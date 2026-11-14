@@ -37,10 +37,25 @@ module.exports = async function dispatchCashierNotification(req, res) {
     return send(res, 401, { error: "Unauthorized" });
   }
 
-  const body = typeof req.body === "string" ? (() => { try { return JSON.parse(req.body); } catch { return null; } })() : req.body;
+  const body =
+    typeof req.body === "string"
+      ? (() => {
+          try {
+            return JSON.parse(req.body);
+          } catch {
+            return null;
+          }
+        })()
+      : req.body;
   const eventType = body?.event_type;
   const eventId = body?.event_id;
-  if (!(["order", "waiter_call"].includes(eventType)) || typeof eventId !== "string" || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(eventId)) {
+  if (
+    !["order", "waiter_call"].includes(eventType) ||
+    typeof eventId !== "string" ||
+    !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+      eventId,
+    )
+  ) {
     return send(res, 400, { error: "Invalid event" });
   }
 
@@ -54,17 +69,29 @@ module.exports = async function dispatchCashierNotification(req, res) {
 
   try {
     const supabase = createClient(url, key, {
-      auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+        detectSessionInUrl: false,
+      },
     });
-    const { data: deliveries, error: claimError } = await supabase.rpc("claim_cashier_notification_deliveries", {
-      p_secret: expectedSecret,
-      p_event_type: eventType,
-      p_event_id: eventId,
-    });
+    const { data: deliveries, error: claimError } = await supabase.rpc(
+      "claim_cashier_notification_deliveries",
+      {
+        p_secret: expectedSecret,
+        p_event_type: eventType,
+        p_event_id: eventId,
+      },
+    );
     if (claimError) {
       // Do not log function details: they may contain database or event information.
-      console.error("Notification event claim failed", claimError.code || "unknown");
-      return send(res, claimError.code === "28000" ? 401 : 502, { error: "Unable to validate notification event" });
+      console.error(
+        "Notification event claim failed",
+        claimError.code || "unknown",
+      );
+      return send(res, claimError.code === "28000" ? 401 : 502, {
+        error: "Unable to validate notification event",
+      });
     }
 
     webpush.setVapidDetails(vapidSubject, vapidPublicKey, vapidPrivateKey);
@@ -98,23 +125,32 @@ module.exports = async function dispatchCashierNotification(req, res) {
         }
       }
 
-      const { error: recordError } = await supabase.rpc("record_cashier_notification_delivery", {
-        p_secret: expectedSecret,
-        p_event_type: eventType,
-        p_event_id: eventId,
-        p_subscription_id: delivery.subscription_id,
-        p_status: status,
-        p_http_status: httpStatus,
-      });
+      const { error: recordError } = await supabase.rpc(
+        "record_cashier_notification_delivery",
+        {
+          p_secret: expectedSecret,
+          p_event_type: eventType,
+          p_event_id: eventId,
+          p_subscription_id: delivery.subscription_id,
+          p_status: status,
+          p_http_status: httpStatus,
+        },
+      );
       if (recordError) {
         failed += 1;
-        console.error("Notification delivery status update failed", recordError.code || "unknown");
+        console.error(
+          "Notification delivery status update failed",
+          recordError.code || "unknown",
+        );
       }
     }
 
     return send(res, 200, { accepted: true, delivered, failed, expired });
   } catch (error) {
-    console.error("Notification dispatch failed", error?.code || error?.name || "unknown");
+    console.error(
+      "Notification dispatch failed",
+      error?.code || error?.name || "unknown",
+    );
     return send(res, 500, { error: "Notification dispatch failed" });
   }
 };
