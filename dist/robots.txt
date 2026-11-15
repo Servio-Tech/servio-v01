@@ -1,0 +1,9 @@
+User-agent: *
+Disallow: /dashboard/
+Disallow: /manager/
+Disallow: /cashier/
+Disallow: /auth/
+
+# السماح فقط بالصفحات العامة
+Allow: /
+Allow: /menu/
