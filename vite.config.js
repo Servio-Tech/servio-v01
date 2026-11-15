@@ -6,18 +6,27 @@ export default defineConfig({
   server: {
     port: 3000,
   },
+  preview: {
+    port: 3000,
+  },
   build: {
     rollupOptions: {
       output: {
-        manualChunks: {
-          mui: ['@mui/material', '@mui/icons-material', '@emotion/react', '@emotion/styled'],
-          charts: ['@mui/x-charts', '@mui/x-date-pickers'],
-          vendor: ['react', 'react-dom', 'react-router-dom', '@supabase/supabase-js'],
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            if (id.includes('@mui/x-charts') || id.includes('@mui/x-date-pickers')) {
+              return 'charts';
+            }
+            if (id.includes('@mui') || id.includes('@emotion')) {
+              return 'mui';
+            }
+            if (id.includes('@supabase')) {
+              return 'supabase';
+            }
+            return 'vendor';
+          }
         },
       },
     },
-  },
-  preview: {
-    port: 3000,
   },
 });
