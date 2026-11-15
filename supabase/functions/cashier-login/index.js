@@ -6,8 +6,10 @@ const allowedOrigins = new Set([
   "http://localhost:3000",
   "http://127.0.0.1:3000",
 ]);
+
 const genericError = "بيانات الدخول غير صحيحة";
-const cors = (origin: string | null) => {
+
+const cors = (origin) => {
   const allowed =
     origin && allowedOrigins.has(origin)
       ? origin
@@ -20,17 +22,14 @@ const cors = (origin: string | null) => {
     "Access-Control-Allow-Methods": "POST, OPTIONS",
   };
 };
-const json = (
-  body: unknown,
-  status = 200,
-  headers: Record<string, string> = {},
-) =>
+
+const json = (body, status = 200, headers = {}) =>
   new Response(JSON.stringify(body), {
     status,
     headers: { ...headers, "Content-Type": "application/json" },
   });
 
-Deno.serve(async (req: Request) => {
+Deno.serve(async (req) => {
   const headers = cors(req.headers.get("origin"));
   if (req.method === "OPTIONS") return new Response("ok", { headers });
   if (req.method !== "POST")
@@ -55,13 +54,15 @@ Deno.serve(async (req: Request) => {
     )
       .split(",")[0]
       .trim();
+
     if (!slug || !branchSlug || !username || !/^\d{4,6}$/.test(pin))
       return json({ error: genericError }, 401, headers);
 
     const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+      Deno.env.get("SUPABASE_URL"),
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY"),
     );
+
     const rate = await supabase.rpc("check_cashier_login_rate_limit", {
       p_ip: ip,
       p_tenant_slug: slug,
@@ -69,6 +70,7 @@ Deno.serve(async (req: Request) => {
       p_username: username,
       p_record_failure: false,
     });
+
     if (rate.error || rate.data?.allowed === false) {
       const retryAfter = Number(rate.data?.retry_after_seconds || 300);
       return json({ error: genericError }, 429, {
@@ -86,6 +88,7 @@ Deno.serve(async (req: Request) => {
         p_pin: pin,
       },
     );
+
     const cashier = verified?.[0];
     if (verifyError || !cashier) {
       await supabase.rpc("check_cashier_login_rate_limit", {
@@ -107,6 +110,7 @@ Deno.serve(async (req: Request) => {
     };
     const password = `${crypto.randomUUID()}${crypto.randomUUID()}`;
     let authUserId = cashier.auth_user_id;
+
     if (!authUserId) {
       const { data, error } = await supabase.auth.admin.createUser({
         email,
@@ -116,12 +120,14 @@ Deno.serve(async (req: Request) => {
       });
       if (error || !data.user)
         return json({ error: genericError }, 500, headers);
+
       authUserId = data.user.id;
       const { error: linkError } = await supabase
         .from("cashiers")
         .update({ auth_user_id: authUserId })
         .eq("id", cashier.id)
         .eq("branch_id", cashier.branch_id);
+
       if (linkError) {
         await supabase.auth.admin.deleteUser(authUserId);
         return json({ error: genericError }, 500, headers);
@@ -133,6 +139,7 @@ Deno.serve(async (req: Request) => {
       });
       if (error) return json({ error: genericError }, 500, headers);
     }
+
     return json({ email, password }, 200, headers);
   } catch {
     return json({ error: genericError }, 500, headers);
