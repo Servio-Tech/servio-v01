@@ -40,16 +40,6 @@ const COMMON_ALLERGENS = [
   "سمسم",
 ];
 
-const SUGGESTION_TAGS = [
-  "يناسب المشروبات الساخنة",
-  "يناسب المشروبات الباردة",
-  "حلويات خفيفة",
-  "وجبات سريعة",
-  "الأكثر مبيعاً",
-  "مقترحات الشيف",
-  "بديل صحي",
-];
-
 const VisuallyHiddenInput = styled("input")({
   clipPath: "inset(50%)",
   height: 1,
@@ -68,7 +58,6 @@ const INITIAL_FORM_STATE = {
   description: "",
   image: "",
   allergens: [],
-  tags: [],
   recommendation_item_ids: [],
   ingredient_ids: [],
   addon_options: [],
@@ -99,7 +88,6 @@ function AddItemDrawer({ open, onClose, itemToEdit = null }) {
         description: itemToEdit.description || "",
         image: itemToEdit.image || "",
         allergens: itemToEdit.allergens || [],
-        tags: itemToEdit.tags || [],
         recommendation_item_ids: itemToEdit.recommendation_item_ids || [],
         ingredient_ids: itemToEdit.ingredient_ids || [],
         addon_options: normalizeAddonOptions(itemToEdit.addon_options),
@@ -186,7 +174,6 @@ function AddItemDrawer({ open, onClose, itemToEdit = null }) {
         description: formData.description,
         image: image || "/logo-icon.webp",
         allergens: formData.allergens,
-        tags: formData.tags,
         recommendation_item_ids: formData.recommendation_item_ids,
         ingredient_ids: formData.ingredient_ids,
         addon_options: normalizeAddonOptions(formData.addon_options),
@@ -358,40 +345,6 @@ function AddItemDrawer({ open, onClose, itemToEdit = null }) {
 
         <Autocomplete
           multiple
-          freeSolo
-          options={SUGGESTION_TAGS}
-          value={formData.tags}
-          onChange={(_, newValue) => {
-            setFormData((prev) => ({ ...prev, tags: newValue }));
-          }}
-          renderTags={(value, getTagProps) =>
-            value.map((option, index) => {
-              const { key, ...tagProps } = getTagProps({ index });
-              return (
-                <Chip
-                  key={key}
-                  label={option}
-                  size="small"
-                  color="primary"
-                  variant="outlined"
-                  {...tagProps}
-                />
-              );
-            })
-          }
-          renderInput={(params) => (
-            <TextField
-              {...params}
-              size="small"
-              label={t("menuTags")}
-              placeholder={t("menuTagsPlaceholder")}
-            />
-          )}
-          fullWidth
-        />
-
-        <Autocomplete
-          multiple
           options={items.filter((item) => item.id !== itemToEdit?.id && (item.isAvailableForSale !== false || formData.recommendation_item_ids.includes(item.id)))}
           getOptionLabel={(option) => option?.name || ""}
           value={items.filter((item) => formData.recommendation_item_ids.includes(item.id))}
@@ -464,7 +417,7 @@ function AddItemDrawer({ open, onClose, itemToEdit = null }) {
             variant="outlined"
             startIcon={<AddIcon />}
             onClick={() => setFreeAddonDrawerOpen(true)}
-            sx={{ alignSelf: "flex-start", borderRadius: 2, fontWeight: 800, textAlign: "start" }}
+            sx={{ alignSelf: "flex-start", borderRadius: 2, fontWeight: 800, textAlign: "start", width: "100%" }}
           >
             {language === "ar"
               ? `اختيار مكملات من أصناف المنيو (${formData.free_addon_item_ids.length})`

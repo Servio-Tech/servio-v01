@@ -315,21 +315,6 @@ function MenuControl() {
                   </Typography>
                 </Box>
 
-                {/* عرض وسوم التوافق إن وجدت */}
-                {product.tags && product.tags.length > 0 && (
-                  <Box sx={{ display: "flex", gap: 0.5, flexWrap: "wrap", mb: 1 }}>
-                    {product.tags.map((tag, idx) => (
-                      <Chip
-                        key={idx}
-                        label={tag}
-                        size="small"
-                        variant="outlined"
-                        sx={{ fontSize: "0.65rem", height: 20 }}
-                      />
-                    ))}
-                  </Box>
-                )}
-
                 <Typography
                   variant="body2"
                   color="text.secondary"

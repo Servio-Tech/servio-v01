@@ -8,7 +8,7 @@ import { getCustomerMenuItems, withIngredientAvailability } from "../utils/menuA
 import { isCompleteMenuOrder } from "../utils/menuOrder";
 
 const MenuContext = createContext();
-const MENU_ITEM_COLUMNS = "id,created_at,name,price,category_id,description,allergens,tags,available,tenant_id,branch_id,sort_order,recommendation_item_ids,addon_options,free_addon_item_ids,max_addons";
+const MENU_ITEM_COLUMNS = "id,created_at,name,price,category_id,description,allergens,available,tenant_id,branch_id,sort_order,recommendation_item_ids,addon_options,free_addon_item_ids,max_addons";
 
 export const MenuProvider = ({ children }) => {
   const { slug, tenantId, isPublic, isTracking, loading: tenantLoading } = useTenant();
@@ -345,7 +345,6 @@ export const MenuProvider = ({ children }) => {
       description: newItem.description,
       image: newItem.image,
       allergens: newItem.allergens,
-      tags: newItem.tags,
       available: newItem.available,
       recommendation_item_ids: Array.isArray(newItem.recommendation_item_ids) ? newItem.recommendation_item_ids : [],
       addon_options: addonOptions,
@@ -382,7 +381,6 @@ export const MenuProvider = ({ children }) => {
       description: updatedItem.description,
       image: updatedItem.image,
       allergens: updatedItem.allergens,
-      tags: updatedItem.tags,
       available: updatedItem.available,
       recommendation_item_ids: recommendationIds,
       addon_options: addonOptions,
