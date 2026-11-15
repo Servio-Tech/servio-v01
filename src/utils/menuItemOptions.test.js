@@ -52,7 +52,7 @@ describe("menu item options", () => {
   test("only returns available items explicitly listed in the current compatibility field", () => {
     const cart = [{ id: "drink", recommendation_item_ids: ["honey", "cookie", "already-added", "unavailable"] }];
     const menu = [
-      { id: "drink", available: true, recommendation_item_ids: ["honey", "cookie", "already-added", "unavailable"], tags: ["حلويات خفيفة"], category_id: "drinks" },
+      { id: "drink", available: true, recommendation_item_ids: ["honey", "cookie", "already-added", "unavailable"], category_id: "drinks" },
       { id: "honey", name: "عسل", available: true },
       { id: "cookie", name: "كوكيز", available: true },
       { id: "already-added", name: "موجود", available: true },

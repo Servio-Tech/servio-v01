@@ -11,7 +11,6 @@ describe("order item payload", () => {
       quantity: 1,
       category_id: "drinks-category",
       image: "data:image/png;base64,large",
-      tags: ["hot"],
       selected_addons: [{ id: null, name: "عسل" }],
       addon_options: ["عسل"],
       max_addons: 1,
