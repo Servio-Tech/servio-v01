@@ -22,21 +22,54 @@ import QrCode2OutlinedIcon from "@mui/icons-material/QrCode2Outlined";
 import AssessmentOutlinedIcon from "@mui/icons-material/AssessmentOutlined";
 import AccessTimeRoundedIcon from "@mui/icons-material/AccessTimeRounded";
 import Inventory2OutlinedIcon from "@mui/icons-material/Inventory2Outlined";
+import LocalOfferOutlinedIcon from '@mui/icons-material/LocalOfferOutlined';
 
 // عناصر القائمة المحدثة لتغطي كل مكونات النظام
 const navItems = [
   {
     id: "manager",
-    label: "لوحة النظرة العامة", translationKey: "manager",
+    label: "لوحة النظرة العامة",
+    translationKey: "manager",
     icon: <DashboardOutlinedIcon />,
   },
-  { id: "menu", label: "التحكم في المنيو", translationKey: "menuControl", icon: <TuneOutlinedIcon /> },
+  {
+    id: "menu",
+    label: "التحكم في المنيو",
+    translationKey: "menuControl",
+    icon: <TuneOutlinedIcon />,
+  },
   { id: "inventory", label: "إدارة المخزون", icon: <Inventory2OutlinedIcon /> },
-  { id: "qrGen", label: "أكواد الطاولات (QR)", translationKey: "qrCodes", icon: <QrCode2OutlinedIcon /> },
-  { id: "history", label: "سجل الطلبات", translationKey: "orderHistory", icon: <ReceiptLongOutlinedIcon /> },
-  { id: "reports", label: "التقارير", translationKey: "managerReports", icon: <AssessmentOutlinedIcon /> },
-  { id: "shifts", label: "الورديات", translationKey: "managerShiftReports", icon: <AccessTimeRoundedIcon /> },
-  { id: "settings", label: "الإعدادات", translationKey: "settings", icon: <SettingsOutlinedIcon /> },
+  { id: "promotions", label: "إدارة العروض", icon: <LocalOfferOutlinedIcon /> },
+  {
+    id: "qrGen",
+    label: "أكواد الطاولات (QR)",
+    translationKey: "qrCodes",
+    icon: <QrCode2OutlinedIcon />,
+  },
+  {
+    id: "history",
+    label: "سجل الطلبات",
+    translationKey: "orderHistory",
+    icon: <ReceiptLongOutlinedIcon />,
+  },
+  {
+    id: "reports",
+    label: "التقارير",
+    translationKey: "managerReports",
+    icon: <AssessmentOutlinedIcon />,
+  },
+  {
+    id: "shifts",
+    label: "الورديات",
+    translationKey: "managerShiftReports",
+    icon: <AccessTimeRoundedIcon />,
+  },
+  {
+    id: "settings",
+    label: "الإعدادات",
+    translationKey: "settings",
+    icon: <SettingsOutlinedIcon />,
+  },
 ];
 
 function ManagerSidebar({
@@ -59,7 +92,27 @@ function ManagerSidebar({
   const sidebarItems = navItems.map((item) => (
     <SidebarItem
       key={item.id}
-      navItem={{ ...item, label: item.id === "inventory" ? (language === "ar" ? "إدارة المخزون" : "Inventory") : item.id === "reports" ? (language === "ar" ? "التقارير" : "Reports") : item.id === "shifts" ? (language === "ar" ? "الورديات" : "Shifts") : t(item.translationKey) }}
+      navItem={{
+        ...item,
+        label:
+          item.id === "inventory"
+            ? language === "ar"
+              ? "إدارة المخزون"
+              : "Inventory"
+            : item.id === "promotions"
+              ? language === "ar"
+                ? "إدارة العروض"
+                : "Promotions & Offers"
+            : item.id === "reports"
+              ? language === "ar"
+                ? "التقارير"
+                : "Reports"
+              : item.id === "shifts"
+                ? language === "ar"
+                  ? "الورديات"
+                  : "Shifts"
+                : t(item.translationKey),
+      }}
       isSelected={activeTab === item.id}
       onSelect={() => handleItemClick(item.id)}
     />
@@ -110,7 +163,12 @@ function ManagerSidebar({
             sx={{ width: 35, height: 35, borderRadius: 0.8 }}
           />
           <Typography
-            sx={{ fontSize: "25px", fontWeight: "800", letterSpacing: "0.5px", color: "#fff" }}
+            sx={{
+              fontSize: "25px",
+              fontWeight: "800",
+              letterSpacing: "0.5px",
+              color: "#fff",
+            }}
             variant="h4"
             component="h1"
           >

@@ -13,6 +13,7 @@ import SettingsLayout from "../components/manager-dashboard/settings/SettingsLay
 import ShiftReports from "../components/manager-dashboard/ShiftReports";
 import IngredientInventory from "../components/manager-dashboard/IngredientInventory";
 import BranchTabs from "../components/manager-dashboard/BranchTabs";
+import Promotions from "../components/manager-dashboard/Promotions";
 
 // MUI COMPONENTS
 import Box from "@mui/material/Box";
@@ -84,6 +85,7 @@ function ManagerDashboard() {
           {activeTab === "inventory" && <IngredientInventory canManage />}
           {activeTab === "settings" && <SettingsLayout />}
           {activeTab === "qrGen" && <QRCodeGenerate />}
+          {activeTab === "promotions" && <Promotions />}
         </Box>
       </Box>
     </Box>
