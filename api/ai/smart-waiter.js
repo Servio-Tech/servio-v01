@@ -80,7 +80,10 @@ export default async function smartWaiter(req, res) {
       body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig: { temperature: 0.6, maxOutputTokens: 350, responseMimeType: "application/json" } }),
       signal: AbortSignal.timeout(8000),
     });
-    if (!response.ok) return send(res, response.status === 429 ? 429 : 502, { error: "Gemini request failed", fallback: true });
+    if (!response.ok) {
+      console.error("Smart waiter Gemini provider status", response.status);
+      return send(res, response.status === 429 ? 429 : 502, { error: "Gemini request failed", fallback: true, provider_status: response.status });
+    }
     const data = await response.json();
     const text = data?.candidates?.[0]?.content?.parts?.map((part) => part.text || "").join("") || "";
     return send(res, 200, { suggestions: parseModelJson(text, items.map((item) => item.id)), model });
