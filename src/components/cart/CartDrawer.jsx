@@ -23,20 +23,23 @@ import { useCart } from "../../context/CartContext";
 import { useOrders } from "../../context/OrdersContext";
 import { useTenant } from "../../context/TenantContext";
 import { useBranch } from "../../context/BranchContext";
+import { useLanguage } from "../../context/LanguageContext";
 import supabase from "../../supabase";
 import { saveCustomerOrder } from "../../utils/customerTracking";
 import { getCartLineKey } from "../../utils/cartItemUtils";
 import { getUnavailableCartItemNames, isUnavailableMenuOrderError } from "../../utils/publicOrderErrors";
 
-function CartDrawer({ open, close, cashierMode = false }) {
+function CartDrawer({ open, close, cashierMode = false, currency = "SAR" }) {
   const { cartItems, tableNumber, clearCart } = useCart();
   const { addOrder } = useOrders();
   const { slug } = useTenant();
   const { branchSlug } = useBranch();
+  const { language } = useLanguage();
+  const isArabic = language !== "en";
   const navigate = useNavigate();
   const [notes, setNotes] = useState("");
   const [sending, setSending] = useState(false);
-  const [sendError, setSendError] = useState("");
+  const [sendError, setSendError] = useState(null);
 
   const totalPrice = cartItems.reduce(
     (acc, item) => acc + (Number(item.price) || 0) * Number(item.quantity || 0),
@@ -47,7 +50,7 @@ function CartDrawer({ open, close, cashierMode = false }) {
   const handleConfirmOrder = async () => {
     if (cartItems.length === 0 || sending) return;
     setSending(true);
-    setSendError("");
+    setSendError(null);
 
     const newOrder = {
       items: cartItems,
@@ -88,20 +91,45 @@ function CartDrawer({ open, close, cashierMode = false }) {
         } catch {
           // رسالة السبب تبقى مفهومة حتى عند تعذر تحديث المنيو وقت الخطأ.
         }
-        const names = unavailableNames.slice(0, 3).map((name) => `«${name.slice(0, 80)}»`).join("، ");
-        const additional = unavailableNames.length > 3 ? "، وأصناف أخرى" : "";
-        setSendError(names
-          ? `تعذر إرسال الطلب: ${names}${additional} غير متاح حاليًا؛ أوقفه المدير أو نفد أحد مكوناته. أزل الصنف من السلة ثم حاول مجددًا. ستبقى أصنافك في السلة.`
-          : "تعذر إرسال الطلب لأن صنفًا أو أكثر لم يعد متاحًا (أوقفه المدير أو نفد أحد مكوناته). حدّث المنيو وأزل الصنف غير المتاح. ستبقى أصنافك في السلة.");
+        setSendError({
+          type: "unavailable",
+          names: unavailableNames.map((name) => ({
+            ar: name,
+            en: String(cartItems.find((item) => String(item?.name || "").trim() === name)?.name_en || name),
+          })),
+        });
       } else if (/ORDER_ITEM_PRICE_MISMATCH|ORDER_TOTAL_MISMATCH/.test(errorMessage)) {
-        setSendError("تغيّر سعر صنف أو إجمالي الطلب منذ فتح المنيو. حدّث الصفحة وراجع الأسعار ثم حاول مجددًا؛ ستبقى أصنافك في السلة.");
+        setSendError({ type: "price" });
       } else {
-        setSendError("تعذر إرسال الطلب الآن. تحقق من الاتصال ثم حاول مرة أخرى؛ ستبقى أصنافك في السلة.");
+        setSendError({ type: "generic" });
       }
     } finally {
       setSending(false);
     }
   };
+
+  let errorText = "";
+  if (sendError?.type === "unavailable") {
+    const names = sendError.names.slice(0, 3)
+      .map((name) => isArabic ? `«${name.ar.slice(0, 80)}»` : `“${name.en.slice(0, 80)}”`)
+      .join(isArabic ? "، " : ", ");
+    const additional = sendError.names.length > 3 ? (isArabic ? "، وأصناف أخرى" : ", and other items") : "";
+    errorText = names
+      ? (isArabic
+        ? `تعذر إرسال الطلب: ${names}${additional} غير متاح حاليًا؛ أوقفه المدير أو نفد أحد مكوناته. أزل الصنف من السلة ثم حاول مجددًا. ستبقى أصنافك في السلة.`
+        : `Unable to send your order: ${names}${additional} ${sendError.names.length === 1 ? "is" : "are"} currently unavailable because the manager disabled ${sendError.names.length === 1 ? "it" : "them"} or an ingredient ran out. Remove the unavailable items from your cart and try again. Your items will remain in the cart.`)
+      : (isArabic
+        ? "تعذر إرسال الطلب لأن صنفًا أو أكثر لم يعد متاحًا (أوقفه المدير أو نفد أحد مكوناته). حدّث المنيو وأزل الصنف غير المتاح. ستبقى أصنافك في السلة."
+        : "Unable to send your order because one or more items are no longer available (disabled by the manager or an ingredient ran out). Refresh the menu and remove the unavailable items. Your items will remain in the cart.");
+  } else if (sendError?.type === "price") {
+    errorText = isArabic
+      ? "تغيّر سعر صنف أو إجمالي الطلب منذ فتح المنيو. حدّث الصفحة وراجع الأسعار ثم حاول مجددًا؛ ستبقى أصنافك في السلة."
+      : "An item price or the order total has changed since you opened the menu. Refresh the page, review the prices, and try again. Your items will remain in the cart.";
+  } else if (sendError?.type === "generic") {
+    errorText = isArabic
+      ? "تعذر إرسال الطلب الآن. تحقق من الاتصال ثم حاول مرة أخرى؛ ستبقى أصنافك في السلة."
+      : "Unable to send your order right now. Check your connection and try again. Your items will remain in the cart.";
+  }
 
   const bottomBarHeight = "220px";
 
@@ -114,6 +142,7 @@ function CartDrawer({ open, close, cashierMode = false }) {
       disableSwipeToOpen={true}
       slotProps={{
         paper: {
+          dir: isArabic ? "rtl" : "ltr",
           sx: {
             borderTopLeftRadius: "24px",
             borderTopRightRadius: "24px",
@@ -157,23 +186,24 @@ function CartDrawer({ open, close, cashierMode = false }) {
             }}
           >
             <Typography variant="h6" sx={{ fontWeight: 800 }}>
-              ملخص الطلب ({itemCount})
+              {isArabic ? "ملخص الطلب" : "Order summary"} ({itemCount})
             </Typography>
-            <IconButton size="small" onClick={close}>
+            <IconButton size="small" onClick={close} aria-label={isArabic ? "إغلاق السلة" : "Close cart"}>
               <CloseIcon />
             </IconButton>
           </Box>
         </Box>
 
         {cartItems.map((item) => (
-          <CartItemCard key={getCartLineKey(item)} cartItemDetails={item} />
+          <CartItemCard key={getCartLineKey(item)} cartItemDetails={item} currency={currency} />
         ))}
 
         <TextField
           fullWidth
           multiline
           rows={2}
-          placeholder="ملاحظات على الطلب (مثل: دون سكر، ثلج إضافي...)"
+          placeholder={isArabic ? "ملاحظات على الطلب (مثل: دون سكر، ثلج إضافي...)" : "Order notes (e.g. no sugar, extra ice...)"}
+          slotProps={{ htmlInput: { "aria-label": isArabic ? "ملاحظات على الطلب" : "Order notes" } }}
           variant="outlined"
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
@@ -206,17 +236,17 @@ function CartDrawer({ open, close, cashierMode = false }) {
             variant="body1"
             sx={{ color: "text.secondary", fontWeight: 600 }}
           >
-            الإجمالي:
+            {isArabic ? "الإجمالي:" : "Total:"}
           </Typography>
           <Typography
             variant="h6"
             sx={{ fontWeight: 800, color: "primary.main" }}
           >
-            {String(totalPrice)} ر.س
+            {String(totalPrice)} {isArabic && currency === "SAR" ? "ر.س" : currency}
           </Typography>
         </Box>
 
-        {sendError && <Alert severity="error" sx={{ mb: 1 }}>{sendError}</Alert>}
+        {errorText && <Alert severity="error" sx={{ mb: 1 }}>{errorText}</Alert>}
 
         <Button
           fullWidth
@@ -231,7 +261,7 @@ function CartDrawer({ open, close, cashierMode = false }) {
             fontSize: "1rem",
           }}
         >
-          {sending ? "جارٍ الإرسال..." : "تأكيد وإرسال الطلب"}
+          {sending ? (isArabic ? "جارٍ الإرسال..." : "Sending...") : (isArabic ? "تأكيد وإرسال الطلب" : "Confirm and send order")}
         </Button>
       </Box>
     </SwipeableDrawer>

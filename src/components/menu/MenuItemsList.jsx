@@ -10,15 +10,17 @@ import CircularProgress from "@mui/material/CircularProgress";
 // DATA
 import { useMenu } from "../../context/MenuContext";
 import { useCart } from "../../context/CartContext";
+import { useLanguage } from "../../context/LanguageContext";
 
 function MenuItemsList() {
   // 1. التغيير هنا: استدعاء customerMenu المجهزة بالأصناف المتوفرة فقط
   const { customerMenu, menuLoading } = useMenu();
   const { cartItems } = useCart();
+  const { language } = useLanguage();
 
   if (menuLoading && (!customerMenu || customerMenu.length === 0)) {
     return (
-      <Box role="status" aria-label="جارٍ تحميل الأصناف" sx={{ display: "flex", flexDirection: "column", gap: 2, pb: cartItems.length > 0 ? "90px" : 0 }}>
+      <Box role="status" aria-label={language === "en" ? "Loading menu items" : "جارٍ تحميل الأصناف"} sx={{ display: "flex", flexDirection: "column", gap: 2, pb: cartItems.length > 0 ? "90px" : 0 }}>
         {[0, 1, 2].map((placeholder) => (
           <Box key={placeholder} sx={{ display: "flex", alignItems: "center", gap: 1.5, p: 1.5, minHeight: 120, borderRadius: 2.5, bgcolor: "background.paper" }}>
             <Box sx={{ flex: 1 }}>
@@ -45,7 +47,7 @@ function MenuItemsList() {
         align="center"
         sx={{ py: 6, fontWeight: 500 }}
       >
-        لا توجد أصناف متاحة في هذا القسم حاليًا. جرّب اختيار قسم آخر.
+        {language === "en" ? "No items are currently available in this category. Try another category." : "لا توجد أصناف متاحة في هذا القسم حاليًا. جرّب اختيار قسم آخر."}
       </Typography>
     );
   }

@@ -10,6 +10,7 @@ import ReviewSection from "../components/menu/ReviewSection";
 import CallWaiterConfirm from "../components/menu/CallWaiterConfirm";
 import SuggestionBanner from "../components/menu/SuggestionBanner";
 import CustomerTrackingBanner from "../components/menu/CustomerTrackingBanner";
+import SmartWaiter from "../components/menu/SmartWaiter";
 import TrialNotice from "../components/TrialNotice";
 import Container from "@mui/material/Container";
 import Box from "@mui/material/Box";
@@ -20,6 +21,7 @@ import { useTables } from "../context/TablesContext";
 import { useTenant } from "../context/TenantContext";
 import { useBranch } from "../context/BranchContext";
 import { useLanguage } from "../context/LanguageContext";
+import { getPlanCapabilities } from "../utils/planCapabilities";
 import { useState, useEffect } from "react";
 
 function Menu() {
@@ -36,7 +38,7 @@ function Menu() {
     slug,
     loading: tenantLoading,
   } = useTenant();
-  const { branchSlug } = useBranch();
+  const { branchSlug, selectedBranch, publicBranchSlug, loading: branchLoading } = useBranch();
   const { language } = useLanguage();
   const isCashierQr =
     new URLSearchParams(window.location.search).get("cashier") === "1";
@@ -61,8 +63,8 @@ function Menu() {
     return (
       <Container maxWidth="sm" sx={{ py: 6 }}>
         <NotFound
-          title="الكافيه غير موجود"
-          message="تعذّر العثور على الكافيه من خلال هذا الرابط."
+          title={language === "en" ? "Cafe not found" : "الكافيه غير موجود"}
+          message={language === "en" ? "We couldn't find the cafe at this link." : "تعذّر العثور على الكافيه من خلال هذا الرابط."}
         />
       </Container>
     );
@@ -70,8 +72,8 @@ function Menu() {
     return (
       <Container maxWidth="sm" sx={{ py: 6 }}>
         <NotFound
-          title="رقم الطاولة غير صالح"
-          message="تحقّق من رابط المنيو أو اطلب المساعدة من الموظف."
+          title={language === "en" ? "Invalid table number" : "رقم الطاولة غير صالح"}
+          message={language === "en" ? "Check the menu link or ask a staff member for help." : "تحقّق من رابط المنيو أو اطلب المساعدة من الموظف."}
         />
       </Container>
     );
@@ -117,6 +119,17 @@ function Menu() {
               : "Allergen details for items added from the photographed menu are estimates based on suggested recipes, not verified by the kitchen. Ask staff about ingredients and possible cross-contact before ordering."}
           </Alert>
         )}
+        {getPlanCapabilities(tenant).aiWaiter === true && (
+          <SmartWaiter
+            key={`${tenant.id}:${selectedBranch?.id || "none"}`}
+            tenant={tenant}
+            branch={selectedBranch}
+            branchLoading={branchLoading}
+            publicBranchSlug={publicBranchSlug}
+            language={language}
+            currency={storeInfo?.currency || "SAR"}
+          />
+        )}
         <MenuItemsList />
       </Container>
       <FloatingActions
@@ -132,11 +145,12 @@ function Menu() {
         handleCallWaiter={() => setCallingWaiterConfirmation(true)}
       />
       <SuggestionBanner />
-      <FloatingCartBar handleCartOpen={() => setCartOpen(true)} />
+      <FloatingCartBar handleCartOpen={() => setCartOpen(true)} currency={storeInfo?.currency || "SAR"} />
       <CartDrawer
         open={isCartOpen}
         close={() => setCartOpen(false)}
         cashierMode={isCashierQr}
+        currency={storeInfo?.currency || "SAR"}
       />
       <ReviewSection
         open={reviewOpen}

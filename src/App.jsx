@@ -1,17 +1,19 @@
-import Menu from "./pages/Menu";
-import CashierDashboard from "./pages/CashierDashboard";
-import ManagerDashboard from "./pages/ManagerDashboard";
-import AdminLogin from "./pages/AdminLogin";
-import AdminRegister from "./pages/AdminRegister";
-import Home from "./pages/Home";
-import AuthCallback from "./pages/AuthCallback";
-import OrderTrackingPage from "./pages/OrderTrackingPage";
+import { lazy, Suspense } from "react";
 import NotFound from "./components/NotFound";
 import RequireSession from "./components/RequireSession";
 import { useParams } from "react-router-dom";
 import "./App.css";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useLanguage } from "./context/LanguageContext";
+
+const Menu = lazy(() => import("./pages/Menu"));
+const CashierDashboard = lazy(() => import("./pages/CashierDashboard"));
+const ManagerDashboard = lazy(() => import("./pages/ManagerDashboard"));
+const AdminLogin = lazy(() => import("./pages/AdminLogin"));
+const AdminRegister = lazy(() => import("./pages/AdminRegister"));
+const Home = lazy(() => import("./pages/Home"));
+const AuthCallback = lazy(() => import("./pages/AuthCallback"));
+const OrderTrackingPage = lazy(() => import("./pages/OrderTrackingPage"));
 
 function App() {
   const { language } = useLanguage();
@@ -22,6 +24,7 @@ function App() {
 
   return (
     <div className="App" dir={language === "ar" ? "rtl" : "ltr"}>
+      <Suspense fallback={<div role="status" style={{ padding: "2rem", textAlign: "center" }}>{language === "ar" ? "جارٍ التحميل..." : "Loading..."}</div>}>
       <Routes>
         {/* الصفحات العامة لا تتطلب جلسة؛ مسار menu يمرر slug ورقم الطاولة للمنيو. */}
         <Route path="/" element={<Home />} />
@@ -39,6 +42,7 @@ function App() {
         <Route path="/manager" element={<RequireSession role="admin"><ManagerDashboard /></RequireSession>} />
         <Route path="*" element={<NotFound title="صفحة غير موجودة" message="الرابط الذي تحاول الوصول إليه غير صحيح." />} />
       </Routes>
+      </Suspense>
     </div>
   );
 }

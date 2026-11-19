@@ -3,7 +3,7 @@ import { useLocation } from "react-router-dom";
 
 const LanguageContext = createContext(null);
 const GLOBAL_KEY = "servio_language";
-const SCOPE_KEYS = { cashier: "servio_language_cashier", manager: "servio_language_manager" };
+const SCOPE_KEYS = { cashier: "servio_language_cashier", manager: "servio_language_manager", menu: "servio_language_menu" };
 
 const TRANSLATIONS = {
   ar: {
@@ -35,7 +35,16 @@ function getScope(pathname) {
 }
 
 function readLanguage(key, fallback = "ar") {
-  try { return localStorage.getItem(key) === "en" ? "en" : fallback; } catch { return fallback; }
+  try {
+    const saved = localStorage.getItem(key);
+    return saved === "en" || saved === "ar" ? saved : fallback;
+  } catch { return fallback; }
+}
+
+function browserLanguage() {
+  if (typeof navigator === "undefined") return "ar";
+  const preferred = navigator.languages?.[0] || navigator.language || "ar";
+  return preferred.toLowerCase().startsWith("ar") ? "ar" : "en";
 }
 
 // رسائل موحدة لإدارة إعدادات الحسابات دون تكرارها داخل المكونات.
@@ -74,7 +83,8 @@ export function LanguageProvider({ children }) {
   // عند الانتقال بين الهوم والكاشير والمدير نحمّل إعداد النطاق المناسب.
   useEffect(() => {
     const scopedKey = SCOPE_KEYS[scope];
-    const nextLanguage = scope === "menu" ? "ar" : readLanguage(scopedKey || GLOBAL_KEY, readLanguage(GLOBAL_KEY));
+    const fallback = scope === "menu" ? browserLanguage() : readLanguage(GLOBAL_KEY);
+    const nextLanguage = readLanguage(scopedKey || GLOBAL_KEY, fallback);
     setLanguageState(nextLanguage);
     document.documentElement.lang = nextLanguage;
   }, [scope]);
@@ -87,7 +97,6 @@ export function LanguageProvider({ children }) {
   const setLanguage = useCallback((nextLanguage) => {
     const next = nextLanguage === "en" ? "en" : "ar";
     try {
-      if (scope === "menu") return;
       if (scope === "public") {
         localStorage.setItem(GLOBAL_KEY, next);
         // تغيير الهوم هو الإعداد العام؛ يلغي أي override سابق حتى تتبعه كل الصفحات.

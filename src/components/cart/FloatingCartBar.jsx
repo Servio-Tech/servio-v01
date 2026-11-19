@@ -6,9 +6,12 @@ import Typography from "@mui/material/Typography";
 
 // CONTEXTS
 import { useCart } from "../../context/CartContext";
+import { useLanguage } from "../../context/LanguageContext";
 
-function FloatingCartBar({ handleCartOpen }) {
+function FloatingCartBar({ handleCartOpen, currency = "SAR" }) {
   const { cartItems } = useCart();
+  const { language } = useLanguage();
+  const isArabic = language !== "en";
 
   const totalPrice = cartItems.reduce(
     (total, item) => total + item.price * item.quantity,
@@ -20,6 +23,7 @@ function FloatingCartBar({ handleCartOpen }) {
 
   return (
     <Box
+      dir={isArabic ? "rtl" : "ltr"}
       sx={{
         position: "fixed",
         bottom: { xs: 14, sm: 20 },
@@ -49,10 +53,10 @@ function FloatingCartBar({ handleCartOpen }) {
             mb: 0.5,
           }}
         >
-          عدد الأصناف: {itemCount}
+          {isArabic ? "عدد الأصناف:" : "Items:"} {itemCount}
         </Typography>
         <Typography variant="subtitle1" sx={{ fontWeight: 800 }}>
-          {totalPrice} ر.س
+          {totalPrice} {isArabic && currency === "SAR" ? "ر.س" : currency}
         </Typography>
       </Box>
 
@@ -70,7 +74,7 @@ function FloatingCartBar({ handleCartOpen }) {
           },
         }}
       >
-        عرض الطلب
+        {isArabic ? "عرض الطلب" : "View order"}
       </Button>
     </Box>
   );

@@ -14,10 +14,13 @@ import RoomServiceIcon from "@mui/icons-material/RoomService";
 
 // CONTEXT
 import { useCart } from "../../context/CartContext";
+import { useLanguage } from "../../context/LanguageContext";
 
 function FloatingActions({ handleReview, handleCallWaiter }) {
   const [openDial, setOpenDial] = useState(false);
   const { cartItems } = useCart();
+  const { language } = useLanguage();
+  const isEnglish = language === "en";
 
   // التبديل الديناميكي للموقع بناءً على وجود عناصر في السلة
   const hasItemsInCart = cartItems && cartItems.length > 0;
@@ -29,7 +32,7 @@ function FloatingActions({ handleReview, handleCallWaiter }) {
   const actions = [
     {
       icon: <NotificationsActiveIcon sx={{ color: "#ff9800" }} />,
-      name: "طلب مساعدة الموظف",
+      name: isEnglish ? "Ask staff for help" : "طلب مساعدة الموظف",
       onClick: () => {
         handleDialClose();
         handleCallWaiter();
@@ -37,7 +40,7 @@ function FloatingActions({ handleReview, handleCallWaiter }) {
     },
     {
       icon: <RateReviewIcon color="primary" />,
-      name: "شاركنا رأيك",
+      name: isEnglish ? "Share your feedback" : "شاركنا رأيك",
       onClick: () => {
         handleDialClose();
         handleReview();
@@ -65,7 +68,7 @@ function FloatingActions({ handleReview, handleCallWaiter }) {
         }}
       >
         <SpeedDial
-          ariaLabel="خيارات الخدمة"
+          ariaLabel={isEnglish ? "Service options" : "خيارات الخدمة"}
           sx={{
             "& .MuiFab-primary": {
               backgroundColor: openDial

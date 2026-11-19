@@ -11,6 +11,7 @@ import StarBorderRoundedIcon from "@mui/icons-material/StarBorderRounded";
 
 // CONTEXTS
 import { useFeedbacks } from "../../context/FeedbackContext";
+import { useLanguage } from "../../context/LanguageContext";
 
 const QUICK_TAGS = [
   "خدمة سريعة",
@@ -19,9 +20,12 @@ const QUICK_TAGS = [
   "تأخير في الطلب",
   "تعامل ممتاز",
 ];
+const QUICK_TAG_LABELS_EN = ["Fast service", "Excellent quality", "Crowded", "Order delayed", "Excellent service"];
 
 function ReviewSection({ open, close, tableNumber }) {
   const { addFeedback } = useFeedbacks(); 
+  const { language } = useLanguage();
+  const isEnglish = language === "en";
   const [rating, setRating] = useState(0);
   const [selectedTags, setSelectedTags] = useState([]);
   const [comment, setComment] = useState("");
@@ -71,7 +75,7 @@ function ReviewSection({ open, close, tableNumber }) {
       disableSwipeToOpen={true}
       slotProps={{
         paper: {
-          dir: "rtl",
+          dir: isEnglish ? "ltr" : "rtl",
           sx: {
             borderTopLeftRadius: "24px",
             borderTopRightRadius: "24px",
@@ -108,10 +112,11 @@ function ReviewSection({ open, close, tableNumber }) {
               }}
             >
               <Typography variant="h5" sx={{ fontWeight: "bold" }}>
-                شاركنا رأيك
+                {isEnglish ? "Share your feedback" : "شاركنا رأيك"}
               </Typography>
               <IconButton
                 onClick={close}
+                aria-label={isEnglish ? "Close" : "إغلاق"}
                 size="small"
                 sx={{ backgroundColor: "grey.100" }}
               >
@@ -140,13 +145,13 @@ function ReviewSection({ open, close, tableNumber }) {
                   variant="body1"
                   sx={{ color: "text.secondary", fontWeight: "500" }}
                 >
-                  كيف كانت تجربتك اليوم؟
+                  {isEnglish ? "How was your experience today?" : "كيف كانت تجربتك اليوم؟"}
                 </Typography>
                 <Rating
                   value={rating}
                   onChange={(event, newValue) => setRating(newValue)}
                   size="large"
-                  aria-label="تقييم تجربتك من خمس نجوم"
+                  aria-label={isEnglish ? "Rate your experience out of five stars" : "تقييم تجربتك من خمس نجوم"}
                   emptyIcon={
                     <StarBorderRoundedIcon fontSize="inherit" />
                   }
@@ -172,10 +177,10 @@ function ReviewSection({ open, close, tableNumber }) {
                     justifyContent: "flex-start",
                   }}
                 >
-                  {QUICK_TAGS.map((tag) => (
+                  {QUICK_TAGS.map((tag, index) => (
                     <Chip
                       key={tag}
-                      label={tag}
+                      label={isEnglish ? QUICK_TAG_LABELS_EN[index] : tag}
                       clickable
                       onClick={() => handleTagToggle(tag)}
                       color={selectedTags.includes(tag) ? "primary" : "default"}
@@ -198,7 +203,7 @@ function ReviewSection({ open, close, tableNumber }) {
                 multiline
                 rows={4}
                 variant="outlined"
-                placeholder="هل لديك ملاحظة إضافية؟ (اختياري)"
+                placeholder={isEnglish ? "Any additional comments? (optional)" : "هل لديك ملاحظة إضافية؟ (اختياري)"}
                 value={comment}
                 onChange={(e) => setComment(e.target.value)}
                 sx={{
@@ -226,7 +231,7 @@ function ReviewSection({ open, close, tableNumber }) {
                 mt: 2,
               }}
             >
-              {loading ? "جارٍ الإرسال..." : "إرسال التقييم"}
+              {loading ? (isEnglish ? "Sending..." : "جارٍ الإرسال...") : (isEnglish ? "Send feedback" : "إرسال التقييم")}
             </Button>
           </>
         ) : (
@@ -245,13 +250,13 @@ function ReviewSection({ open, close, tableNumber }) {
               color="primary"
               gutterBottom
             >
-              شكرًا لك!
+              {isEnglish ? "Thank you!" : "شكرًا لك!"}
             </Typography>
             <Typography
               variant="body1"
               sx={{ color: "text.secondary", textAlign: "center" }}
             >
-              وصلنا تقييمك، شكرًا لمشاركته. نأمل زيارتك مجددًا.
+              {isEnglish ? "Thanks for sharing your feedback. We hope to see you again." : "وصلنا تقييمك، شكرًا لمشاركته. نأمل زيارتك مجددًا."}
             </Typography>
           </Box>
         )}
