@@ -14,6 +14,8 @@ const AdminRegister = lazy(() => import("./pages/AdminRegister"));
 const Home = lazy(() => import("./pages/Home"));
 const AuthCallback = lazy(() => import("./pages/AuthCallback"));
 const OrderTrackingPage = lazy(() => import("./pages/OrderTrackingPage"));
+const OwnerLogin = lazy(() => import("./pages/OwnerLogin"));
+const OwnerDashboard = lazy(() => import("./pages/OwnerDashboard"));
 
 function App() {
   const { language } = useLanguage();
@@ -31,6 +33,8 @@ function App() {
         <Route path="/login" element={<AdminLogin />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="/register" element={<AdminRegister />} />
+        <Route path="/owner-console/sign-in" element={<OwnerLogin />} />
+        <Route path="/owner-console" element={<OwnerDashboard />} />
         <Route path="/cashier/:slug" element={<CashierLoginRoute />} />
         <Route path="/track/:slug/:orderId?" element={<OrderTrackingPage />} />
         <Route path="/menu/:slug/:tableNumber?" element={<Menu />} />
