@@ -4,7 +4,7 @@ import supabase from "../supabase";
 
 const TenantContext = createContext(null);
 // هذه المسارات تخص التطبيق نفسه وليست معرف متجر؛ جميع المسارات الأخرى قد تحمل slug لمتجر عام.
-const RESERVED_ROUTES = new Set(["login", "register", "dashboard", "manager", "menu", "cashier", "auth", "track"]);
+const RESERVED_ROUTES = new Set(["login", "register", "dashboard", "manager", "menu", "cashier", "auth", "track", "owner-console"]);
 
 function getRouteContext(pathname) {
   const parts = pathname.split("/").filter(Boolean);
