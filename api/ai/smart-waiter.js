@@ -64,7 +64,7 @@ export default async function smartWaiter(req, res) {
   if (!result.ok) return send(res, 429, { error: "Waiter usage limit reached", retry_after_seconds: 60, fallback: true });
   const apiKey = String(process.env.GEMINI_API_KEY || "");
   if (!apiKey) return send(res, 503, { error: "Gemini is not configured", fallback: true });
-  const model = String(process.env.GEMINI_MODEL || "gemini-2.5-flash-lite");
+  const model = String(process.env.GEMINI_MODEL || "gemini-3.6-flash");
   const catalog = items.map(({ id, name, description, price }) => ({ id, name, description, price })).slice(0, MAX_ITEMS);
   const prompt = [
     "أنت ويتر سعودي لطيف لمطعم. اقترح أصنافاً من الكتالوج فقط وبلهجة سعودية خفيفة ومهذبة.",
