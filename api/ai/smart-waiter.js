@@ -50,7 +50,7 @@ function parseModelJson(text, ids) {
   } catch { return []; }
 }
 
-module.exports = async function smartWaiter(req, res) {
+export default async function smartWaiter(req, res) {
   if (req.method !== "POST") { res.setHeader("Allow", "POST"); return send(res, 405, { error: "Method not allowed" }); }
   const body = typeof req.body === "string" ? (() => { try { return JSON.parse(req.body); } catch { return null; } })() : req.body;
   const tenantId = String(body?.tenantId || "").slice(0, 80);
