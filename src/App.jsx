@@ -24,8 +24,8 @@ function App() {
     <div className="App" dir={language === "ar" ? "rtl" : "ltr"}>
       <Routes>
         {/* الصفحات العامة لا تتطلب جلسة؛ مسار menu يمرر slug ورقم الطاولة للمنيو. */}
-        <Route path="/" element={<Home />} />
-        <Route path="/login" element={<AdminLogin />} />
+        <Route path="/home" element={<Home />} />
+        <Route path="/" element={<AdminLogin />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="/register" element={<AdminRegister />} />
         <Route path="/cashier/:slug" element={<CashierLoginRoute />} />
