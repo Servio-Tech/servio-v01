@@ -78,7 +78,7 @@ export default async function smartWaiter(req, res) {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig: { temperature: 0.6, maxOutputTokens: 350, responseMimeType: "application/json" } }),
-      signal: AbortSignal.timeout(8000),
+      signal: AbortSignal.timeout(15000),
     });
     if (!response.ok) {
       console.error("Smart waiter Gemini provider status", response.status);
