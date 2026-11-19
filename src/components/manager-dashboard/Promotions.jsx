@@ -204,7 +204,7 @@ function Promotions() {
         </Stack>
 
         <Alert severity="info" sx={{ bgcolor: "#1b2d4c", color: "#dce7fa", "& .MuiAlert-icon": { color: "#8cb6f0" } }}>
-          {text("هذه الصفحة تدير بيانات العروض فقط؛ الخصومات لا تُطبّق تلقائياً على الطلبات أو المدفوعات.", "This page manages offer information only; discounts are not automatically applied to orders or payments.")}
+          {text("تظهر العروض النشطة في المنيو بالسعر القديم مشطوباً والجديد، ويعيد الخادم التحقق من أفضل خصم عند إرسال الطلب.", "Active offers appear in the menu with the old price crossed out and the new price; the server rechecks the best discount when the order is sent.")}
         </Alert>
         {!branchId && <Alert severity="warning">{text("اختر فرعاً لإدارة عروضه.", "Select a branch to manage its promotions.")}</Alert>}
         {loadError && <Alert severity={isPromotionsUnavailableError(loadError) ? "warning" : "error"} action={<Button color="inherit" size="small" onClick={() => void load()}>{text("إعادة المحاولة", "Retry")}</Button>}>{errorMessage(loadError)}</Alert>}

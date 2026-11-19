@@ -6,6 +6,7 @@ import { createRequestGuard } from "../utils/requestGuard";
 import { normalizeAddonItemIds, normalizeAddonLimit, normalizeAddonOptions } from "../utils/menuItemOptions";
 import { getCustomerMenuItems, withIngredientAvailability } from "../utils/menuAvailability";
 import { isCompleteMenuOrder } from "../utils/menuOrder";
+import { getActivePromotions, getBestPromotionForItem } from "../utils/promotions";
 
 const MenuContext = createContext();
 const MENU_ITEM_COLUMNS = "id,created_at,name,price,category_id,description,allergens,available,tenant_id,branch_id,sort_order,recommendation_item_ids,addon_options,free_addon_item_ids,max_addons";
@@ -18,6 +19,7 @@ export const MenuProvider = ({ children }) => {
   const [addonComplements, setAddonComplements] = useState([]);
   const [ingredients, setIngredients] = useState([]);
   const [menuItemIngredients, setMenuItemIngredients] = useState([]);
+  const [promotions, setPromotions] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [menuLoading, setMenuLoading] = useState(true);
@@ -54,6 +56,7 @@ export const MenuProvider = ({ children }) => {
       setAddonComplements([]);
       setIngredients([]);
       setMenuItemIngredients([]);
+      setPromotions([]);
       setMenuLoading(false);
       setMenuRefreshing(false);
       setMenuError(null);
@@ -67,6 +70,7 @@ export const MenuProvider = ({ children }) => {
       setAddonComplements([]);
       setIngredients([]);
       setMenuItemIngredients([]);
+      setPromotions([]);
       setMenuLoading(false);
       setMenuRefreshing(false);
       setMenuError(null);
@@ -80,6 +84,7 @@ export const MenuProvider = ({ children }) => {
       setAddonComplements([]);
       setIngredients([]);
       setMenuItemIngredients([]);
+      setPromotions([]);
       setMenuLoading(false);
       setMenuRefreshing(false);
       setMenuError("لم يتم تحديد النشاط الحالي");
@@ -93,6 +98,7 @@ export const MenuProvider = ({ children }) => {
     setAddonComplements([]);
     setIngredients([]);
     setMenuItemIngredients([]);
+    setPromotions([]);
     setMenuLoading(true);
     setMenuRefreshing(false);
     setMenuError(null);
@@ -149,6 +155,12 @@ export const MenuProvider = ({ children }) => {
           }));
           setIngredients([]);
           setMenuItemIngredients([]);
+          try {
+            const activePromotions = branchId ? await getActivePromotions(supabase, tenantId, branchId) : [];
+            if (active) setPromotions(activePromotions);
+          } catch {
+            if (active) setPromotions([]);
+          }
         } else {
           // لا تجعل صور Base64 الكبيرة تحجب أسماء وأسعار الأصناف عن لوحة المدير.
           // نحتفظ مؤقتًا بصورة الصنف الحالية كي لا تومض البطاقات عند إعادة المزامنة.
@@ -540,9 +552,15 @@ export const MenuProvider = ({ children }) => {
 
   const handleAlignment = (_, newCategory) => { if (newCategory) setSelectedCategory(newCategory); };
   const filteredMenu = useMemo(() => items.filter((item) => (selectedCategory === "all" || selectedCategory === item.category_id) && (!searchQuery.trim() || item.name.toLowerCase().includes(searchQuery.trim().toLowerCase()) || item.description?.toLowerCase().includes(searchQuery.trim().toLowerCase()))), [items, selectedCategory, searchQuery]);
+  const customerMenu = useMemo(() => getCustomerMenuItems(filteredMenu).map((item) => {
+    if (!isPublic) return item;
+    const best = getBestPromotionForItem(item.price, item.id, promotions);
+    if (!best || best.price >= Number(item.price)) return item;
+    return { ...item, original_price: Number(item.price), price: best.price, promotion: best.promotion };
+  }), [filteredMenu, isPublic, promotions]);
 
   return (
-    <MenuContext.Provider value={{ items, filteredMenu, customerMenu: getCustomerMenuItems(filteredMenu), categoriesList, addonComplements, ingredients, menuItemIngredients, selectedCategory, searchQuery, setSearchQuery, handleAlignment, reorderMenuItems, addNewItem, updateItem, deleteItem, toggleAvailable, addIngredient, updateIngredient, setIngredientAvailability, addCategory, updateCategory, updateCategoryPrintRoute, updateCategoryPrintRoutes, deleteCategory, addAddonComplement, deleteAddonComplement, menuLoading, menuRefreshing, menuError, menuRealtimeStatus, refreshMenu, loadItemImage }}>
+    <MenuContext.Provider value={{ items, filteredMenu, customerMenu, promotions, categoriesList, addonComplements, ingredients, menuItemIngredients, selectedCategory, searchQuery, setSearchQuery, handleAlignment, reorderMenuItems, addNewItem, updateItem, deleteItem, toggleAvailable, addIngredient, updateIngredient, setIngredientAvailability, addCategory, updateCategory, updateCategoryPrintRoute, updateCategoryPrintRoutes, deleteCategory, addAddonComplement, deleteAddonComplement, menuLoading, menuRefreshing, menuError, menuRealtimeStatus, refreshMenu, loadItemImage }}>
       {children}
     </MenuContext.Provider>
   );

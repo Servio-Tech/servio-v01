@@ -100,16 +100,21 @@ function MenuItemCard({ itemDetails, priority = false }) {
               mt: 1.5,
             }}
           >
-            <Typography
-              variant="subtitle2"
-              sx={{
-                fontWeight: 800,
-                color: "primary.main",
-                fontSize: "0.95rem",
-              }}
-            >
-              {itemDetails.price} {storeInfo?.currency || "SAR"}
-            </Typography>
+            <Box sx={{ display: "flex", alignItems: "baseline", gap: 0.8, flexWrap: "wrap" }}>
+              {itemDetails.original_price != null && (
+                <Typography variant="caption" sx={{ textDecoration: "line-through", color: "text.secondary", fontWeight: 700 }}>
+                  {itemDetails.original_price} {storeInfo?.currency || "SAR"}
+                </Typography>
+              )}
+              <Typography variant="subtitle2" sx={{ fontWeight: 800, color: itemDetails.original_price != null ? "#c64616" : "primary.main", fontSize: "0.95rem" }}>
+                {itemDetails.price} {storeInfo?.currency || "SAR"}
+              </Typography>
+              {itemDetails.original_price != null && (
+                <Typography variant="caption" sx={{ color: "#c64616", fontWeight: 800 }}>
+                  {language === "en" ? "Offer" : "عرض"}
+                </Typography>
+              )}
+            </Box>
 
             <Button
               onClick={(e) => {

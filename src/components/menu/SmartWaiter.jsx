@@ -22,7 +22,7 @@ const labels = {
     speak: "استمع للاقتراحات", speechUnavailable: "لا يتوفر صوت بهذه اللغة في المتصفح؛ يمكنك قراءة الاقتراحات.",
     details: "عرض التفاصيل", dismiss: "لا أرغب بهذا الاقتراح", empty: "لا توجد أصناف مطابقة الآن. جرّب تغيير الطلب أو حد السعر.",
     pairing: "مناسب مع ما في سلتك", promotion: "ضمن عرض حالي", morning: "فكرة للصباح", afternoon: "فكرة لمنتصف اليوم", evening: "فكرة للمساء", menu: "من القائمة",
-    offer: "عرض", offerNote: "السعر المعروض هو سعر القائمة، ولا يُطبّق خصم العرض تلقائياً على الطلب. تحقّق من شروط العرض مع الفريق.",
+    offer: "عرض", offerNote: "يُعاد التحقق من السعر المخفّض من المطعم عند إرسال الطلب.",
     allergyWarning: "لا يمكن للمساعد ضمان خلو الأصناف من مسببات الحساسية. اسأل فريق المطعم عن المكونات قبل الطلب.", allergyRequest: "لا أستطيع التحقق من قيود الحساسية أو الاستبعاد. يرجى سؤال فريق المطعم قبل الاختيار.",
   },
   en: {
@@ -34,7 +34,7 @@ const labels = {
     speak: "Hear suggestions", speechUnavailable: "No voice is available for this language; please read the suggestions.",
     details: "View details", dismiss: "Not interested in this suggestion", empty: "No matching items right now. Try another request or price limit.",
     pairing: "Pairs with your cart", promotion: "In a current offer", morning: "A morning idea", afternoon: "An afternoon idea", evening: "An evening idea", menu: "From the menu",
-    offer: "Offer", offerNote: "The price shown is the menu price. The offer discount is not applied automatically to your order; ask staff about its terms.",
+    offer: "Offer", offerNote: "The discounted price is checked again by the restaurant when you send the order.",
     allergyWarning: "This assistant cannot guarantee allergen-free items. Ask restaurant staff about ingredients before ordering.", allergyRequest: "I cannot verify allergy or dietary exclusions. Please ask restaurant staff before choosing.",
   },
 };
@@ -64,6 +64,9 @@ export default function SmartWaiter({ tenant, branch, branchLoading, publicBranc
   const [selectedId, setSelectedId] = useState(null);
   const [listening, setListening] = useState(false);
   const [voiceError, setVoiceError] = useState("");
+  const [robotOpen, setRobotOpen] = useState(false);
+  const [aiSuggestions, setAiSuggestions] = useState([]);
+  const [aiState, setAiState] = useState("idle");
   const [hour, setHour] = useState(() => new Date().getHours());
   const recognitionRef = useRef(null);
   const previousLanguageRef = useRef(language);
@@ -82,6 +85,13 @@ export default function SmartWaiter({ tenant, branch, branchLoading, publicBranc
     items: scopedItems, categories: categoriesList, cartItems, promotions: offers,
     budget: invalidBudget ? null : budget, query, hour, dismissedIds: dismissals.ids,
   }), [scopedItems, categoriesList, cartItems, offers, budget, invalidBudget, query, hour, dismissals.ids]);
+  const displaySuggestions = useMemo(() => {
+    const ai = aiSuggestions.map((entry) => {
+      const item = scopedItems.find((candidate) => String(candidate.id) === String(entry.id));
+      return item ? { item, promotion: offers.find((offer) => offer.target_item_ids.includes(String(item.id))), reason: "aiReason", aiReason: entry.reason } : null;
+    }).filter(Boolean);
+    return [...ai, ...suggestions.filter(({ item }) => !ai.some((entry) => String(entry.item.id) === String(item.id)))].slice(0, 5);
+  }, [aiSuggestions, scopedItems, offers, suggestions]);
   const selectedItem = scopedItems.find((item) => String(item.id) === String(selectedId) && (item.isAvailableForSale ?? item.available) === true);
 
   useEffect(() => {
@@ -98,6 +108,17 @@ export default function SmartWaiter({ tenant, branch, branchLoading, publicBranc
     const interval = window.setInterval(() => setHour(new Date().getHours()), 60_000);
     return () => window.clearInterval(interval);
   }, [expanded]);
+
+  useEffect(() => {
+    let stream;
+    if (typeof navigator !== "undefined" && navigator.mediaDevices?.getUserMedia) {
+      navigator.mediaDevices.getUserMedia({ audio: true }).then((nextStream) => {
+        stream = nextStream;
+        stream.getTracks().forEach((track) => track.stop());
+      }).catch(() => setVoiceError(text.micError));
+    }
+    return () => stream?.getTracks().forEach((track) => track.stop());
+  }, [scopeKey]);
 
   useEffect(() => {
     if (previousLanguageRef.current === language) return;
@@ -135,6 +156,27 @@ export default function SmartWaiter({ tenant, branch, branchLoading, publicBranc
     window.addEventListener("focus", refreshOffers);
     return () => { active = false; window.clearInterval(interval); window.removeEventListener("focus", refreshOffers); };
   }, [expanded, scope?.tenantId, scope?.branchId, offerScope, branchLoading, hidden, dismissals.count, manualOpen]);
+
+  useEffect(() => {
+    if (!expanded || !tenant?.id || scopedItems.length === 0) return undefined;
+    const timer = window.setTimeout(async () => {
+      setAiState("loading");
+      try {
+        const response = await fetch("/api/ai/smart-waiter", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ tenantId: tenant.id, query, items: scopedItems }),
+        });
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok || payload.fallback) throw new Error("fallback");
+        setAiSuggestions(Array.isArray(payload.suggestions) ? payload.suggestions : []);
+        setAiState("ready");
+      } catch {
+        setAiSuggestions([]);
+        setAiState("fallback");
+      }
+    }, query ? 450 : 100);
+    return () => window.clearTimeout(timer);
+  }, [expanded, tenant?.id, query, scopedItems]);
 
   useEffect(() => () => {
     const recognition = recognitionRef.current;
@@ -197,6 +239,20 @@ export default function SmartWaiter({ tenant, branch, branchLoading, publicBranc
     } catch { setVoiceError(text.speechUnavailable); }
   };
 
+  if (!robotOpen && !expanded) {
+    return (
+      <Box sx={{ position: "fixed", bottom: 92, insetInlineEnd: 14, zIndex: 1050, display: "flex", alignItems: "center", gap: 1 }}>
+        <Box sx={{ bgcolor: "#fff", color: "#14213d", px: 1.2, py: .8, borderRadius: 3, boxShadow: "0 8px 24px rgba(20,33,61,.16)", fontWeight: 800, fontSize: ".78rem" }}>{getSmartWaiterGreeting(language, hour)} {isEnglish ? "Need a suggestion?" : "وش تشتهي اليوم؟"}</Box>
+        <Button aria-label={text.open} onClick={() => { setRobotOpen(true); setExpanded(true); }} sx={{ minWidth: 72, width: 72, height: 72, borderRadius: "50%", p: 0, bgcolor: "#14213d", boxShadow: "0 12px 28px rgba(20,33,61,.28)", "&:hover": { bgcolor: "#243655" } }}>
+          <Box sx={{ position: "relative", width: 48, height: 48, borderRadius: "50%", bgcolor: "#ff9b72", border: "3px solid #fff" }}>
+            <Box sx={{ position: "absolute", top: 14, left: 10, width: 7, height: 7, borderRadius: "50%", bgcolor: "#14213d" }} /><Box sx={{ position: "absolute", top: 14, right: 10, width: 7, height: 7, borderRadius: "50%", bgcolor: "#14213d" }} />
+            <Box sx={{ position: "absolute", bottom: 9, left: 15, width: 16, height: 6, borderBottom: "3px solid #14213d", borderRadius: "50%" }} />
+            <Box sx={{ position: "absolute", top: -10, left: 20, width: 6, height: 10, bgcolor: "#fff", borderRadius: 2 }} /><Box sx={{ position: "absolute", top: -15, left: 18, width: 10, height: 10, borderRadius: "50%", bgcolor: "#ff8351" }} />
+          </Box>
+        </Button>
+      </Box>
+    );
+  }
   if (hidden || (dismissals.count >= MAX_DISMISSALS && !manualOpen)) {
     return <Button aria-label={text.open} onClick={() => { setHidden(false); setManualOpen(true); setExpanded(true); }}
       startIcon={<AutoAwesomeOutlinedIcon />} variant="contained" size="small"
@@ -229,6 +285,7 @@ export default function SmartWaiter({ tenant, branch, branchLoading, publicBranc
       )}
       <Collapse in={expanded} unmountOnExit>
         <Typography variant="body2" color="text.secondary" sx={{ mt: 1.2 }}>{text.description}</Typography>
+        {aiState === "loading" && <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: .5 }}>{isEnglish ? "Preparing a Saudi-style suggestion…" : "أجهز لك اقتراحًا بلهجة سعودية…"}</Typography>}
         <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5} sx={{ mt: 1.5 }}>
           <TextField fullWidth size="small" label={text.query} value={query} onChange={(event) => setQuery(event.target.value.slice(0, 160))} helperText={text.queryHint} />
           <TextField size="small" type="number" label={text.budget} value={budget} onChange={(event) => setBudget(event.target.value)} error={invalidBudget} helperText={invalidBudget ? text.invalidBudget : text.budgetHint} slotProps={{ htmlInput: { min: 0, step: "any", inputMode: "decimal" } }} sx={{ minWidth: { sm: 210 } }} />
@@ -241,11 +298,11 @@ export default function SmartWaiter({ tenant, branch, branchLoading, publicBranc
         {voiceError && <Alert severity="info" sx={{ mt: 1 }}>{voiceError}</Alert>}
         {!invalidBudget && !menuLoading && !branchLoading && (suggestions.length ? (
           <Stack spacing={1} sx={{ mt: 1.5 }}>
-            {suggestions.map(({ item, promotion, reason }) => (
+            {displaySuggestions.map(({ item, promotion, reason, aiReason }) => (
               <Box key={item.id} sx={{ p: 1.2, bgcolor: "rgba(255,255,255,.78)", border: "1px solid", borderColor: "divider", borderRadius: 2 }}>
                 <Stack direction="row" sx={{ alignItems: "flex-start", gap: 1 }}>
                   <Box sx={{ flex: 1, minWidth: 0 }}>
-                    <Typography variant="caption" color="primary.main" sx={{ fontWeight: 800 }}>{text[reason]}</Typography>
+                    <Typography variant="caption" color="primary.main" sx={{ fontWeight: 800 }}>{aiReason || text[reason]}</Typography>
                     <Typography sx={{ fontWeight: 800 }}>{isEnglish ? (item.name_en || item.name) : item.name}</Typography>
                     <Typography variant="body2" color="text.secondary">{String(item.price)} {currency}</Typography>
                     {promotion && <Typography variant="body2" color="text.secondary">{text.offer}: {isEnglish ? (promotion.title_en || promotion.title_ar) : (promotion.title_ar || promotion.title_en)}</Typography>}

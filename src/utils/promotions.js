@@ -54,3 +54,21 @@ export function promotionStatus(promotion, now = Date.now()) {
   if (promotion.starts_at && new Date(promotion.starts_at).getTime() > now) return "scheduled";
   return "active";
 }
+
+export function getPromotionPrice(price, promotion) {
+  const base = Math.max(0, Number(price) || 0);
+  if (!promotion || promotionStatus(promotion) !== "active") return base;
+  const value = Math.max(0, Number(promotion.discount_value) || 0);
+  const discounted = promotion.discount_type === "fixed"
+    ? base - value
+    : base * (1 - Math.min(100, value) / 100);
+  return Math.max(0, Math.round(discounted * 100) / 100);
+}
+
+export function getBestPromotionForItem(price, itemId, promotions = []) {
+  const candidates = promotions
+    .filter((promotion) => promotion.target_item_ids.includes(String(itemId)) && promotionStatus(promotion) === "active")
+    .map((promotion) => ({ promotion, price: getPromotionPrice(price, promotion) }))
+    .sort((left, right) => (left.price - right.price) || left.promotion.id.localeCompare(right.promotion.id));
+  return candidates[0] || null;
+}
