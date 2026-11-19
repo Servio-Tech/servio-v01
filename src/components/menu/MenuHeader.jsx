@@ -12,7 +12,7 @@ import PlaceOutlinedIcon from "@mui/icons-material/PlaceOutlined";
 import { useStore } from "../../context/StoreInfoContext";
 import { useLanguage } from "../../context/LanguageContext";
 
-function MenuHeader({ table }) {
+function MenuHeader({ table, showSearch = true }) {
   // Context: استخراج بيانات المحل (الاسم والوصف) لعرضها في الهيدر الرئيسي للمنيو
   const { storeInfo } = useStore();
   const { language } = useLanguage();
@@ -70,7 +70,7 @@ function MenuHeader({ table }) {
       </Stack>
 
       {/* MENU SEARCH BAR COMPONENT */}
-      <MenuSearchBar />
+      {showSearch && <MenuSearchBar />}
     </Box>
   );
 }

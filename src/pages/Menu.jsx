@@ -1,5 +1,6 @@
 // صفحة التطبيق `Menu` التي تجمع واجهة المسار وسلوكه.
 import MenuHeader from "../components/menu/MenuHeader";
+import MenuSearchBar from "../components/menu/MenuSearchBar";
 import MenuFilterTabs from "../components/menu/MenuFilterTabs";
 import MenuItemsList from "../components/menu/MenuItemsList";
 import FloatingCartBar from "../components/cart/FloatingCartBar";
@@ -102,9 +103,27 @@ function Menu() {
             pb: 0.3,
           }}
         >
-          <MenuHeader table={orderLocation} />
-          <MenuFilterTabs />
+          <MenuHeader table={orderLocation} showSearch={false} />
         </Box>
+      </Box>
+      <Box
+        sx={{
+          position: "sticky",
+          top: 0,
+          zIndex: 20,
+          maxWidth: 760,
+          mx: "auto",
+          mt: -0.3,
+          px: { xs: 1.2, sm: 2 },
+          pt: 0.8,
+          background: "rgba(246,247,249,.92)",
+          backdropFilter: "blur(18px)",
+          WebkitBackdropFilter: "blur(18px)",
+          borderBottom: "1px solid rgba(23,26,47,.08)",
+        }}
+      >
+          <MenuSearchBar />
+          <MenuFilterTabs />
       </Box>
       <Container maxWidth="md" sx={{ pt: 1.5 }}>
         <CustomerTrackingBanner
