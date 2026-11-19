@@ -671,7 +671,7 @@ export default function Home() {
               <LanguageToggle compact dark />
               <Button
                 component={RouterLink}
-                to="/login"
+                to="/"
                 size="small"
                 sx={{
                   color: "#fff",
@@ -779,7 +779,7 @@ export default function Home() {
                   </Button>
                   <Button
                     component={RouterLink}
-                    to="/login"
+                    to="/"
                     variant="text"
                     size="large"
                     sx={{ color: "#fff", fontWeight: 850 }}
@@ -1241,7 +1241,7 @@ export default function Home() {
                 </Button>
                 <Button
                   component={RouterLink}
-                  to="/login"
+                  to="/"
                   fullWidth
                   variant="outlined"
                   size="large"
