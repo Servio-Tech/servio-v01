@@ -7,6 +7,10 @@ body,
 }
 
 :root {
+  --servio-ink: #111111;
+  --servio-surface: #14213d;
+  --servio-accent: #d9541e;
+  --servio-border: rgba(255, 255, 255, 0.08);
   --servio-space-1: 4px;
   --servio-space-2: 8px;
   --servio-space-3: 12px;
@@ -69,25 +73,15 @@ svg {
 .MuiPaper-root,
 .MuiCard-root {
   min-width: 0;
-  border-color: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  box-shadow: 0 14px 42px rgba(23, 26, 47, 0.065);
-}
-
-/* هوية SERVIO الزجاجية: أسطح أوف وايت دافئة، أفعال برتقالية، وهيكل نيفي. */
-.MuiPaper-root:not(.MuiPopover-paper):not(.MuiMenu-paper),
-.MuiCard-root {
-  background-color: rgba(255, 248, 241, 0.72);
 }
 
 .MuiButton-containedPrimary,
 .MuiButton-contained.MuiButton-colorPrimary {
-  box-shadow: 0 9px 22px rgba(244, 121, 32, 0.2);
+  box-shadow: 0 4px 14px rgba(217, 84, 30, 0.18);
 }
 
 .MuiChip-colorPrimary {
-  border-color: rgba(244, 121, 32, 0.32);
+  border-color: rgba(217, 84, 30, 0.32);
 }
 
 .MuiTableContainer-root {

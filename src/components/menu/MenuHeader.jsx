@@ -1,5 +1,6 @@
 // COMPONENTS
 import MenuSearchBar from "./MenuSearchBar";
+import LanguageToggle from "../LanguageToggle";
 
 // MUI COMPONENTS
 import { Box, Stack, Chip, Typography } from "@mui/material";
@@ -9,10 +10,13 @@ import PlaceOutlinedIcon from "@mui/icons-material/PlaceOutlined";
 
 // CONTEXTS
 import { useStore } from "../../context/StoreInfoContext";
+import { useLanguage } from "../../context/LanguageContext";
 
-function MenuHeader({ table }) {
+function MenuHeader({ table, showSearch = true }) {
   // Context: استخراج بيانات المحل (الاسم والوصف) لعرضها في الهيدر الرئيسي للمنيو
   const { storeInfo } = useStore();
+  const { language } = useLanguage();
+  const isEnglish = language === "en";
 
   return (
     <Box sx={{ pb: 0.7 }}>
@@ -22,6 +26,8 @@ function MenuHeader({ table }) {
         sx={{
           justifyContent: "space-between",
           alignItems: "center",
+          flexWrap: "wrap",
+          gap: 1,
           mb: 2.5,
         }}
       >
@@ -32,18 +38,19 @@ function MenuHeader({ table }) {
             component="h1"
             sx={{ fontWeight: 900, letterSpacing: "-0.7px", mb: 0.5, fontSize: { xs: "1.65rem", sm: "2rem" } }}
           >
-            {storeInfo?.store_name || "قائمة الطعام"}
+            {storeInfo?.store_name || (isEnglish ? "Menu" : "قائمة الطعام")}
           </Typography>
         </Box>
 
+        <Stack direction="row" sx={{ alignItems: "center", gap: 1, flexWrap: "wrap" }}>
         {/* TABLE NUMBER BADGE */}
-        <Chip
+        {table && <Chip
           icon={
             <PlaceOutlinedIcon
               sx={{ fontSize: "1.1rem !important", ml: "4px !important" }}
             />
           }
-          label={`طاولة ${table}`}
+          label={table === "كاشير" ? (isEnglish ? "Cashier" : "كاشير") : `${isEnglish ? "Table" : "طاولة"} ${table}`}
           sx={{
             px: 1.5,
             py: 2.2,
@@ -57,11 +64,13 @@ function MenuHeader({ table }) {
               marginRight: "-2px",
             },
           }}
-        />
+        />}
+        <LanguageToggle compact />
+        </Stack>
       </Stack>
 
       {/* MENU SEARCH BAR COMPONENT */}
-      <MenuSearchBar />
+      {showSearch && <MenuSearchBar />}
     </Box>
   );
 }

@@ -4,7 +4,7 @@ import supabase from "../supabase";
 
 const TenantContext = createContext(null);
 // هذه المسارات تخص التطبيق نفسه وليست معرف متجر؛ جميع المسارات الأخرى قد تحمل slug لمتجر عام.
-const RESERVED_ROUTES = new Set(["login", "register", "dashboard", "manager", "menu", "cashier", "auth", "track"]);
+const RESERVED_ROUTES = new Set(["login", "register", "dashboard", "manager", "menu", "cashier", "auth", "track", "owner-console"]);
 
 function getRouteContext(pathname) {
   const parts = pathname.split("/").filter(Boolean);
@@ -36,6 +36,16 @@ export function TenantProvider({ children }) {
 
   useEffect(() => {
     let cancelled = false;
+    const resolvePlanInBackground = (tenantRow, tenantSlug) => {
+      if (!tenantRow?.id || !tenantSlug) return;
+      Promise.resolve()
+        .then(() => supabase.rpc("get_public_plan", { p_slug: tenantSlug }))
+        .then(({ data, error }) => {
+          if (cancelled || error || data !== "pro") return;
+          setTenant((current) => current?.id === tenantRow.id ? { ...current, plan: "pro" } : current);
+        })
+        .catch(() => { /* Missing or unavailable plan service remains safely Starter. */ });
+    };
     const resolveTenant = async () => {
       setLoading(true);
       try {
@@ -46,8 +56,10 @@ export function TenantProvider({ children }) {
             supabase.rpc("get_public_store", { p_slug: route.slug }),
           ]);
           if (!cancelled) {
-            setTenant(tenantData?.[0] || null);
+            const publicTenant = tenantData?.[0];
+            setTenant(publicTenant ? { ...publicTenant, plan: "starter" } : null);
             setStoreInfo(storeData?.[0] || null);
+            resolvePlanInBackground(publicTenant, route.slug);
           }
         } else {
           const { data: sessionData } = await supabase.auth.getSession();
@@ -69,8 +81,9 @@ export function TenantProvider({ children }) {
             supabase.from("store").select("*").eq("tenant_id", profileData.tenant_id).maybeSingle(),
           ]);
           if (!cancelled) {
-            setTenant(tenantData || null);
+            setTenant(tenantData ? { ...tenantData, plan: "starter" } : null);
             setStoreInfo(storeData || null);
+            resolvePlanInBackground(tenantData, tenantData?.slug);
           }
         }
       } finally {

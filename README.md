@@ -50,27 +50,28 @@ Scan a table QR → Browse the menu → Place an order → Team manages the requ
 
 ### Requirements
 
-- Node.js 18 or newer
+- Node.js 20.19+ or 22.12+ (as required by Vite 8)
 - npm
 - A Supabase development project for features that require backend data
 
 ### Setup
 
 ```bash
-git clone https://github.com/Tappo-Tech/servio-v01.git
+git clone --branch v2-dev https://github.com/Servio-Tech/servio-v01.git
 cd servio-v01
 npm ci
-cp .env.example .env
-npm start
+cp .env.example .env.local
+# Update .env.local with credentials for an isolated development project only.
+npm run dev
 ```
 
-Configure local values using `.env.example` as a guide. Do not commit credentials or customer data. The development server runs at `http://localhost:3000`.
+Configure local values using `.env.example` as a guide. Do not commit credentials or customer data. The development server runs at `http://localhost:3000`. See [V2-STAGING.md](V2-STAGING.md) before testing or deploying: preview variables currently share the production backend and v2 migrations require review on an isolated database.
 
 ### Common commands
 
 ```bash
-npm start       # Start the development server
-npm test        # Run tests
+npm run dev     # Start the development server
+npm run test:node  # Run the new offline Node and PGlite tests
 npm run build   # Build the production bundle
 ```
 

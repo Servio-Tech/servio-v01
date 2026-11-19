@@ -21,12 +21,16 @@ import WarningAmberIcon from "@mui/icons-material/WarningAmber";
 // CONTEXTS
 import { useCart } from "../../context/CartContext";
 import { useLanguage } from "../../context/LanguageContext";
+import { useTenant } from "../../context/TenantContext";
 
 function MenuItemCard({ itemDetails, priority = false }) {
   const { addToCart } = useCart();
   const { loadItemImage } = useMenu();
   const { language } = useLanguage();
+  const { storeInfo } = useTenant();
   const isArabic = language !== "en";
+  const itemName = isArabic ? itemDetails.name : (itemDetails.name_en || itemDetails.name);
+  const itemDescription = isArabic ? itemDetails.description : (itemDetails.description_en || itemDetails.description);
 
   const hasAllergy = itemDetails.allergens && itemDetails.allergens.length > 0;
 
@@ -70,7 +74,7 @@ function MenuItemCard({ itemDetails, priority = false }) {
                 color: "text.primary",
               }}
             >
-              {itemDetails.name}
+              {itemName}
             </Typography>
             <Typography
               variant="body2"
@@ -84,7 +88,7 @@ function MenuItemCard({ itemDetails, priority = false }) {
                 overflow: "hidden",
               }}
             >
-              {itemDetails.description}
+              {itemDescription}
             </Typography>
           </Box>
 
@@ -104,7 +108,7 @@ function MenuItemCard({ itemDetails, priority = false }) {
                 fontSize: "0.95rem",
               }}
             >
-              {itemDetails.price} ر.س
+              {itemDetails.price} {storeInfo?.currency || "SAR"}
             </Typography>
 
             <Button
@@ -144,7 +148,7 @@ function MenuItemCard({ itemDetails, priority = false }) {
         >
           <MenuItemImage
             src={itemDetails.image}
-            alt={itemDetails.name}
+            alt={itemName}
             imageLoading={itemDetails.imageLoading}
             imageError={itemDetails.imageError}
             loadImage={() => loadItemImage(itemDetails.id)}

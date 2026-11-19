@@ -14,6 +14,12 @@ export default defineConfig({
       output: {
         manualChunks(id) {
           if (id.includes('node_modules')) {
+            if (id.includes('/docx/')) {
+              return 'report-docx';
+            }
+            if (id.includes('/write-excel-file/')) {
+              return 'report-xlsx';
+            }
             if (id.includes('@mui/x-charts') || id.includes('@mui/x-date-pickers')) {
               return 'charts';
             }

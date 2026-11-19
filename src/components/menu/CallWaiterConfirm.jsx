@@ -13,6 +13,7 @@ import CheckCircleOutlinedIcon from "@mui/icons-material/CheckCircleOutlined";
 
 // CONTEXTS
 import { useWaiterCalls } from "../../context/WaiterCallsContext";
+import { useLanguage } from "../../context/LanguageContext";
 
 const REASON_OPTIONS = [
   "طلب الحساب",
@@ -20,6 +21,7 @@ const REASON_OPTIONS = [
   "أدوات إضافية",
   "تنظيف الطاولة",
 ];
+const REASON_LABELS_EN = ["Request the bill", "Help with an order", "Extra utensils", "Clean the table"];
 
 function CallWaiterConfirm({ open, close, tableNumber = "1" }) {
   const [selectedReason, setSelectedReason] = useState("");
@@ -27,6 +29,8 @@ function CallWaiterConfirm({ open, close, tableNumber = "1" }) {
   const [loading, setLoading] = useState(false);
 
   const { addCall } = useWaiterCalls(); 
+  const { language } = useLanguage();
+  const isEnglish = language === "en";
 
   const handleReasonToggle = (reason) => {
     setSelectedReason((prev) => (prev === reason ? "" : reason));
@@ -51,7 +55,7 @@ function CallWaiterConfirm({ open, close, tableNumber = "1" }) {
       disableSwipeToOpen={true}
       slotProps={{
         paper: {
-          dir: "rtl",
+          dir: isEnglish ? "ltr" : "rtl",
           sx: {
             borderTopLeftRadius: "24px",
             borderTopRightRadius: "24px",
@@ -92,10 +96,11 @@ function CallWaiterConfirm({ open, close, tableNumber = "1" }) {
               }}
             >
               <Typography variant="h5" sx={{ fontWeight: "bold" }}>
-                طلب مساعدة الموظف
+                {isEnglish ? "Ask staff for help" : "طلب مساعدة الموظف"}
               </Typography>
               <IconButton
                 onClick={close}
+                aria-label={isEnglish ? "Close" : "إغلاق"}
                 size="small"
                 sx={{ backgroundColor: "grey.100" }}
               >
@@ -120,19 +125,19 @@ function CallWaiterConfirm({ open, close, tableNumber = "1" }) {
                 </Box>
                 <Box>
                   <Typography variant="subtitle1" sx={{ fontWeight: "bold" }}>
-                    طاولة رقم {tableNumber}
+                    {tableNumber === "كاشير" ? (isEnglish ? "Cashier" : "كاشير") : `${isEnglish ? "Table" : "طاولة رقم"} ${tableNumber || "—"}`}
                   </Typography>
                   <Typography variant="body2" sx={{ color: "text.secondary" }}>
-                    اختر ما تحتاجه، وسنبلّغ فريق الخدمة.
+                    {isEnglish ? "Choose what you need and we'll notify the service team." : "اختر ما تحتاجه، وسنبلّغ فريق الخدمة."}
                   </Typography>
                 </Box>
               </Box>
 
               <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
-                {REASON_OPTIONS.map((reason) => (
+                {REASON_OPTIONS.map((reason, index) => (
                   <Chip
                     key={reason}
-                    label={reason}
+                    label={isEnglish ? REASON_LABELS_EN[index] : reason}
                     clickable
                     onClick={() => handleReasonToggle(reason)}
                     color={selectedReason === reason ? "primary" : "default"}
@@ -163,7 +168,7 @@ function CallWaiterConfirm({ open, close, tableNumber = "1" }) {
                 mt: 3,
               }}
             >
-              {loading ? "جارٍ الإرسال..." : "إرسال طلب المساعدة"}
+              {loading ? (isEnglish ? "Sending..." : "جارٍ الإرسال...") : (isEnglish ? "Send request" : "إرسال طلب المساعدة")}
             </Button>
           </>
         ) : (
@@ -181,13 +186,13 @@ function CallWaiterConfirm({ open, close, tableNumber = "1" }) {
               sx={{ fontSize: "4rem", mb: 1.5 }}
             />
             <Typography variant="h6" sx={{ fontWeight: "bold" }} gutterBottom>
-              تم إرسال طلبك إلى فريق الخدمة
+              {isEnglish ? "Your request was sent to the service team" : "تم إرسال طلبك إلى فريق الخدمة"}
             </Typography>
             <Typography
               variant="body2"
               sx={{ color: "text.secondary", textAlign: "center" }}
             >
-              سيتابع فريق الخدمة طلبك قريبًا.
+              {isEnglish ? "The service team will follow up shortly." : "سيتابع فريق الخدمة طلبك قريبًا."}
             </Typography>
           </Box>
         )}

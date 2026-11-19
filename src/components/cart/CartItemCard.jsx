@@ -21,11 +21,14 @@ import {
   normalizeSelectedAddons,
 } from "../../utils/menuItemOptions";
 
-function CartItemCard({ cartItemDetails }) {
+function CartItemCard({ cartItemDetails, currency = "SAR" }) {
   const { updatedQuantity, toggleCartItemAddon, addSeparateCartItem, separateCartLineIntoUnits } = useCart();
   const { language } = useLanguage();
   const { items = [] } = useMenu();
-  const isArabic = language === "ar";
+  const isArabic = language !== "en";
+  const catalogItem = items.find((item) => String(item?.id) === String(cartItemDetails.id));
+  const itemName = isArabic ? cartItemDetails.name : (cartItemDetails.name_en || catalogItem?.name_en || cartItemDetails.name);
+  const itemDescription = isArabic ? cartItemDetails.description : (cartItemDetails.description_en || catalogItem?.description_en || cartItemDetails.description);
   const addonChoices = buildAddonChoices(cartItemDetails, items);
   const maxAddons = normalizeAddonLimit(cartItemDetails.max_addons, addonChoices.length);
   const selectedAddons = normalizeSelectedAddons(cartItemDetails.selected_addons, addonChoices, maxAddons);
@@ -35,6 +38,7 @@ function CartItemCard({ cartItemDetails }) {
 
   return (
     <Card
+      dir={isArabic ? "rtl" : "ltr"}
       sx={{
         display: "grid",
         gridTemplateColumns: "minmax(0,1fr) auto",
@@ -51,11 +55,11 @@ function CartItemCard({ cartItemDetails }) {
       }}
     >
       <Box sx={{ display: "contents" }}>
-        <Box sx={{ textAlign: "start", gridArea: "details", minWidth: 0, pl: 1.2 }}>
+        <Box sx={{ textAlign: "start", gridArea: "details", minWidth: 0, paddingInlineEnd: 1.2 }}>
           <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 0.5, fontSize: "1rem" }}>
-            {cartItemDetails.name}
+            {itemName}
           </Typography>
-          {cartItemDetails.description && (
+          {itemDescription && (
             <Typography
               variant="body2"
               sx={{
@@ -68,7 +72,7 @@ function CartItemCard({ cartItemDetails }) {
                 overflow: "hidden",
               }}
             >
-              {cartItemDetails.description}
+              {itemDescription}
             </Typography>
           )}
         </Box>
@@ -100,6 +104,8 @@ function CartItemCard({ cartItemDetails }) {
               {addonChoices.map((choice) => {
                 const selected = selectedKeys.has(choice.key);
                 const atLimit = selectedAddons.length >= maxAddons;
+                const linkedItem = choice.id && items.find((item) => String(item?.id) === choice.id);
+                const choiceLabel = isArabic ? choice.name : (linkedItem?.name_en || choice.name);
                 return (
                   <Chip
                     key={choice.key}
@@ -110,7 +116,7 @@ function CartItemCard({ cartItemDetails }) {
                     disabled={!selected && atLimit}
                     onClick={() => toggleCartItemAddon(lineId, choice, addonChoices)}
                     icon={selected ? <CheckCircleRoundedIcon /> : <AddCircleOutlineRoundedIcon />}
-                    label={choice.name}
+                    label={choiceLabel}
                     sx={{ flex: "0 0 auto", whiteSpace: "nowrap", borderRadius: "11px", fontSize: "0.73rem", fontWeight: 800, borderColor: "rgba(244,121,32,.36)", bgcolor: selected ? undefined : "rgba(255,255,255,.82)", "& .MuiChip-icon": { fontSize: 17 } }}
                   />
                 );
@@ -136,8 +142,8 @@ function CartItemCard({ cartItemDetails }) {
             startIcon={<ControlPointDuplicateRoundedIcon fontSize="small" />}
             onClick={() => (quantity > 1 ? separateCartLineIntoUnits(lineId) : addSeparateCartItem(lineId))}
             aria-label={isArabic
-              ? (quantity > 1 ? `فصل ${quantity} وحدات من ${cartItemDetails.name} لتخصيص إضافات كل قطعة` : `طلب وحدة أخرى من ${cartItemDetails.name} بإضافات مستقلة`)
-              : (quantity > 1 ? `Separate all ${quantity} ${cartItemDetails.name} units to customize each unit’s add-ons` : `Order another ${cartItemDetails.name} unit with independent add-ons`)}
+              ? (quantity > 1 ? `فصل ${quantity} وحدات من ${itemName} لتخصيص إضافات كل قطعة` : `طلب وحدة أخرى من ${itemName} بإضافات مستقلة`)
+              : (quantity > 1 ? `Separate all ${quantity} ${itemName} units to customize each unit’s add-ons` : `Order another ${itemName} unit with independent add-ons`)}
             sx={{
               gridArea: "custom",
               width: "100%",
@@ -165,7 +171,7 @@ function CartItemCard({ cartItemDetails }) {
 
         <Box sx={{ display: "flex", gridArea: "price", justifyContent: "space-between", alignItems: "center", mt: 1.5, gap: 1 }}>
           <Typography variant="subtitle2" sx={{ fontWeight: 800, color: "primary.main", fontSize: "0.95rem", whiteSpace: "nowrap" }}>
-            {cartItemDetails.price} {isArabic ? "ر.س" : "SAR"}
+            {cartItemDetails.price} {isArabic && currency === "SAR" ? "ر.س" : currency}
           </Typography>
 
           <Box sx={{ display: "flex", alignItems: "center", gap: { xs: 0.7, sm: 1.2 } }}>
@@ -183,7 +189,7 @@ function CartItemCard({ cartItemDetails }) {
       <CardMedia
         component="img"
         image={cartItemDetails.image || "/logo-icon.webp"}
-        alt={cartItemDetails.name}
+        alt={itemName}
         sx={{ gridArea: "image", justifySelf: "end", alignSelf: "start", width: { xs: 76, sm: 95 }, height: { xs: 76, sm: 95 }, flexShrink: 0, borderRadius: "12px", objectFit: "cover" }}
       />
     </Card>
