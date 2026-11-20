@@ -38,15 +38,15 @@ export default function ManagerSidebar({ mobileOpen, handleDrawerToggle, activeT
   const ar = language === "ar";
   const select = (id) => { onSelectTab(id); if (isMobile) handleDrawerToggle(); };
   return <SwipeableDrawer anchor={ar ? "right" : "left"} variant={isMobile ? "temporary" : "permanent"} open={isMobile ? mobileOpen : true} onClose={handleDrawerToggle} onOpen={() => {}} ModalProps={{ keepMounted: true }}
-    sx={{ width: { xs: 0, md: 252 }, flexShrink: 0, "& .MuiDrawer-paper": { width: 252, boxSizing: "border-box", color: "#fff", background: "#14213d", border: 0, borderInlineEnd: "1px solid rgba(255,255,255,.07)", boxShadow: "0 18px 42px rgba(0,0,0,.18)" } }}>
+    sx={{ width: { xs: 0, md: 252 }, flexShrink: 0, "& .MuiDrawer-paper": { width: 252, boxSizing: "border-box", color: "#fff", background: "#17181d", border: 0, borderInlineEnd: "1px solid rgba(255,255,255,.08)", boxShadow: "0 18px 42px rgba(0,0,0,.18)" } }}>
     <Box dir={ar ? "rtl" : "ltr"} sx={{ p: 2, minHeight: "100%" }}>
       <Box sx={{ display: "flex", gap: 1.3, alignItems: "center", px: 1, py: 2, mb: 2, borderBottom: "1px solid rgba(255,255,255,.09)" }}>
         <Box component="img" src="/logo192.png" alt="SERVIO" sx={{ width: 38, height: 38, borderRadius: 1 }} />
-        <Box><Typography component="div" sx={{ color: "white", fontWeight: 900, letterSpacing: ".05em", fontSize: "1.22rem", lineHeight: 1 }}>SERVIO</Typography><Typography sx={{ color: "#9daec8", fontSize: ".68rem", mt: .6, fontWeight: 700 }}>{ar ? "مساحة الإدارة" : "MANAGER WORKSPACE"}</Typography></Box>
+        <Box><Typography component="div" sx={{ color: "white", fontWeight: 950, letterSpacing: "-.04em", fontSize: "1.22rem", lineHeight: 1 }}>SERVIO <Box component="span" sx={{ color: "#ff6038" }}>•</Box></Typography><Typography sx={{ color: "#a6a7af", fontSize: ".68rem", mt: .6, fontWeight: 700 }}>{ar ? "موجز الإدارة" : "MANAGER FIELD NOTES"}</Typography></Box>
       </Box>
       {sections.map((section) => <Box key={section.en} sx={{ mb: 2.2 }}>
-        <Typography sx={{ px: 1.5, mb: .8, color: "#8a9bb6", fontWeight: 850, letterSpacing: ar ? 0 : ".12em", fontSize: ".65rem" }}>{ar ? section.ar : section.en}</Typography>
-        <List disablePadding sx={{ "& .MuiListItemButton-root": { borderRadius: 2, py: 1, "&.Mui-selected": { bgcolor: "rgba(217,84,30,.18)", "&:hover": { bgcolor: "rgba(217,84,30,.24)" } } }, "& .MuiListItemText-primary": { textAlign: "start", fontSize: ".86rem" }, "& .Mui-selected .MuiListItemText-primary, & .Mui-selected .MuiListItemIcon-root": { color: "#ff9569" } }}>
+        <Typography sx={{ px: 1.5, mb: .8, color: "#858791", fontWeight: 850, letterSpacing: ar ? 0 : ".12em", fontSize: ".65rem" }}>{ar ? section.ar : section.en}</Typography>
+        <List disablePadding sx={{ "& .MuiListItemButton-root": { borderRadius: 2, py: 1, "&.Mui-selected": { bgcolor: "rgba(255,96,56,.15)", "&:hover": { bgcolor: "rgba(255,96,56,.22)" } } }, "& .MuiListItemText-primary": { textAlign: "start", fontSize: ".86rem" }, "& .Mui-selected .MuiListItemText-primary, & .Mui-selected .MuiListItemIcon-root": { color: "#ff8a6d" } }}>
           {section.items.map((item) => <SidebarItem key={item.id} navItem={{ ...item, label: ar ? item.ar : item.en }} isSelected={activeTab === item.id} onSelect={() => select(item.id)} />)}
         </List>
       </Box>)}

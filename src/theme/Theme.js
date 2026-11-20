@@ -4,11 +4,11 @@ import { createTheme } from '@mui/material/styles';
 export const createAppTheme = (direction = 'rtl') => createTheme({
   direction,
   palette: {
-    primary: { main: '#D9541E', light: '#ED8457', dark: '#AD3F16', contrastText: '#FFFFFF' },
-    secondary: { main: '#171A2F', light: '#2E3250', dark: '#0B0D1A', contrastText: '#FFFFFF' },
-    background: { default: '#F8F9FA', paper: '#FFFFFF' },
-    text: { primary: '#171A2F', secondary: '#6B7280' },
-    divider: '#E5E7EB',
+    primary: { main: '#FF6038', light: '#FF8A6D', dark: '#D94624', contrastText: '#FFFFFF' },
+    secondary: { main: '#171717', light: '#34343A', dark: '#0D0D0F', contrastText: '#FFFFFF' },
+    background: { default: '#F7F7F5', paper: '#FFFFFF' },
+    text: { primary: '#171717', secondary: '#747474' },
+    divider: '#E7E7E3',
   },
   typography: {
     fontFamily: `'Tajawal', 'Inter', sans-serif`,
@@ -25,7 +25,7 @@ export const createAppTheme = (direction = 'rtl') => createTheme({
     button: { fontWeight: 850, letterSpacing: '-0.01em', textTransform: 'none' },
     caption: { fontWeight: 650, lineHeight: 1.45 },
   },
-  shape: { borderRadius: 8 },
+  shape: { borderRadius: 14 },
   components: {
     MuiButton: {
       styleOverrides: {

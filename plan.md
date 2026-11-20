@@ -8,7 +8,9 @@ The existing React/Vite/MUI application will be enhanced in place. Manager repor
 
 ## Visual direction
 
-A precise dark-analytics workspace: ink backgrounds (#111111, #161618), navy surfaces (#14213D, #1E2530), subtle one-pixel borders and burnt-orange actions (#D9541E). Keep layouts responsive, data-forward, keyboard accessible and bilingual. Use restrained movement, 6–8px radii and no heavy glass effects. Use Tajawal for Arabic and Inter/system sans-serif for English. A clear SERVIO wordmark and sparse orange highlights provide continuity; microcopy is direct and operational.
+The new direction is **SERVIO Field Notes**: a vertical editorial product feed inspired by the supplied Dribbble references, not a generic SaaS template. The public surface uses warm paper (#f7f7f5), charcoal ink (#171717), thin hairline borders, soft 16–24px corners, generous whitespace, compact utility navigation, and large “shots” that alternate between light reporting boards and dark analytics boards. The manager and cashier workspaces keep the same visual language but become denser: charcoal canvas, graphite panels, lavender/blue chart accents, one orange action color, and high-contrast numeric hierarchy.
+
+Core principles: (1) make the product feel like a curated stream of useful operational snapshots, (2) let one large card carry one story, (3) use dark analytics panels as signature brand assets rather than as decoration, and (4) preserve the fastest path to orders, shifts and printing. The layout paradigm is a single-column editorial spine on public pages and a split rail plus asymmetric data canvas inside workspaces. Signature elements are the SERVIO wordmark with a small status dot, pill-shaped filter controls, and miniature dashboard “shots” with a caption/meta row. Motion is limited to 160–220ms lift/fade transitions, never blocking operational actions. Tajawal remains the Arabic face; Inter/system sans-serif serves English. Brand essence: **a calm operating feed for hospitality teams that turns a noisy service day into the next clear action**. Personality: editorial, precise, human.
 
 ## Structure
 
@@ -17,3 +19,4 @@ A precise dark-analytics workspace: ink backgrounds (#111111, #161618), navy sur
 - `src/components/cashier-dashboard`: lean live order and service-call views, retaining existing operational components.
 - `src/utils`: capability, analytics and export helpers.
 - `supabase/migrations`: reviewable, unapplied database changes where needed.
+- `src/styles/studio.css`: shared Field Notes tokens, editorial feed surfaces and workspace utility classes; visual changes must not alter order, payment, printer or database contracts.

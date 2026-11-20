@@ -200,9 +200,9 @@ function Dashboard() {
         : (ar ? "الوردية غير نشطة" : "Shift not started");
 
   return (
-    <Box sx={{ width: "100%", minHeight: "100vh", bgcolor: "#111111", pb: 5 }}>
+    <Box className="studio-workspace" sx={{ width: "100%", minHeight: "100vh", pb: 5 }}>
       <NewTableOrderAlert />
-      <Box component="header" sx={{ bgcolor: "#111", borderBottom: "3px solid #d9541e", px: { xs: 2, sm: 3, md: 4 }, py: 1.5 }}>
+      <Box component="header" sx={{ bgcolor: "#17181d", borderBottom: "1px solid rgba(255,255,255,.1)", px: { xs: 2, sm: 3, md: 4 }, py: 1.5 }}>
         <Container maxWidth="xl" disableGutters><DashboardHeader handleNotificationOpen={() => setIsNotificationOpen(true)} /></Container>
       </Box>
 
@@ -225,7 +225,7 @@ function Dashboard() {
             </Box>
           </Box>
 
-          <Box sx={{ border: "1px solid #dfe5ec", borderRadius: 2.5, bgcolor: "#fff", overflow: "hidden" }}>
+          <Box className="studio-panel-light" sx={{ overflow: "hidden" }}>
             <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 1, px: { xs: 1.5, sm: 2 }, py: 1 }}>
               <Button onClick={() => setShiftExpanded((expanded) => !expanded)} aria-expanded={shiftExpanded} aria-controls="cashier-shift-panel" sx={{ justifyContent: "flex-start", minHeight: 38, color: "#25364c", fontWeight: 850, px: .5, "&:hover": { bgcolor: "#f4f6f8" } }}>
                 <Box component="span" aria-hidden="true" sx={{ width: 8, height: 8, borderRadius: "50%", bgcolor: shiftState.error ? "#c3443b" : shiftState.currentShift ? "#29966d" : "#d9541e", marginInlineEnd: 1 }} />
@@ -240,7 +240,7 @@ function Dashboard() {
             </Collapse>
           </Box>
 
-          <Box sx={{ bgcolor: "#1e2530", border: "1px solid rgba(255,255,255,.08)", borderRadius: 1, overflow: "hidden" }}>
+          <Box className="studio-panel" sx={{ overflow: "hidden" }}>
             <Tabs value={activeTab} onChange={(_, value) => setActiveTab(value)} variant="scrollable" scrollButtons="auto" aria-label={ar ? "تبويبات الكاشير" : "Cashier tabs"} sx={{ px: { xs: .5, sm: 1.5 }, borderBottom: "1px solid rgba(255,255,255,.08)", "& .MuiTabs-flexContainer, & .MuiTabs-list": { flexWrap: "nowrap", gap: 0 }, "& .MuiTabs-indicator": { bgcolor: "#d9541e", height: 3 }, "& .MuiTab-root": { minHeight: 56, px: { xs: 1.5, sm: 2 }, color: "#aeb8c8", fontSize: ".82rem", fontWeight: 850, whiteSpace: "nowrap" }, "& .Mui-selected": { color: "#fff !important" } }}>
               <Tab id="cashier-tab-orders" aria-controls="cashier-panel-orders" value="orders" label={ar ? "الطلبات الواردة" : "Incoming orders"} />
               <Tab id="cashier-tab-inventory" aria-controls="cashier-panel-inventory" value="inventory" icon={<Inventory2OutlinedIcon />} iconPosition="start" label={ar ? "إدارة المخزون" : "Inventory"} />
@@ -249,7 +249,7 @@ function Dashboard() {
               <Tab id="cashier-tab-notifications" aria-controls="cashier-panel-notifications" value="notifications" icon={<NotificationsActiveRoundedIcon />} iconPosition="start" label={ar ? "الإشعارات والدليل" : "Notifications & guide"} />
               <Tab id="cashier-tab-shifts" aria-controls="cashier-panel-shifts" value="shifts" icon={<AccessTimeRoundedIcon />} iconPosition="start" label={ar ? "الورديات" : "Shifts"} />
             </Tabs>
-            <Box role="tabpanel" id={`cashier-panel-${activeTab}`} aria-labelledby={`cashier-tab-${activeTab}`} sx={{ p: { xs: 1.5, sm: 2.5, md: 3 }, minHeight: 360, minWidth: 0, bgcolor: activeTab === "orders" ? "#1e2530" : "#fff" }}>
+            <Box role="tabpanel" id={`cashier-panel-${activeTab}`} aria-labelledby={`cashier-tab-${activeTab}`} sx={{ p: { xs: 1.5, sm: 2.5, md: 3 }, minHeight: 360, minWidth: 0, bgcolor: activeTab === "orders" ? "#202127" : "#fff" }}>
               {activeTab === "orders" ? (
                 <LiveOrders resetToken={location.state?.openLiveOrders ? location.key : undefined} />
               ) : activeTab === "shifts" ? (

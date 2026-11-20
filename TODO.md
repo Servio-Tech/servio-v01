@@ -9,6 +9,13 @@
 - [x] Consolidated reports, real sales trends, distribution and peak hours, PDF/print, XLSX, DOCX and Access-compatible CSV. Promotion-performance analytics remains unavailable without reliable tracking data.
 - [x] Branch add, rename and switch, plus safe deletion of empty active non-main branches only. Data-bearing branches are protected; deletion migration requires real-schema and concurrent-load review.
 - [x] Local build, unit/React tests and synthetic in-memory PostgreSQL checks; no production database or physical printer was used.
-- [ ] Create an isolated Supabase/Vercel staging environment, test all migrations against the full schema and confirm printer/receipt behavior on actual devices before any release.
+- [ ] Create an isolated Supabase/Vercel staging environment and confirm printer/receipt behavior on actual devices before any future release. The current release was validated with local fixtures and automated checks; no physical printer test was available.
 - [ ] Implement and validate server-authoritative promotion discounts and performance tracking if the business requires those features.
 - [ ] Decide an approved archive/retention workflow for branches with existing data before offering their removal.
+
+
+## Field Notes redesign
+
+- [x] Rework the public home into the supplied editorial product-feed direction with alternating light/dark dashboard shots, filters, captions, and a role-value section while preserving registration, login, FAQ and bilingual copy.
+- [x] Apply the same visual system to the guest menu and cashier workspace without changing order, shift, printer, notification or payment behavior.
+- [x] Validate the build, 18 focused React tests, 40 local logic/migration tests, and the local route manifest before merging v2-dev into main and publishing Production.
