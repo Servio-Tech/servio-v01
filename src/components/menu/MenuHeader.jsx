@@ -36,7 +36,7 @@ function MenuHeader({ table }) {
           <Typography
             variant="h4"
             component="h1"
-            sx={{ fontWeight: 900, letterSpacing: "-0.7px", mb: 0.5, fontSize: { xs: "1.65rem", sm: "2rem" } }}
+            sx={{ fontWeight: 950, letterSpacing: "-1px", mb: 0.5, fontSize: { xs: "1.65rem", sm: "2rem" } }}
           >
             {storeInfo?.store_name || (isEnglish ? "Menu" : "قائمة الطعام")}
           </Typography>
@@ -58,7 +58,7 @@ function MenuHeader({ table }) {
             fontWeight: 700,
             fontSize: "0.875rem",
             color: "secondary.contrastText",
-            backgroundColor: "secondary.main",
+            backgroundColor: "#171717",
             "& .MuiChip-icon": {
               marginLeft: "4px",
               marginRight: "-2px",

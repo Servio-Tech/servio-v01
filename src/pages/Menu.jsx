@@ -79,24 +79,18 @@ function Menu() {
     );
   return (
     <Box
-      sx={{
-        minHeight: "100vh",
-        background:
-          "radial-gradient(circle at 100% 0%, rgba(244,121,32,.08), transparent 28%), linear-gradient(180deg, #fafbfc 0%, #f6f7f9 100%)",
-        pb: 3,
-      }}
+      className="studio-page"
+      sx={{ minHeight: "100vh", pb: 3 }}
     >
       <Box sx={{ px: { xs: 1.2, sm: 2 }, pt: { xs: 1, sm: 1.5 } }}>
         <Box
           sx={{
             maxWidth: 760,
             mx: "auto",
-            background: "rgba(255,255,255,.78)",
-            border: "1px solid rgba(255,255,255,.75)",
-            backdropFilter: "blur(18px)",
-            WebkitBackdropFilter: "blur(18px)",
-            borderRadius: { xs: 3.5, sm: 4 },
-            boxShadow: "0 16px 45px rgba(23,26,47,.07)",
+            background: "#fff",
+            border: "1px solid var(--fn-line)",
+            borderRadius: { xs: 2.5, sm: 3 },
+            boxShadow: "0 14px 40px rgba(22,22,26,.06)",
             px: { xs: 1.2, sm: 2 },
             pt: 1.3,
             pb: 0.3,
