@@ -15,12 +15,10 @@ import Container from "@mui/material/Container";
 import Stack from "@mui/material/Stack";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
-import Collapse from "@mui/material/Collapse";
+import Paper from "@mui/material/Paper";
 import Tabs from "@mui/material/Tabs";
 import Tab from "@mui/material/Tab";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useLocation } from "react-router-dom";
-import { useShift } from "../context/ShiftContext";
 import { getWorkdaySchedule, isWithinWorkdayShifts, shiftBusinessDate } from "../utils/workdayUtils";
 import { toLocalDateKey } from "../utils/salesReportUtils";
 import PrinterSetupDialog from "../components/cashier-dashboard/PrinterSetupDialog";
@@ -36,8 +34,6 @@ import NotificationsActiveRoundedIcon from "@mui/icons-material/NotificationsAct
 import NewTableOrderAlert from "../components/cashier-dashboard/orders/NewTableOrderAlert";
 import IngredientInventory from "../components/manager-dashboard/IngredientInventory";
 import CashierItemAvailability from "../components/cashier-dashboard/CashierItemAvailability";
-import ExpandMoreRoundedIcon from "@mui/icons-material/ExpandMoreRounded";
-import StorefrontRoundedIcon from "@mui/icons-material/StorefrontRounded";
 import { getPrinterSettings, printKitchenTicketGroups } from "../utils/qzPrinting";
 import { buildOrderReceiptGroups } from "../utils/categoryReceiptUtils";
 import NotificationSettingsCard from "../components/cashier-dashboard/NotificationSettingsCard";
@@ -48,10 +44,7 @@ function Dashboard() {
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const [isSalesHistoryOpen, setIsSalesHistoryOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("orders");
-  const [shiftExpanded, setShiftExpanded] = useState(false);
   const [testInvoice, setTestInvoice] = useState(null);
-  const location = useLocation();
-  const shiftState = useShift();
   const { finishedOrders = [], ordersLoading, ordersLoadError } = useOrders();
   const { newTableOrderAlert } = useOrders();
   const { storeInfo = {} } = useStore();
@@ -95,16 +88,6 @@ function Dashboard() {
     0,
   );
   const currency = storeInfo.currency || "ر.س";
-
-  // The existing table-order alert navigates to this route with this flag.
-  useEffect(() => {
-    if (location.state?.openLiveOrders) setActiveTab("orders");
-  }, [location.key, location.state]);
-
-  // Do not leave shift failures hidden inside the compact shift panel.
-  useEffect(() => {
-    if (shiftState.error) setShiftExpanded(true);
-  }, [shiftState.error]);
 
   const [autoPrintAfterSave, setAutoPrintAfterSave] = useState(() => {
     try {
@@ -189,91 +172,245 @@ function Dashboard() {
     });
   };
 
-  const ar = language === "ar";
-  const shiftReady = shiftState.statusReady ?? !shiftState.loading;
-  const shiftLabel = shiftState.error
-    ? (ar ? "تعذر تحميل حالة الوردية" : "Shift status unavailable")
-    : !shiftReady
-      ? (ar ? "جارٍ التحقق من الوردية" : "Checking shift")
-      : shiftState.currentShift
-        ? (ar ? "الوردية نشطة" : "Shift active")
-        : (ar ? "الوردية غير نشطة" : "Shift not started");
-
   return (
-    <Box className="studio-workspace" sx={{ width: "100%", minHeight: "100vh", pb: 5 }}>
+    <Box
+      sx={{
+        width: "100%",
+        minHeight: "100vh",
+        background:
+          "radial-gradient(circle at 88% 8%, rgba(244,121,32,.14), transparent 24%), linear-gradient(135deg, #fff8f1 0%, #f7f8fb 44%, #eef1f7 100%)",
+        py: { xs: 2, sm: 3, md: 4 },
+        px: { xs: 2, sm: 3, md: 5 },
+      }}
+    >
       <NewTableOrderAlert />
-      <Box component="header" sx={{ bgcolor: "#17181d", borderBottom: "1px solid rgba(255,255,255,.1)", px: { xs: 2, sm: 3, md: 4 }, py: 1.5 }}>
-        <Container maxWidth="xl" disableGutters><DashboardHeader handleNotificationOpen={() => setIsNotificationOpen(true)} /></Container>
-      </Box>
+      <Container maxWidth="xl" disableGutters>
+        <Stack spacing={{ xs: 1.5, md: 2.25 }}>
+          <Paper
+            elevation={0}
+            sx={{
+              p: { xs: 1.5, sm: 2, md: 2.5 },
+              borderRadius: { xs: 3, md: 4 },
+              border: "1px solid rgba(255,255,255,.72)",
+              background: "rgba(255,255,255,.78)",
+              backdropFilter: "blur(18px)",
+              boxShadow: "0 14px 42px rgba(23,26,47,.06)",
+            }}
+          >
+            <DashboardHeader
+              handleNotificationOpen={() => setIsNotificationOpen(true)}
+            />
+          </Paper>
 
-      <Container maxWidth="xl" disableGutters sx={{ px: { xs: 2, sm: 3, md: 4 }, pt: { xs: 2, md: 3 } }}>
-        <Stack spacing={2}>
-          <Box sx={{ display: "flex", alignItems: { xs: "stretch", md: "center" }, justifyContent: "space-between", gap: 1.5, flexWrap: "wrap" }}>
-            <Box>
-              <Typography sx={{ color: "#d9541e", fontSize: ".72rem", fontWeight: 900, letterSpacing: ".08em", textTransform: "uppercase" }}>{ar ? "مساحة التشغيل" : "OPERATIONS WORKSPACE"}</Typography>
-              <Typography sx={{ color: "#f4f6fa", fontSize: { xs: "1.2rem", sm: "1.4rem" }, fontWeight: 950, lineHeight: 1.3, mt: .25 }}>{ar ? "لوحة الكاشير" : "Cashier dashboard"}</Typography>
-            </Box>
-            <Box sx={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 1.2 }}>
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1, px: 1.5, py: .8, bgcolor: "#14213d", border: "1px solid rgba(255,255,255,.1)", borderRadius: 1 }}>
-                <Box sx={{ width: 34, height: 34, borderRadius: 1.5, display: "grid", placeItems: "center", bgcolor: "#fff1e9", color: "#d9541e" }}><StorefrontRoundedIcon sx={{ fontSize: 19 }} /></Box>
-                <Box>
-                  <Typography sx={{ fontSize: ".68rem", color: "#b1bdd0", fontWeight: 800, lineHeight: 1.2 }}>{t("totalSales")} · {ar ? "اليوم التشغيلي" : "Workday"}</Typography>
-                  <Typography sx={{ color: "#f4f6fa", fontWeight: 950, fontSize: ".94rem", lineHeight: 1.35, fontVariantNumeric: "tabular-nums" }}>{ordersLoading || ordersLoadError ? "—" : totalSales.toFixed(2)} <Box component="span" sx={{ fontSize: ".7rem", color: "#b1bdd0", fontWeight: 700 }}>{currency}</Box></Typography>
-                </Box>
-              </Box>
-              <Button variant="outlined" startIcon={<ReceiptLongRoundedIcon />} onClick={() => setIsSalesHistoryOpen(true)} sx={{ minHeight: 48, borderColor: "rgba(255,255,255,.14)", color: "#e2e8f1", bgcolor: "#1e2530", borderRadius: 1, fontWeight: 800, "&:hover": { borderColor: "#d9541e", bgcolor: "#283345" } }}>{t("orderHistory")}</Button>
-            </Box>
-          </Box>
+          <Paper
+            elevation={0}
+            sx={{
+              p: { xs: 1.5, sm: 2, md: 2.25 },
+              borderRadius: { xs: 3, md: 4 },
+              border: "1px solid rgba(255,255,255,.68)",
+              background: "rgba(255,255,255,.72)",
+              backdropFilter: "blur(18px)",
+              boxShadow: "0 16px 48px rgba(23,26,47,.06)",
+            }}
+          >
+            <Stack
+              direction={{ xs: "column", sm: "row" }}
+              sx={{
+                alignItems: { xs: "stretch", sm: "center" },
+                justifyContent: "space-between",
+                gap: 2,
+              }}
+            >
+              <Box sx={{ minWidth: 0 }}>
+                <Typography
+                  variant="caption"
+                  sx={{ color: "text.secondary", fontWeight: 800 }}
+                >
+                  {t("totalSales")} ·{" "}
+                  {language === "ar" ? "اليوم التشغيلي" : "Workday"}
+                </Typography>
+                <Stack
+                  direction="row"
 
-          <Box className="studio-panel-light" sx={{ overflow: "hidden" }}>
-            <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 1, px: { xs: 1.5, sm: 2 }, py: 1 }}>
-              <Button onClick={() => setShiftExpanded((expanded) => !expanded)} aria-expanded={shiftExpanded} aria-controls="cashier-shift-panel" sx={{ justifyContent: "flex-start", minHeight: 38, color: "#25364c", fontWeight: 850, px: .5, "&:hover": { bgcolor: "#f4f6f8" } }}>
-                <Box component="span" aria-hidden="true" sx={{ width: 8, height: 8, borderRadius: "50%", bgcolor: shiftState.error ? "#c3443b" : shiftState.currentShift ? "#29966d" : "#d9541e", marginInlineEnd: 1 }} />
-                {shiftLabel}
-                <ExpandMoreRoundedIcon sx={{ marginInlineStart: .5, fontSize: 20, transform: shiftExpanded ? "rotate(180deg)" : "none", transition: "transform .2s" }} />
-              </Button>
-              <PrinterBridgeStatus language={language} categoryPrinterNames={categoryPrinterNames} />
-            </Box>
-            {/* Keep the gate mounted even when collapsed: its mandatory-start dialog and shift checks remain active. */}
-            <Collapse in={shiftExpanded}>
-              <Box id="cashier-shift-panel" sx={{ px: { xs: 1.5, sm: 2 }, pt: .5 }}><CashierShiftGate /></Box>
-            </Collapse>
-          </Box>
-
-          <Box className="studio-panel" sx={{ overflow: "hidden" }}>
-            <Tabs value={activeTab} onChange={(_, value) => setActiveTab(value)} variant="scrollable" scrollButtons="auto" aria-label={ar ? "تبويبات الكاشير" : "Cashier tabs"} sx={{ px: { xs: .5, sm: 1.5 }, borderBottom: "1px solid rgba(255,255,255,.08)", "& .MuiTabs-flexContainer, & .MuiTabs-list": { flexWrap: "nowrap", gap: 0 }, "& .MuiTabs-indicator": { bgcolor: "#d9541e", height: 3 }, "& .MuiTab-root": { minHeight: 56, px: { xs: 1.5, sm: 2 }, color: "#aeb8c8", fontSize: ".82rem", fontWeight: 850, whiteSpace: "nowrap" }, "& .Mui-selected": { color: "#fff !important" } }}>
-              <Tab id="cashier-tab-orders" aria-controls="cashier-panel-orders" value="orders" label={ar ? "الطلبات الواردة" : "Incoming orders"} />
-              <Tab id="cashier-tab-inventory" aria-controls="cashier-panel-inventory" value="inventory" icon={<Inventory2OutlinedIcon />} iconPosition="start" label={ar ? "إدارة المخزون" : "Inventory"} />
-              <Tab id="cashier-tab-availability" aria-controls="cashier-panel-availability" value="availability" icon={<Inventory2OutlinedIcon />} iconPosition="start" label={ar ? "توفر الأصناف" : "Item availability"} />
-              <Tab id="cashier-tab-printing" aria-controls="cashier-panel-printing" value="printing" icon={<PrintRoundedIcon />} iconPosition="start" label={ar ? "إعدادات الطباعة" : "Printer settings"} />
-              <Tab id="cashier-tab-notifications" aria-controls="cashier-panel-notifications" value="notifications" icon={<NotificationsActiveRoundedIcon />} iconPosition="start" label={ar ? "الإشعارات والدليل" : "Notifications & guide"} />
-              <Tab id="cashier-tab-shifts" aria-controls="cashier-panel-shifts" value="shifts" icon={<AccessTimeRoundedIcon />} iconPosition="start" label={ar ? "الورديات" : "Shifts"} />
-            </Tabs>
-            <Box role="tabpanel" id={`cashier-panel-${activeTab}`} aria-labelledby={`cashier-tab-${activeTab}`} sx={{ p: { xs: 1.5, sm: 2.5, md: 3 }, minHeight: 360, minWidth: 0, bgcolor: activeTab === "orders" ? "#202127" : "#fff" }}>
-              {activeTab === "orders" ? (
-                <LiveOrders resetToken={location.state?.openLiveOrders ? location.key : undefined} />
-              ) : activeTab === "shifts" ? (
-                <ShiftReports />
-              ) : activeTab === "inventory" ? (
-                <IngredientInventory />
-              ) : activeTab === "availability" ? (
-                <CashierItemAvailability />
-              ) : activeTab === "notifications" ? (
-                <Box sx={{ maxWidth: 1100, mx: "auto", py: { xs: 1, md: 2 } }}><NotificationSettingsCard /></Box>
-              ) : (
-                <Stack spacing={2.5} sx={{ maxWidth: 1100, mx: "auto", py: { xs: 1, md: 2 } }}>
-                  <PrinterSetupDialog open={activeTab === "printing"} onClose={() => {}} language={language} autoPrint={autoPrintAfterSave} onAutoPrintChange={handleAutoPrintChange} onTest={openPrinterTest} inline />
-                  <CategoryPrintRoutingDrawer open={activeTab === "printing"} onClose={() => {}} categories={categoriesList} onUpdateCategories={updateCategoryPrintRoutes} inline />
+                  spacing={1}
+                  sx={{ mt: 0.2 , alignItems: "baseline"}}
+                >
+                  <Typography
+                    sx={{
+                      fontSize: { xs: "1.45rem", sm: "1.8rem" },
+                      fontWeight: 950,
+                      color: "text.primary",
+                      letterSpacing: "-.04em",
+                    }}
+                  >
+                    {ordersLoading || ordersLoadError
+                      ? "—"
+                      : totalSales.toFixed(2)}
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    fontWeight={800}
+                    color="text.secondary"
+                  >
+                    {currency}
+                  </Typography>
                 </Stack>
-              )}
-            </Box>
+              </Box>
+              <Stack
+                direction={{ xs: "column", sm: "row" }}
+
+
+                spacing={1}
+                sx={{ width: { xs: "100%", sm: "auto" } , justifyContent: "flex-end", alignItems: { xs: "stretch", sm: "center" }}}
+              >
+                <Button
+                  variant="outlined"
+                  startIcon={<ReceiptLongRoundedIcon />}
+                  onClick={() => setIsSalesHistoryOpen(true)}
+                  sx={{
+                    borderRadius: 2.5,
+                    fontWeight: 800,
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {t("orderHistory")}
+                </Button>
+              </Stack>
+            </Stack>
+          </Paper>
+
+          <CashierShiftGate />
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: { xs: "flex-start", sm: "flex-end" },
+              minWidth: 0,
+            }}
+          >
+            <PrinterBridgeStatus
+              language={language}
+              categoryPrinterNames={categoryPrinterNames}
+            />
           </Box>
+
+          <Paper
+            elevation={0}
+            sx={{
+              p: { xs: 1.25, sm: 2, md: 2.5 },
+              borderRadius: { xs: 3, md: 4 },
+              border: "1px solid rgba(255,255,255,.68)",
+              background: "rgba(255,255,255,.72)",
+              backdropFilter: "blur(18px)",
+              boxShadow: "0 16px 48px rgba(23,26,47,.06)",
+              minHeight: { xs: 0, md: "calc(100vh - 168px)" },
+              minWidth: 0,
+            }}
+          >
+            <Tabs
+              value={activeTab}
+              onChange={(_, value) => setActiveTab(value)}
+              variant="scrollable"
+              scrollButtons="auto"
+              aria-label={
+                language === "ar" ? "تبويبات الكاشير" : "Cashier tabs"
+              }
+              sx={{
+                mb: 2,
+                borderBottom: 1,
+                borderColor: "divider",
+                "& .MuiTab-root": { fontWeight: 850, minHeight: 48 },
+              }}
+            >
+              <Tab
+                value="orders"
+                label={
+                  language === "ar" ? "الطلبات الواردة" : "Incoming orders"
+                }
+              />
+              <Tab
+                value="inventory"
+                icon={<Inventory2OutlinedIcon />}
+                iconPosition="start"
+                label={language === "ar" ? "إدارة المخزون" : "Inventory"}
+              />
+              <Tab
+                value="availability"
+                icon={<Inventory2OutlinedIcon />}
+                iconPosition="start"
+                label={language === "ar" ? "توفر الأصناف" : "Item availability"}
+              />
+              <Tab
+                value="printing"
+                icon={<PrintRoundedIcon />}
+                iconPosition="start"
+                label={
+                  language === "ar" ? "إعدادات الطباعة" : "Printer settings"
+                }
+              />
+              <Tab
+                value="notifications"
+                icon={<NotificationsActiveRoundedIcon />}
+                iconPosition="start"
+                label={language === "ar" ? "الإشعارات والدليل" : "Notifications & guide"}
+              />
+              <Tab
+                value="shifts"
+                icon={<AccessTimeRoundedIcon />}
+                iconPosition="start"
+                label={language === "ar" ? "الورديات" : "Shifts"}
+              />
+            </Tabs>
+            {activeTab === "orders" ? (
+              <LiveOrders />
+            ) : activeTab === "shifts" ? (
+              <ShiftReports />
+            ) : activeTab === "inventory" ? (
+              <IngredientInventory />
+            ) : activeTab === "availability" ? (
+              <CashierItemAvailability />
+            ) : activeTab === "notifications" ? (
+              <Box sx={{ maxWidth: 1100, mx: "auto", py: { xs: 1, md: 2 } }}>
+                <NotificationSettingsCard />
+              </Box>
+            ) : (
+              <Stack spacing={2.5} sx={{ maxWidth: 1100, mx: "auto", py: { xs: 1, md: 2 } }}>
+                <PrinterSetupDialog
+                  open={activeTab === "printing"}
+                  onClose={() => {}}
+                  language={language}
+                  autoPrint={autoPrintAfterSave}
+                  onAutoPrintChange={handleAutoPrintChange}
+                  onTest={openPrinterTest}
+                  inline
+                />
+                <CategoryPrintRoutingDrawer
+                  open={activeTab === "printing"}
+                  onClose={() => {}}
+                  categories={categoriesList}
+                  onUpdateCategories={updateCategoryPrintRoutes}
+                  inline
+                />
+              </Stack>
+            )}
+          </Paper>
+
+          <CashierSalesDrawer
+            open={isSalesHistoryOpen}
+            onClose={() => setIsSalesHistoryOpen(false)}
+          />
+          <WaiterCallNotification
+            open={isNotificationOpen}
+            close={() => setIsNotificationOpen(false)}
+          />
+          <InvoiceModal
+            open={Boolean(testInvoice)}
+            onClose={() => setTestInvoice(null)}
+            order={testInvoice}
+            isTest
+            autoPrint
+          />
         </Stack>
       </Container>
-
-      <CashierSalesDrawer open={isSalesHistoryOpen} onClose={() => setIsSalesHistoryOpen(false)} />
-      <WaiterCallNotification open={isNotificationOpen} close={() => setIsNotificationOpen(false)} />
-      <InvoiceModal open={Boolean(testInvoice)} onClose={() => setTestInvoice(null)} order={testInvoice} isTest autoPrint />
     </Box>
   );
 }

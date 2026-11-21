@@ -27,12 +27,8 @@ function ItemDetailsDrawer({ open, onClose, itemDetails }) {
   const [quantity, setQuantity] = useState(1);
   const { addToCart } = useCart();
   const { language } = useLanguage();
-  const { slug, storeInfo } = useTenant();
+  const { slug } = useTenant();
   const { loadItemImage } = useMenu();
-  const isEnglish = language === "en";
-  const itemName = isEnglish ? (itemDetails?.name_en || itemDetails?.name) : itemDetails?.name;
-  const itemDescription = isEnglish ? (itemDetails?.description_en || itemDetails?.description) : itemDetails?.description;
-  const currency = storeInfo?.currency || "SAR";
 
   const handleIncrease = () => setQuantity((prev) => prev + 1);
   const handleDecrease = () => setQuantity((prev) => (prev > 1 ? prev - 1 : 1));
@@ -85,7 +81,6 @@ function ItemDetailsDrawer({ open, onClose, itemDetails }) {
 
         <IconButton
           onClick={onClose}
-          aria-label={isEnglish ? "Close item details" : "إغلاق تفاصيل الصنف"}
           sx={{
             position: "absolute",
             top: 12,
@@ -101,7 +96,7 @@ function ItemDetailsDrawer({ open, onClose, itemDetails }) {
 
         <MenuItemImage
           src={itemDetails?.image}
-          alt={itemName}
+          alt={itemDetails?.name}
           imageLoading={itemDetails?.imageLoading}
           imageError={itemDetails?.imageError}
           loadImage={() => loadItemImage(itemDetails?.id)}
@@ -118,7 +113,7 @@ function ItemDetailsDrawer({ open, onClose, itemDetails }) {
             }}
           >
             <Typography variant="h5" sx={{ fontWeight: 800 }}>
-              {itemName}
+              {itemDetails?.name}
             </Typography>
             <Typography
               variant="h6"
@@ -129,7 +124,7 @@ function ItemDetailsDrawer({ open, onClose, itemDetails }) {
                 ml: 2,
               }}
             >
-              {itemDetails?.price} {currency}
+              {itemDetails?.price} ر.س
             </Typography>
           </Box>
 
@@ -137,7 +132,7 @@ function ItemDetailsDrawer({ open, onClose, itemDetails }) {
             variant="body1"
             sx={{ color: "text.secondary", lineHeight: 1.6, mb: 3 }}
           >
-            {itemDescription}
+            {itemDetails?.description}
           </Typography>
 
           {hasDraftAllergenData ? (
@@ -165,8 +160,8 @@ function ItemDetailsDrawer({ open, onClose, itemDetails }) {
                 icon={<WarningAmberIcon />}
                 sx={{ borderRadius: "12px", mb: 3, fontWeight: 600 }}
               >
-                {isEnglish ? "This item contains allergens: " : "يحتوي هذا الصنف على مسببات الحساسية: "}
-                {itemDetails.allergens.join(isEnglish ? ", " : "، ")}
+                يحتوي هذا الصنف على مسببات الحساسية:{" "}
+                {itemDetails.allergens.join("، ")}
               </Alert>
             )
           )}
@@ -189,7 +184,6 @@ function ItemDetailsDrawer({ open, onClose, itemDetails }) {
         <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
           <IconButton
             onClick={handleDecrease}
-            aria-label={isEnglish ? "Decrease quantity" : "تقليل الكمية"}
             size="small"
             sx={{ border: "1px solid", borderColor: "divider" }}
           >
@@ -205,7 +199,6 @@ function ItemDetailsDrawer({ open, onClose, itemDetails }) {
 
           <IconButton
             onClick={handleIncrease}
-            aria-label={isEnglish ? "Increase quantity" : "زيادة الكمية"}
             size="small"
             sx={{
               border: "1px solid",
@@ -234,8 +227,8 @@ function ItemDetailsDrawer({ open, onClose, itemDetails }) {
           }}
         >
           {language === "en"
-            ? `Order (${itemDetails?.price * quantity} ${currency})`
-            : `اطلب (${itemDetails?.price * quantity} ${currency})`}
+            ? `Order (${itemDetails?.price * quantity} SAR)`
+            : `اطلب (${itemDetails?.price * quantity} ر.س)`}
         </Button>
       </Box>
     </SwipeableDrawer>

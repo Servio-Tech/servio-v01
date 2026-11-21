@@ -574,7 +574,7 @@ export default function AdminRegister() {
               {t("haveAccount")}{" "}
               <Box
                 component={RouterLink}
-                to="/"
+                to="/login"
                 sx={{
                   color: "primary.main",
                   fontWeight: 900,

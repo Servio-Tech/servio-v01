@@ -21,16 +21,12 @@ import WarningAmberIcon from "@mui/icons-material/WarningAmber";
 // CONTEXTS
 import { useCart } from "../../context/CartContext";
 import { useLanguage } from "../../context/LanguageContext";
-import { useTenant } from "../../context/TenantContext";
 
 function MenuItemCard({ itemDetails, priority = false }) {
   const { addToCart } = useCart();
   const { loadItemImage } = useMenu();
   const { language } = useLanguage();
-  const { storeInfo } = useTenant();
   const isArabic = language !== "en";
-  const itemName = isArabic ? itemDetails.name : (itemDetails.name_en || itemDetails.name);
-  const itemDescription = isArabic ? itemDetails.description : (itemDetails.description_en || itemDetails.description);
 
   const hasAllergy = itemDetails.allergens && itemDetails.allergens.length > 0;
 
@@ -74,7 +70,7 @@ function MenuItemCard({ itemDetails, priority = false }) {
                 color: "text.primary",
               }}
             >
-              {itemName}
+              {itemDetails.name}
             </Typography>
             <Typography
               variant="body2"
@@ -88,7 +84,7 @@ function MenuItemCard({ itemDetails, priority = false }) {
                 overflow: "hidden",
               }}
             >
-              {itemDescription}
+              {itemDetails.description}
             </Typography>
           </Box>
 
@@ -100,21 +96,16 @@ function MenuItemCard({ itemDetails, priority = false }) {
               mt: 1.5,
             }}
           >
-            <Box sx={{ display: "flex", alignItems: "baseline", gap: 0.8, flexWrap: "wrap" }}>
-              {itemDetails.original_price != null && (
-                <Typography variant="caption" sx={{ textDecoration: "line-through", color: "text.secondary", fontWeight: 700 }}>
-                  {itemDetails.original_price} {storeInfo?.currency || "SAR"}
-                </Typography>
-              )}
-              <Typography variant="subtitle2" sx={{ fontWeight: 800, color: itemDetails.original_price != null ? "#c64616" : "primary.main", fontSize: "0.95rem" }}>
-                {itemDetails.price} {storeInfo?.currency || "SAR"}
-              </Typography>
-              {itemDetails.original_price != null && (
-                <Typography variant="caption" sx={{ color: "#c64616", fontWeight: 800 }}>
-                  {language === "en" ? "Offer" : "عرض"}
-                </Typography>
-              )}
-            </Box>
+            <Typography
+              variant="subtitle2"
+              sx={{
+                fontWeight: 800,
+                color: "primary.main",
+                fontSize: "0.95rem",
+              }}
+            >
+              {itemDetails.price} ر.س
+            </Typography>
 
             <Button
               onClick={(e) => {
@@ -153,7 +144,7 @@ function MenuItemCard({ itemDetails, priority = false }) {
         >
           <MenuItemImage
             src={itemDetails.image}
-            alt={itemName}
+            alt={itemDetails.name}
             imageLoading={itemDetails.imageLoading}
             imageError={itemDetails.imageError}
             loadImage={() => loadItemImage(itemDetails.id)}

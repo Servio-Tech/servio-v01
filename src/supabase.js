@@ -5,7 +5,7 @@ const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseKey = import.meta.env.VITE_SUPABASE_KEY;
 
 if (!supabaseUrl || !supabaseKey) {
-  throw new Error("Supabase environment is missing. Copy .env.example to .env and set VITE_SUPABASE_URL and VITE_SUPABASE_KEY.");
+  throw new Error("Supabase environment is missing. Copy .env.example to .env and set REACT_APP_SUPABASE_URL and REACT_APP_SUPABASE_KEY.");
 }
 
 const supabase = createClient(supabaseUrl, supabaseKey, {

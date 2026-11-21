@@ -1,3 +1,4 @@
+// مكوّن واجهة `DashboardHeader` ضمن مجموعة `cashier-dashboard`.
 import Stack from "@mui/material/Stack";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
@@ -5,8 +6,8 @@ import Avatar from "@mui/material/Avatar";
 import IconButton from "@mui/material/IconButton";
 import Badge from "@mui/material/Badge";
 import Tooltip from "@mui/material/Tooltip";
-import NotificationsNoneRoundedIcon from "@mui/icons-material/NotificationsNoneRounded";
-import LogoutRoundedIcon from "@mui/icons-material/LogoutRounded";
+import NotificationsIcon from "@mui/icons-material/Notifications";
+import LogoutIcon from "@mui/icons-material/Logout";
 import LanguageToggle from "../LanguageToggle";
 import { useLanguage } from "../../context/LanguageContext";
 import { useNavigate } from "react-router-dom";
@@ -14,54 +15,107 @@ import { useUser } from "../../context/UserContext";
 import { useWaiterCalls } from "../../context/WaiterCallsContext";
 import { logout } from "../../utils/logout";
 
-function initials(name) {
-  const parts = String(name || "Cashier").trim().split(/\s+/).filter(Boolean);
-  return parts.slice(0, 2).map((part) => part[0]).join("").toUpperCase() || "C";
-}
-
-export default function DashboardHeader({ handleNotificationOpen }) {
-  const { user } = useUser();
-  const { calls } = useWaiterCalls();
-  const navigate = useNavigate();
-  const { language, t } = useLanguage();
-  const ar = language === "ar";
-  const userName = user?.name || (ar ? "الكاشير" : "Cashier");
-  const currentDate = new Date().toLocaleDateString(ar ? "ar-EG" : "en-US", {
-    weekday: "short", month: "short", day: "numeric",
-  });
-  const iconStyle = {
-    color: "#e8edf5", border: "1px solid rgba(255,255,255,.16)",
-    borderRadius: 2, width: 40, height: 40,
-    "&:hover": { bgcolor: "rgba(255,255,255,.1)", color: "#fff" },
-  };
-
+function stringAvatar(name) { if (!name) return { children: "C" }; const parts = name.trim().split(" "); return { children: (parts.length > 1 ? `${parts[0][0]}${parts[1][0]}` : parts[0][0]).toUpperCase() }; }
+function DashboardHeader({ handleNotificationOpen }) {
+  const { user } = useUser(); const { calls } = useWaiterCalls(); const navigate = useNavigate(); const userName = user?.name || "Cashier"; const { language, t } = useLanguage();
+  const currentDate = new Date().toLocaleDateString(language === "ar" ? "ar-EG" : "en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
   return (
-    <Stack direction="row" useFlexGap sx={{ alignItems: "center", justifyContent: "space-between", gap: 1.5, flexWrap: "wrap" }}>
-      <Stack direction="row" spacing={1.5} sx={{ alignItems: "center", minWidth: 0 }}>
-        <Box aria-hidden="true" sx={{ width: 41, height: 41, flexShrink: 0, borderRadius: 2, bgcolor: "#d9541e", display: "grid", placeItems: "center", color: "#fff", fontSize: "1.1rem", fontWeight: 950 }}>S</Box>
-        <Box sx={{ minWidth: 0 }}>
-          <Typography sx={{ color: "#fff", fontWeight: 950, fontSize: { xs: ".95rem", sm: "1.02rem" }, letterSpacing: ".04em", lineHeight: 1.2 }}>SERVIO <Box component="span" sx={{ color: "#a5b1c5", fontWeight: 600, letterSpacing: 0 }}>/ {ar ? "الكاشير" : "Cashier"}</Box></Typography>
-          <Typography sx={{ color: "#aab6c9", fontSize: ".73rem", mt: .35, lineHeight: 1.2 }}>{ar ? "استقبال ومتابعة الطلبات" : "Order receiving & operations"} · {currentDate}</Typography>
+    <Box sx={{ width: "100%" }}>
+      <Stack
+        direction="row"
+        sx={{
+          justifyContent: "space-between",
+          alignItems: "center",
+          width: "100%",
+          gap: { xs: 1, sm: 2 },
+        }}
+      >
+        <Box sx={{ textAlign: "start", minWidth: 0 }}>
+          <Typography
+            variant="overline"
+            sx={{ color: "primary.main", fontWeight: 900, letterSpacing: 1.2 }}
+          >
+            {t("liveOperations")}
+          </Typography>
+          <Typography
+            variant="h5"
+            component="h2"
+            sx={{
+              fontSize: { xs: "1.2rem", sm: "1.45rem", md: "1.7rem" },
+              fontWeight: 900,
+              color: "text.primary",
+              letterSpacing: "-0.03em",
+              lineHeight: 1.15,
+            }}
+          >
+            {t("currentOrders")}
+          </Typography>
+          <Typography
+            variant="body2"
+            sx={{
+              fontSize: { xs: "0.74rem", sm: "0.84rem" },
+              fontWeight: 600,
+              color: "text.secondary",
+              mt: 0.45,
+              display: { xs: "none", sm: "block" },
+            }}
+          >
+            {currentDate} · {t("cashierKitchen")}
+          </Typography>
         </Box>
-      </Stack>
-      <Stack direction="row" useFlexGap sx={{ alignItems: "center", gap: { xs: .7, sm: 1 }, marginInlineStart: "auto" }}>
-        <LanguageToggle compact dark />
-        <Tooltip title={t("waiterCalls")}>
-          <IconButton aria-label={`${t("waiterCalls")} (${calls.length})`} onClick={handleNotificationOpen} sx={iconStyle}>
-            <Badge badgeContent={calls.length} color="error"><NotificationsNoneRoundedIcon fontSize="small" /></Badge>
+        <Stack direction="row" sx={{ alignItems: "center", gap: { xs: 0.45, sm: 0.9 }, flex: "0 0 auto" }}>
+          <LanguageToggle compact />
+          <IconButton
+            onClick={handleNotificationOpen}
+            sx={{
+              color: "text.secondary",
+              border: "1px solid",
+              borderColor: "divider",
+              borderRadius: 2.5,
+              p: { xs: 1, sm: 1.15 },
+              "&:hover": {
+                color: "primary.main",
+                backgroundColor: "rgba(244,121,32,.06)",
+              },
+            }}
+          >
+            <Badge badgeContent={calls.length} color="error">
+              <NotificationsIcon sx={{ fontSize: { xs: 19, md: 21 } }} />
+            </Badge>
           </IconButton>
-        </Tooltip>
-        <Stack direction="row" spacing={.8} sx={{ alignItems: "center", paddingInlineStart: { sm: .5 }, display: { xs: "none", md: "flex" } }}>
-          <Avatar sx={{ width: 35, height: 35, bgcolor: "#33425a", color: "#fff", fontSize: ".75rem", fontWeight: 800 }}>{initials(userName)}</Avatar>
-          <Box sx={{ maxWidth: 130 }}>
-            <Typography noWrap sx={{ color: "#fff", fontSize: ".77rem", fontWeight: 800, lineHeight: 1.25 }}>{userName}</Typography>
-            <Typography sx={{ color: "#aab6c9", fontSize: ".68rem" }}>{ar ? "الكاشير" : "Cashier"}</Typography>
-          </Box>
+          <Avatar
+            {...stringAvatar(userName)}
+            sx={{
+              width: { xs: 38, md: 42 },
+              height: { xs: 38, md: 42 },
+              fontSize: { xs: "0.875rem", md: "0.95rem" },
+              fontWeight: 800,
+              backgroundColor: "primary.main",
+              color: "primary.contrastText",
+              boxShadow: "0 8px 20px rgba(244,121,32,.16)",
+            }}
+          />
+          <Tooltip title={t("logout")}>
+            <IconButton
+              aria-label={t("logout")}
+              onClick={() => logout(navigate)}
+              sx={{
+                color: "text.secondary",
+                border: "1px solid",
+                borderColor: "divider",
+                borderRadius: 2.5,
+                "&:hover": {
+                  color: "primary.main",
+                  borderColor: "primary.light",
+                },
+              }}
+            >
+              <LogoutIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
         </Stack>
-        <Tooltip title={t("logout")}>
-          <IconButton aria-label={t("logout")} onClick={() => logout(navigate)} sx={iconStyle}><LogoutRoundedIcon fontSize="small" /></IconButton>
-        </Tooltip>
       </Stack>
-    </Stack>
+    </Box>
   );
 }
+export default DashboardHeader;

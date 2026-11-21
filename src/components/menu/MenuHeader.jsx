@@ -1,6 +1,5 @@
 // COMPONENTS
 import MenuSearchBar from "./MenuSearchBar";
-import LanguageToggle from "../LanguageToggle";
 
 // MUI COMPONENTS
 import { Box, Stack, Chip, Typography } from "@mui/material";
@@ -10,13 +9,10 @@ import PlaceOutlinedIcon from "@mui/icons-material/PlaceOutlined";
 
 // CONTEXTS
 import { useStore } from "../../context/StoreInfoContext";
-import { useLanguage } from "../../context/LanguageContext";
 
-function MenuHeader({ table, showSearch = true }) {
+function MenuHeader({ table }) {
   // Context: استخراج بيانات المحل (الاسم والوصف) لعرضها في الهيدر الرئيسي للمنيو
   const { storeInfo } = useStore();
-  const { language } = useLanguage();
-  const isEnglish = language === "en";
 
   return (
     <Box sx={{ pb: 0.7 }}>
@@ -26,8 +22,6 @@ function MenuHeader({ table, showSearch = true }) {
         sx={{
           justifyContent: "space-between",
           alignItems: "center",
-          flexWrap: "wrap",
-          gap: 1,
           mb: 2.5,
         }}
       >
@@ -36,21 +30,20 @@ function MenuHeader({ table, showSearch = true }) {
           <Typography
             variant="h4"
             component="h1"
-            sx={{ fontWeight: 950, letterSpacing: "-1px", mb: 0.5, fontSize: { xs: "1.65rem", sm: "2rem" } }}
+            sx={{ fontWeight: 900, letterSpacing: "-0.7px", mb: 0.5, fontSize: { xs: "1.65rem", sm: "2rem" } }}
           >
-            {storeInfo?.store_name || (isEnglish ? "Menu" : "قائمة الطعام")}
+            {storeInfo?.store_name || "قائمة الطعام"}
           </Typography>
         </Box>
 
-        <Stack direction="row" sx={{ alignItems: "center", gap: 1, flexWrap: "wrap" }}>
         {/* TABLE NUMBER BADGE */}
-        {table && <Chip
+        <Chip
           icon={
             <PlaceOutlinedIcon
               sx={{ fontSize: "1.1rem !important", ml: "4px !important" }}
             />
           }
-          label={table === "كاشير" ? (isEnglish ? "Cashier" : "كاشير") : `${isEnglish ? "Table" : "طاولة"} ${table}`}
+          label={`طاولة ${table}`}
           sx={{
             px: 1.5,
             py: 2.2,
@@ -58,19 +51,17 @@ function MenuHeader({ table, showSearch = true }) {
             fontWeight: 700,
             fontSize: "0.875rem",
             color: "secondary.contrastText",
-            backgroundColor: "#171717",
+            backgroundColor: "secondary.main",
             "& .MuiChip-icon": {
               marginLeft: "4px",
               marginRight: "-2px",
             },
           }}
-        />}
-        <LanguageToggle compact />
-        </Stack>
+        />
       </Stack>
 
       {/* MENU SEARCH BAR COMPONENT */}
-      {showSearch && <MenuSearchBar />}
+      <MenuSearchBar />
     </Box>
   );
 }

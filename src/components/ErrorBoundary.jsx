@@ -1,17 +1,16 @@
 // مكوّن واجهة `ErrorBoundary` ضمن مجموعة `components`.
 import { Component } from "react";
+import { useLanguage } from "../context/LanguageContext";
 import { Box, Button, Typography } from "@mui/material";
 
 function ErrorBoundaryView({ error }) {
-  const language = typeof document !== "undefined" && document.documentElement.lang === "en" ? "en" : "ar";
-  const title = language === "en" ? "Unexpected error" : "حدث خطأ غير متوقع";
-  const reload = language === "en" ? "Reload page" : "إعادة تحميل الصفحة";
+  const { t, language } = useLanguage();
   return (
     <Box sx={{ minHeight: "100vh", display: "grid", placeItems: "center", textAlign: "center", p: 3 }} dir={language === "ar" ? "rtl" : "ltr"}>
       <Box>
-        <Typography variant="h5" fontWeight={800} mb={1}>{title}</Typography>
+        <Typography variant="h5" fontWeight={800} mb={1}>{t("unexpectedError")}</Typography>
         <Typography color="text.secondary" mb={2}>{String(error?.message || "")}</Typography>
-        <Button variant="contained" onClick={() => window.location.reload()}>{reload}</Button>
+        <Button variant="contained" onClick={() => window.location.reload()}>{t("reloadPage")}</Button>
       </Box>
     </Box>
   );

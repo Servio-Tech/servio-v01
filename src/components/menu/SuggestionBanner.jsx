@@ -1,7 +1,6 @@
 import { useSuggestions } from "../../context/SuggestionsContext";
 import { useCart } from "../../context/CartContext";
 import { useLanguage } from "../../context/LanguageContext";
-import { useTenant } from "../../context/TenantContext";
 
 // MUI COMPONENTS
 import Box from "@mui/material/Box";
@@ -17,7 +16,6 @@ function SuggestionBanner() {
   const { suggestedItems, dismissSuggestion } = useSuggestions();
   const { addToCart, cartItems } = useCart();
   const { language } = useLanguage();
-  const { storeInfo } = useTenant();
   const isArabic = language !== "en";
 
   // عدم العرض إذا لم تكن هناك اقتراحات أو السلة فارغة
@@ -83,7 +81,7 @@ function SuggestionBanner() {
             </Typography>
             <Chip
               size="small"
-              label={isArabic ? "اختيار سريع" : "Quick pick"}
+              label="اختيار سريع"
               color="primary"
               sx={{
                 height: 18,
@@ -106,7 +104,7 @@ function SuggestionBanner() {
               textOverflow: "ellipsis",
             }}
           >
-            {isArabic ? currentSuggestion.name : (currentSuggestion.name_en || currentSuggestion.name)}
+            {currentSuggestion.name}
           </Typography>
 
           <Typography
@@ -114,7 +112,7 @@ function SuggestionBanner() {
             color="text.secondary"
             sx={{ fontWeight: 700, fontSize: "0.7rem", lineHeight: 1 }}
           >
-            +{Number(currentSuggestion.price).toFixed(2)} {storeInfo?.currency || "SAR"}
+            +{Number(currentSuggestion.price).toFixed(2)} ر.س
           </Typography>
         </Box>
       </Box>
@@ -141,7 +139,6 @@ function SuggestionBanner() {
         </Button>
         <IconButton
           size="small"
-          aria-label={isArabic ? "إخفاء الاقتراح" : "Dismiss suggestion"}
           onClick={() => dismissSuggestion(currentSuggestion.id)}
           sx={{ color: "text.disabled", p: 0.3 }}
         >

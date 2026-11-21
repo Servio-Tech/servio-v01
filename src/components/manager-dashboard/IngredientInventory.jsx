@@ -3,8 +3,6 @@ import { useMemo, useState } from "react";
 import { useMenu } from "../../context/MenuContext";
 import { useLanguage } from "../../context/LanguageContext";
 import { FullscreenDialog as Dialog } from "../common/FullscreenOverlays";
-
-// MUI COMPONENTS
 import {
   Alert,
   Avatar,
@@ -25,8 +23,6 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-
-// MUI ICONS
 import AddRoundedIcon from "@mui/icons-material/AddRounded";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import Inventory2OutlinedIcon from "@mui/icons-material/Inventory2Outlined";
