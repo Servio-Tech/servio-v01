@@ -22,21 +22,23 @@ import { useOrders } from "../../../context/OrdersContext";
 import FiberManualRecordIcon from "@mui/icons-material/FiberManualRecord";
 import AddShoppingCartRoundedIcon from "@mui/icons-material/AddShoppingCartRounded";
 import { useLanguage } from "../../../context/LanguageContext";
+import { getOrderType } from "./orderBellLogic";
 
 const COLUMNS = [
-  { key: "pending", title: "newOrder", color: "warning", accent: "#F47920", soft: "rgba(244,121,32,.11)" },
-  { key: "preparing", title: "preparing", color: "info", accent: "#2878C8", soft: "rgba(40,120,200,.10)" },
-  { key: "ready", title: "ready", color: "success", accent: "#159A68", soft: "rgba(21,154,104,.11)" },
-  { key: "awaiting_payment", title: "unpaidOrders", color: "warning", accent: "#B66A00", soft: "rgba(244,173,52,.16)" },
+  { key: "pending", title: "newOrder", color: "warning", accent: "#e99462", soft: "rgba(233,148,98,.10)" },
+  { key: "preparing", title: "preparing", color: "info", accent: "#91b6ce", soft: "rgba(145,182,206,.10)" },
+  { key: "ready", title: "ready", color: "success", accent: "#77c6a0", soft: "rgba(119,198,160,.10)" },
+  { key: "awaiting_payment", title: "unpaidOrders", color: "warning", accent: "#eebc6e", soft: "rgba(238,188,110,.10)" },
 ];
 
-function LiveOrders() {
+function LiveOrders({ orderTypeFilter = "all" }) {
   const { orders, ordersLoading, ordersLoadError, reloadOrders } = useOrders();
   const { t, language } = useLanguage();
   const [quickOrderOpen, setQuickOrderOpen] = useState(false);
 
   const activeOrders = orders.filter((order) => (
     !order.is_completed &&
+    (orderTypeFilter === "all" || getOrderType(order) === orderTypeFilter) &&
     Array.isArray(order.items) &&
     order.items.length > 0 &&
     order.items.every((item) => item && String(item.name || "").trim() && item.quantity != null && item.price != null)
@@ -77,7 +79,7 @@ function LiveOrders() {
         const columnOrders = getOrdersByStatus(col.key);
 
         return (
-          <Grid key={col.key} size={{ xs: 12, md: 6, lg: 4 }}>
+          <Grid key={col.key} size={{ xs: 12, md: 6, xl: 3 }}>
             {/* عنوان العمود بنفس طابع لوحة التحكم */}
             <Paper
               elevation={0}
@@ -87,11 +89,9 @@ function LiveOrders() {
                 borderRadius: "15px",
                 border: "1px solid",
                 borderColor: `${col.accent}55`,
-                borderTop: `5px solid ${col.accent}`,
+                borderTop: `3px solid ${col.accent}`,
                 background: col.soft,
-                backdropFilter: "blur(12px)",
-                WebkitBackdropFilter: "blur(12px)",
-                boxShadow: "0 10px 26px rgba(23,26,47,.04)",
+                boxShadow: "none",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "space-between",

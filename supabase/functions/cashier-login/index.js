@@ -133,6 +133,21 @@ Deno.serve(async (req) => {
         return json({ error: genericError }, 500, headers);
       }
     } else {
+      // Refuse the server-side password rotation for blocked identities, even
+      // when their old access token has not expired. A lookup failure is closed.
+      const { data: block, error: blockError } = await supabase
+        .from("platform_user_blocks")
+        .select("user_id")
+        .eq("user_id", authUserId)
+        .maybeSingle();
+      if (blockError || block) return json({ error: genericError }, 401, headers);
+      const { data: authAccount, error: authAccountError } =
+        await supabase.auth.admin.getUserById(authUserId);
+      const bannedUntil = authAccount?.user?.banned_until;
+      if (
+        authAccountError || !authAccount?.user ||
+        (bannedUntil && (!Number.isFinite(Date.parse(bannedUntil)) || Date.parse(bannedUntil) > Date.now()))
+      ) return json({ error: genericError }, 401, headers);
       const { error } = await supabase.auth.admin.updateUserById(authUserId, {
         password,
         user_metadata: metadata,

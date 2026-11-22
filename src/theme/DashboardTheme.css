@@ -1,0 +1,68 @@
+/* All dashboard-only rules are scoped; public pages never receive this class. */
+.dashboard-theme-scope {
+  min-width: 0;
+  min-height: 100vh;
+  color: #f4f0e8;
+  background: #111110;
+  text-align: start;
+}
+
+@media screen {
+  /* Override the legacy global cream Paper rule, including MUI portals. */
+  .dashboard-theme-scope .MuiPaper-root:not(.MuiPopover-paper):not(.MuiMenu-paper):not(.MuiDrawer-paper),
+  .dashboard-theme-portal .MuiPaper-root:not(.MuiPopover-paper):not(.MuiMenu-paper):not(.MuiDrawer-paper) {
+    background-color: #1b1a18;
+    border-color: rgba(233, 222, 207, 0.12);
+    box-shadow: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+
+  .dashboard-theme-portal .MuiPopover-paper,
+  .dashboard-theme-portal .MuiMenu-paper,
+  .dashboard-theme-portal .MuiDrawer-paper.MuiPaper-root:not(.MuiPopover-paper):not(.MuiMenu-paper) {
+    background-color: #1b1a18;
+    color: #f4f0e8;
+    border-color: rgba(233, 222, 207, 0.12);
+    background-image: none;
+  }
+
+  .dashboard-manager-sidebar .MuiDrawer-paper.MuiPaper-root:not(.MuiPopover-paper):not(.MuiMenu-paper) {
+    background-color: #161615;
+  }
+
+  .dashboard-manager-branches > .MuiBox-root:first-child {
+    background-color: #1b1a18;
+  }
+
+  /* The QR studio owns its card colors, including the white QR quiet zone. */
+  .dashboard-manager-content--qrGen .qr-studio .qr-output-card.MuiPaper-root:not(.MuiPopover-paper):not(.MuiMenu-paper) {
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+  }
+  .dashboard-manager-content--qrGen .qr-print-tip {
+    color: #bfb7a9;
+  }
+}
+
+.dashboard-theme-scope .MuiTableContainer-root,
+.dashboard-theme-portal .MuiTableContainer-root {
+  max-width: 100%;
+  overflow-x: auto;
+}
+.dashboard-theme-scope .MuiButton-root,
+.dashboard-theme-portal .MuiButton-root {
+  text-transform: none;
+}
+.dashboard-theme-scope .MuiTabs-scrollButtons.Mui-disabled {
+  opacity: 0.3;
+}
+.dashboard-manager-language .MuiToggleButton-root.Mui-selected {
+  color: #20130d;
+}
+.dashboard-theme-scope :focus-visible,
+.dashboard-theme-portal :focus-visible {
+  outline: 2px solid #f2a675;
+  outline-offset: 2px;
+}

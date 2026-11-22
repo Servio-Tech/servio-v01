@@ -64,8 +64,11 @@ function DashboardHeader({ handleNotificationOpen }) {
           </Typography>
         </Box>
         <Stack direction="row" sx={{ alignItems: "center", gap: { xs: 0.45, sm: 0.9 }, flex: "0 0 auto" }}>
-          <LanguageToggle compact />
+          <Box sx={{ "& .MuiToggleButton-root.Mui-selected": { color: "#20130d" } }}>
+            <LanguageToggle compact dark />
+          </Box>
           <IconButton
+            aria-label={language === "ar" ? "نداءات النادل" : "Waiter calls"}
             onClick={handleNotificationOpen}
             sx={{
               color: "text.secondary",

@@ -1,87 +1,128 @@
-// مكوّن واجهة `IngredientInventory` ضمن مجموعة `manager-dashboard`.
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useMenu } from "../../context/MenuContext";
 import { useLanguage } from "../../context/LanguageContext";
+import { useBranch } from "../../context/BranchContext";
 import { FullscreenDialog as Dialog } from "../common/FullscreenOverlays";
 import {
-  Alert,
-  Avatar,
-  Box,
-  Button,
-  Card,
-  Chip,
-  CircularProgress,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
-  Divider,
-  FormControlLabel,
-  Grid,
-  IconButton,
-  Stack,
-  Switch,
-  TextField,
-  Typography,
+  Alert, Box, Button, Chip, CircularProgress, DialogActions, DialogContent,
+  DialogTitle, IconButton, InputAdornment, MenuItem, Stack, Switch, TextField, Typography,
 } from "@mui/material";
 import AddRoundedIcon from "@mui/icons-material/AddRounded";
+import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import Inventory2OutlinedIcon from "@mui/icons-material/Inventory2Outlined";
 import SearchRoundedIcon from "@mui/icons-material/SearchRounded";
-import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
+import StorefrontOutlinedIcon from "@mui/icons-material/StorefrontOutlined";
+import SyncRoundedIcon from "@mui/icons-material/SyncRounded";
+import {
+  filterAndSortAvailability, linkedItemsByIngredient, runScopedAction,
+  scopeToBranch, summarizeAvailability,
+} from "./out-of-stock/availabilityModel";
+
+const palette = {
+  ink: "#141513", panel: "#1d1f1b", raised: "#252722", line: "#393a33",
+  cream: "#f5f0e5", muted: "#b8b3a6", orange: "#d77b4b", paleOrange: "#f0b28a",
+  green: "#a8c7aa",
+};
+
+const fieldSx = {
+  "& .MuiOutlinedInput-root": {
+    color: palette.cream, backgroundColor: "#191b18", borderRadius: 2,
+    "& fieldset": { borderColor: palette.line },
+    "&:hover fieldset": { borderColor: "#777367" },
+    "&.Mui-focused fieldset": { borderColor: palette.orange },
+  },
+  "& .MuiInputLabel-root, & .MuiSvgIcon-root": { color: palette.muted },
+  "& .MuiInputLabel-root.Mui-focused": { color: palette.paleOrange },
+};
+
+const switchSx = {
+  "& .MuiSwitch-switchBase.Mui-checked": { color: palette.green },
+  "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": { backgroundColor: palette.green },
+  "& .MuiSwitch-track": { backgroundColor: "#8b7f70" },
+};
+
+function StateChip({ available, children }) {
+  return <Chip size="small" label={children} sx={{
+    height: 25, fontWeight: 800, borderRadius: 1.25,
+    color: available ? palette.green : palette.paleOrange,
+    bgcolor: available ? "rgba(120,173,133,.12)" : "rgba(215,123,75,.14)",
+    border: `1px solid ${available ? "rgba(168,199,170,.25)" : "rgba(215,123,75,.3)"}`,
+  }} />;
+}
+
+function Stat({ label, value, detail, highlight }) {
+  return (
+    <Box sx={{ p: { xs: 1.75, sm: 2.1 }, border: `1px solid ${palette.line}`, borderRadius: 2.5, backgroundColor: palette.panel, minWidth: 0 }}>
+      <Typography sx={{ color: palette.muted, fontSize: ".77rem", fontWeight: 700 }}>{label}</Typography>
+      <Typography sx={{ color: highlight ? palette.paleOrange : palette.cream, fontSize: { xs: "1.7rem", sm: "2rem" }, lineHeight: 1.15, fontWeight: 900, mt: 1 }}>{value}</Typography>
+      <Typography sx={{ color: palette.muted, fontSize: ".72rem", mt: 0.75 }}>{detail}</Typography>
+    </Box>
+  );
+}
 
 function IngredientInventory({ canManage = false }) {
-  const { ingredients = [], items = [], addIngredient, updateIngredient, setIngredientAvailability, menuLoading, menuError, refreshMenu } = useMenu();
+  const {
+    ingredients = [], items = [], addIngredient, updateIngredient,
+    setIngredientAvailability, toggleAvailable, menuLoading, menuRefreshing,
+    menuError, refreshMenu,
+  } = useMenu();
   const { language } = useLanguage();
+  const { selectedBranch, selectedBranchId, loading: branchLoading } = useBranch();
   const isArabic = language !== "en";
+  const tr = (ar, en) => isArabic ? ar : en;
+  const locale = isArabic ? "ar" : "en";
+  const branchRef = useRef(selectedBranchId);
+  branchRef.current = selectedBranchId;
+  const [view, setView] = useState("items");
   const [search, setSearch] = useState("");
+  const [status, setStatus] = useState("all");
+  const [sort, setSort] = useState("unavailable");
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [dialogBranchId, setDialogBranchId] = useState(null);
   const [editingIngredient, setEditingIngredient] = useState(null);
   const [draftName, setDraftName] = useState("");
   const [busyId, setBusyId] = useState(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
-  const relatedItemsByIngredient = useMemo(() => {
-    const result = new Map();
-    items.forEach((item) => {
-      (item.ingredient_ids || []).forEach((ingredientId) => {
-        const key = String(ingredientId);
-        const linked = result.get(key) || [];
-        linked.push(item);
-        result.set(key, linked);
-      });
-    });
-    return result;
-  }, [items]);
+  // MenuContext clears on branch changes in an effect, so filter immediately during render too.
+  const branchIngredients = useMemo(() => scopeToBranch(ingredients, selectedBranchId), [ingredients, selectedBranchId]);
+  const branchItems = useMemo(() => scopeToBranch(items, selectedBranchId), [items, selectedBranchId]);
+  const linkedItems = useMemo(() => linkedItemsByIngredient(branchItems), [branchItems]);
+  const summary = useMemo(() => summarizeAvailability(branchIngredients, branchItems), [branchIngredients, branchItems]);
+  const displayedRows = useMemo(() => filterAndSortAvailability(view === "items" ? branchItems : branchIngredients, {
+    type: view === "items" ? "item" : "ingredient", query: search, status, sort, linkedItems, locale,
+  }), [view, branchItems, branchIngredients, search, status, sort, linkedItems, locale]);
 
-  const filteredIngredients = useMemo(() => {
-    const query = search.trim().toLocaleLowerCase(isArabic ? "ar" : "en");
-    return [...ingredients]
-      .filter((ingredient) => {
-        if (!query) return true;
-        const linkedNames = (relatedItemsByIngredient.get(String(ingredient.id)) || []).map((item) => item.name).join(" ");
-        return `${ingredient.name || ""} ${linkedNames}`.toLocaleLowerCase(isArabic ? "ar" : "en").includes(query);
-      })
-      .sort((a, b) => String(a.name || "").localeCompare(String(b.name || ""), isArabic ? "ar" : "en"));
-  }, [ingredients, relatedItemsByIngredient, search, isArabic]);
+  useEffect(() => {
+    setDialogOpen(false);
+    setEditingIngredient(null);
+    setDraftName("");
+    setError("");
+  }, [selectedBranchId]);
 
-  const unavailableCount = ingredients.filter((ingredient) => ingredient.available !== true).length;
-  const affectedItemCount = items.filter((item) => (item.unavailableIngredients || []).length > 0).length;
+  const writesDisabled = !selectedBranchId || branchLoading || menuLoading || menuRefreshing || Boolean(menuError) || Boolean(busyId) || saving;
+  const hasRows = branchIngredients.length > 0 || branchItems.length > 0;
+  const numbersReady = selectedBranchId && !branchLoading && !menuLoading && (!menuError || hasRows);
+  const count = (value) => numbersReady ? value.toLocaleString(locale) : "—";
 
   const openAdd = () => {
+    if (writesDisabled || !canManage) return;
     setEditingIngredient(null);
+    setDialogBranchId(selectedBranchId);
     setDraftName("");
     setError("");
     setDialogOpen(true);
   };
-
   const openEdit = (ingredient) => {
+    if (writesDisabled || !canManage || String(ingredient.branch_id) !== String(selectedBranchId)) return;
     setEditingIngredient(ingredient);
+    setDialogBranchId(selectedBranchId);
     setDraftName(ingredient.name || "");
     setError("");
     setDialogOpen(true);
   };
-
   const closeDialog = () => {
     if (saving) return;
     setDialogOpen(false);
@@ -89,203 +130,193 @@ function IngredientInventory({ canManage = false }) {
     setDraftName("");
     setError("");
   };
-
+  const failureMessage = (operationError) => {
+    const detail = operationError?.message ? ` (${operationError.message})` : "";
+    return tr("تعذّر تأكيد التغيير. أعد تحميل البيانات وتحقق من الحالة قبل المحاولة مجددًا.", "Could not confirm the change. Reload and check the status before trying again.") + detail;
+  };
   const handleSave = async (event) => {
     event.preventDefault();
-    const normalizedName = draftName.trim().replace(/\s+/g, " ");
-    if (!normalizedName || saving) return;
+    const name = draftName.trim().replace(/\s+/g, " ");
+    if (!name || writesDisabled || !canManage || dialogBranchId !== selectedBranchId) return;
+    const branchAtStart = selectedBranchId;
     setSaving(true);
     setError("");
-    const result = editingIngredient
-      ? await updateIngredient({ ...editingIngredient, name: normalizedName })
-      : await addIngredient(normalizedName);
+    const result = await runScopedAction(branchAtStart, editingIngredient?.branch_id ?? dialogBranchId, () => editingIngredient
+      ? updateIngredient({ ...editingIngredient, name }) : addIngredient(name));
     setSaving(false);
-    if (result?.error) {
-      setError(result.error.message || (isArabic ? "تعذر حفظ المادة." : "Could not save the ingredient."));
+    if (branchRef.current !== branchAtStart) {
+      void refreshMenu();
+      return;
+    }
+    if (result.error) {
+      setError(failureMessage(result.error));
+      void refreshMenu();
       return;
     }
     setDialogOpen(false);
     setEditingIngredient(null);
     setDraftName("");
   };
-
-  const handleAvailabilityChange = async (ingredient, available) => {
-    if (busyId) return;
-    setBusyId(ingredient.id);
+  const changeAvailability = async (record, type) => {
+    if (writesDisabled || String(record.branch_id) !== String(selectedBranchId)) return;
+    const branchAtStart = selectedBranchId;
+    setBusyId(`${type}:${record.id}`);
     setError("");
-    const result = await setIngredientAvailability(ingredient.id, available);
+    const result = await runScopedAction(branchAtStart, record.branch_id, () => type === "ingredient"
+      ? setIngredientAvailability(record.id, record.available !== true)
+      : toggleAvailable(record.id));
     setBusyId(null);
-    if (result?.error) setError(result.error.message || (isArabic ? "تعذر تحديث حالة المادة." : "Could not update ingredient status."));
+    if (branchRef.current !== branchAtStart) {
+      void refreshMenu();
+      return;
+    }
+    if (result.error) {
+      setError(failureMessage(result.error));
+      void refreshMenu();
+    }
   };
 
   return (
-    <Box sx={{ p: { xs: 0, md: 0.5 }, minWidth: 0 }}>
-      <Stack spacing={2.25}>
-        <Card elevation={0} sx={{ p: { xs: 2, sm: 2.75 }, borderRadius: { xs: 3, md: 4 }, border: "1px solid rgba(255,255,255,.78)", background: "linear-gradient(125deg, rgba(255,255,255,.92) 0%, rgba(255,249,242,.92) 100%)", boxShadow: "0 16px 42px rgba(23,26,47,.055)" }}>
-          <Stack direction={{ xs: "column", md: "row" }} spacing={2}   sx={{ alignItems: { xs: "stretch", md: "center" }, justifyContent: "space-between" }}>
-            <Stack direction="row" spacing={1.5}  sx={{ minWidth: 0 , alignItems: "center"}}>
-              <Avatar sx={{ width: 48, height: 48, bgcolor: "rgba(244,121,32,.12)", color: "primary.main" }}>
-                <Inventory2OutlinedIcon />
-              </Avatar>
-              <Box sx={{ minWidth: 0 }}>
-                <Typography variant="h5" sx={{ fontWeight: 950, letterSpacing: "-.02em" }}>
-                  {isArabic ? "إدارة المخزون" : "Inventory management"}
-                </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ mt: 0.4, maxWidth: 760 }}>
-                  {canManage
-                    ? (isArabic ? "أضف المواد التي تدخل في الأصناف واربطها بها. عند تسجيل نفاد مادة، تتوقف كل الأصناف المرتبطة عن الظهور للطلب والبيع." : "Add ingredients and link them to menu items. Marking an ingredient unavailable stops every linked item from being ordered or sold.")
-                    : (isArabic ? "حدّث توفر المواد عند نفادها أو إعادة توفيرها؛ ستتحدث الأصناف المرتبطة تلقائيًا." : "Update ingredient availability when stock runs out or is replenished; linked menu items update automatically.")}
-                </Typography>
+    <Box dir={isArabic ? "rtl" : "ltr"} sx={{ minWidth: 0, color: palette.cream, background: palette.ink, borderRadius: { xs: 2.5, md: 3.5 }, p: { xs: 2, sm: 2.75, lg: 3.5 } }}>
+      <Stack spacing={2.5}>
+        <Box component="header" sx={{ pb: 0.5 }}>
+          <Stack direction={{ xs: "column", md: "row" }} spacing={2} sx={{ justifyContent: "space-between", alignItems: { xs: "flex-start", md: "flex-end" } }}>
+            <Box sx={{ minWidth: 0 }}>
+              <Stack direction="row" useFlexGap spacing={1} sx={{ alignItems: "center", flexWrap: "wrap", mb: 1.5 }}>
+                <Box sx={{ width: 8, height: 8, borderRadius: "50%", bgcolor: palette.orange }} />
+                <Typography sx={{ color: palette.paleOrange, fontSize: ".73rem", fontWeight: 900, letterSpacing: ".04em" }}>{tr("متابعة التوفر", "AVAILABILITY OVERVIEW")}</Typography>
+                <Typography sx={{ color: "#6f7067", fontSize: ".8rem" }}>/</Typography>
+                <Typography sx={{ color: palette.muted, fontSize: ".75rem", fontWeight: 700 }}>{selectedBranch?.name || tr("لم يُحدد فرع", "No branch selected")}</Typography>
+              </Stack>
+              <Typography component="h1" sx={{ color: palette.cream, fontWeight: 900, fontSize: { xs: "1.65rem", md: "2.15rem" }, lineHeight: 1.2 }}>{tr("إدارة النفاد", "Availability management")}</Typography>
+              <Typography sx={{ color: palette.muted, fontSize: ".88rem", lineHeight: 1.9, mt: 1, maxWidth: 730 }}>
+                {tr("تابع توفر الأصناف ومكوناتها في الفرع المحدد. نفاد أي مكون مرتبط يوقف الصنف عن الطلب، حتى لو كان مفعّلًا يدويًا.", "Monitor items and their ingredients in the selected branch. An unavailable linked ingredient stops an item from being ordered, even when it is manually enabled.")}
+              </Typography>
+            </Box>
+            {canManage && <Button onClick={openAdd} disabled={writesDisabled} startIcon={<AddRoundedIcon />} variant="contained" sx={{ minHeight: 44, px: 2, borderRadius: 2, whiteSpace: "nowrap", fontWeight: 900, color: "#21140e", bgcolor: palette.orange, boxShadow: "none", "&:hover": { bgcolor: "#e68c5b", boxShadow: "none" }, "&.Mui-disabled": { color: "#77736a", bgcolor: "#393a33" } }}>{tr("إضافة مكون", "Add ingredient")}</Button>}
+          </Stack>
+        </Box>
+
+        {menuError && <Alert severity="error" action={<Button color="inherit" size="small" onClick={() => void refreshMenu()}>{tr("إعادة المحاولة", "Retry")}</Button>} sx={{ borderRadius: 2 }}>
+          {hasRows
+            ? tr("تعذّر تحديث البيانات. المعروض هو آخر بيانات محمّلة وقد لا يعكس الحالة الحالية؛ التعديل متوقف حتى نجاح التحديث.", "Refresh failed. Showing the last loaded data, which may be outdated; changes are disabled until refresh succeeds.")
+            : tr("تعذّر تحميل الأصناف والمكونات. تحقق من الاتصال ثم أعد المحاولة.", "Could not load items and ingredients. Check the connection and retry.")}
+        </Alert>}
+        {error && !dialogOpen && <Alert severity="error" onClose={() => setError("")} action={<Button color="inherit" size="small" onClick={() => void refreshMenu()}>{tr("تحديث البيانات", "Reload data")}</Button>} sx={{ borderRadius: 2 }}>{error}</Alert>}
+        {!selectedBranchId && !branchLoading && <Alert severity="warning" sx={{ borderRadius: 2 }}>{tr("اختر فرعًا لعرض حالات التوفر وتعديلها.", "Select a branch to view and change availability.")}</Alert>}
+
+        <Box sx={{ display: "grid", gridTemplateColumns: { xs: "repeat(2, minmax(0, 1fr))", lg: "repeat(4, minmax(0, 1fr))" }, gap: 1.25 }}>
+          <Stat label={tr("أصناف متاحة للطلب", "Items available")} value={count(summary.itemAvailable)} detail={tr(`من ${count(summary.itemTotal)} صنف`, `of ${count(summary.itemTotal)} items`)} />
+          <Stat label={tr("أصناف غير متاحة", "Items unavailable")} value={count(summary.itemUnavailable)} detail={tr("لأي سبب", "For any reason")} highlight={summary.itemUnavailable > 0} />
+          <Stat label={tr("مكونات نافدة", "Unavailable ingredients")} value={count(summary.ingredientUnavailable)} detail={tr(`من ${count(summary.ingredientTotal)} مكون`, `of ${count(summary.ingredientTotal)} ingredients`)} highlight={summary.ingredientUnavailable > 0} />
+          <Stat label={tr("أصناف متأثرة بمكون نافد", "Items affected by ingredients")} value={count(summary.itemAffected)} detail={tr("يشمل الأصناف الموقوفة يدويًا", "Includes manually disabled items")} highlight={summary.itemAffected > 0} />
+        </Box>
+
+        <Box sx={{ border: `1px solid ${palette.line}`, borderRadius: 2.5, backgroundColor: palette.panel, overflow: "hidden" }}>
+          <Box sx={{ p: { xs: 1.5, sm: 2.25 }, borderBottom: `1px solid ${palette.line}` }}>
+            <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5} sx={{ justifyContent: "space-between", alignItems: { xs: "stretch", sm: "center" } }}>
+              <Box>
+                <Typography component="h2" sx={{ fontSize: "1.08rem", fontWeight: 900 }}>{tr("حالة التوفر", "Availability status")}</Typography>
+                <Typography sx={{ color: palette.muted, fontSize: ".77rem", mt: 0.5 }}>{tr("اختر عرض الأصناف أو المكونات لإدارة حالتها.", "Choose items or ingredients to manage their status.")}</Typography>
               </Box>
+              <Stack direction="row" spacing={0.5} role="group" aria-label={tr("نوع العرض", "View type")} sx={{ p: 0.5, borderRadius: 2, bgcolor: "#141613", alignSelf: { xs: "stretch", sm: "auto" } }}>
+                {[["items", tr("الأصناف", "Items"), summary.itemTotal], ["ingredients", tr("المكونات", "Ingredients"), summary.ingredientTotal]].map(([key, label, total]) => (
+                  <Button key={key} onClick={() => setView(key)} aria-pressed={view === key} sx={{ flex: 1, color: view === key ? palette.cream : palette.muted, bgcolor: view === key ? palette.raised : "transparent", borderRadius: 1.5, minWidth: 105, fontWeight: 800, px: 1.5, "&:hover": { bgcolor: palette.raised } }}>{label} <Box component="span" sx={{ color: view === key ? palette.paleOrange : palette.muted, mx: 0.75, fontSize: ".75rem" }}>{count(total)}</Box></Button>
+                ))}
+              </Stack>
             </Stack>
-            {canManage && (
-              <Button onClick={openAdd} variant="contained" startIcon={<AddRoundedIcon />} sx={{ borderRadius: 2.5, fontWeight: 900, whiteSpace: "nowrap", minHeight: 44 }}>
-                {isArabic ? "إضافة مادة" : "Add ingredient"}
-              </Button>
-            )}
-          </Stack>
-        </Card>
+            <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr 1fr", md: "minmax(0, 1fr) 180px 190px" }, gap: 1.25, mt: 2.25 }}>
+              <TextField value={search} onChange={(event) => setSearch(event.target.value)} size="small" placeholder={view === "items" ? tr("ابحث عن صنف أو مكون", "Search an item or ingredient") : tr("ابحث عن مكون أو صنف مرتبط", "Search an ingredient or linked item")} sx={{ ...fieldSx, gridColumn: { xs: "1 / -1", md: "auto" } }} slotProps={{ htmlInput: { "aria-label": tr("البحث", "Search") }, input: { startAdornment: <InputAdornment position="start"><SearchRoundedIcon fontSize="small" /></InputAdornment> } }} />
+              <TextField select value={status} onChange={(event) => setStatus(event.target.value)} size="small" label={tr("الحالة", "Status")} sx={fieldSx}>
+                <MenuItem value="all">{tr("كل الحالات", "All statuses")}</MenuItem>
+                <MenuItem value="unavailable">{tr("غير المتاح", "Unavailable")}</MenuItem>
+                <MenuItem value="available">{tr("المتاح", "Available")}</MenuItem>
+              </TextField>
+              <TextField select value={sort} onChange={(event) => setSort(event.target.value)} size="small" label={tr("الترتيب", "Sort by")} sx={fieldSx}>
+                <MenuItem value="unavailable">{tr("غير المتاح أولًا", "Unavailable first")}</MenuItem>
+                <MenuItem value="name-asc">{tr("الاسم: أ–ي", "Name: A–Z")}</MenuItem>
+                <MenuItem value="name-desc">{tr("الاسم: ي–أ", "Name: Z–A")}</MenuItem>
+              </TextField>
+            </Box>
+          </Box>
 
-        {error && <Alert severity="error" onClose={() => setError("")} sx={{ borderRadius: 2.5 }}>{error}</Alert>}
-
-        <Grid container spacing={1.5}>
-          <Grid size={{ xs: 12, sm: 4 }}>
-            <Card elevation={0} sx={{ p: 2, borderRadius: 3, height: "100%", border: "1px solid", borderColor: "divider", background: "rgba(255,255,255,.82)" }}>
-              <Typography variant="caption" color="text.secondary" fontWeight={800}>{isArabic ? "المواد المسجلة" : "Ingredients"}</Typography>
-              <Typography variant="h4" fontWeight={950} sx={{ mt: 0.5 }}>{ingredients.length}</Typography>
-            </Card>
-          </Grid>
-          <Grid size={{ xs: 12, sm: 4 }}>
-            <Card elevation={0} sx={{ p: 2, borderRadius: 3, height: "100%", border: "1px solid", borderColor: "divider", background: "rgba(255,255,255,.82)" }}>
-              <Typography variant="caption" color="text.secondary" fontWeight={800}>{isArabic ? "مواد مسجلة كنافدة" : "Unavailable ingredients"}</Typography>
-              <Typography variant="h4" fontWeight={950} color={unavailableCount ? "warning.dark" : "text.primary"} sx={{ mt: 0.5 }}>{unavailableCount}</Typography>
-            </Card>
-          </Grid>
-          <Grid size={{ xs: 12, sm: 4 }}>
-            <Card elevation={0} sx={{ p: 2, borderRadius: 3, height: "100%", border: "1px solid", borderColor: "divider", background: "rgba(255,255,255,.82)" }}>
-              <Typography variant="caption" color="text.secondary" fontWeight={800}>{isArabic ? "أصناف متأثرة بنفاد مادة" : "Menu items affected"}</Typography>
-              <Typography variant="h4" fontWeight={950} color={affectedItemCount ? "error.main" : "text.primary"} sx={{ mt: 0.5 }}>{affectedItemCount}</Typography>
-            </Card>
-          </Grid>
-        </Grid>
-
-        <TextField
-          value={search}
-          onChange={(event) => setSearch(event.target.value)}
-          size="small"
-          placeholder={isArabic ? "ابحث عن مادة أو صنف مرتبط بها" : "Search ingredients or linked items"}
-
-          sx={{ maxWidth: { xs: "100%", md: 480 }, "& .MuiOutlinedInput-root": { borderRadius: 2.5, backgroundColor: "rgba(255,255,255,.86)" } }}
-         slotProps={{ input: { startAdornment: <SearchRoundedIcon sx={{ mr: 1, color: "text.secondary" }} /> } }}/>
-
-        {menuError && (
-          <Alert
-            severity="error"
-            action={<Button color="inherit" size="small" onClick={refreshMenu}>{isArabic ? "إعادة المحاولة" : "Retry"}</Button>}
-            sx={{ borderRadius: 2.5 }}
-          >
-            {isArabic ? "تعذر تحميل المواد والأصناف المرتبطة. تحقق من الاتصال ثم أعد المحاولة." : "Could not load ingredients and linked items. Check the connection and retry."}
-          </Alert>
-        )}
-
-        {menuLoading && ingredients.length === 0 ? (
-          <Card elevation={0} sx={{ p: 4, border: "1px solid", borderColor: "divider", borderRadius: 3, background: "rgba(255,255,255,.7)" }}>
-            <Stack direction="row" spacing={1.25}   sx={{ alignItems: "center", justifyContent: "center" }}>
-              <CircularProgress size={22} />
-              <Typography color="text.secondary">{isArabic ? "جارٍ تحميل المواد…" : "Loading ingredients…"}</Typography>
+          <Box sx={{ p: { xs: 1.5, sm: 2.25 } }}>
+            <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", mb: 1.5, gap: 1 }}>
+              <Typography sx={{ color: palette.muted, fontSize: ".75rem", fontWeight: 700 }}>{tr(`${displayedRows.length.toLocaleString(locale)} نتيجة`, `${displayedRows.length.toLocaleString(locale)} results`)}</Typography>
+              {menuRefreshing && <Stack direction="row" spacing={0.75} sx={{ alignItems: "center", color: palette.muted }}><CircularProgress size={14} sx={{ color: palette.orange }} /><Typography sx={{ fontSize: ".72rem" }}>{tr("جارٍ التحديث", "Refreshing")}</Typography></Stack>}
             </Stack>
-          </Card>
-        ) : filteredIngredients.length ? (
-          <Stack spacing={1.25}>
-            {filteredIngredients.map((ingredient) => {
-              const linkedItems = relatedItemsByIngredient.get(String(ingredient.id)) || [];
-              const isAvailable = ingredient.available === true;
-              return (
-                <Card key={ingredient.id} elevation={0} sx={{ p: { xs: 1.5, sm: 2 }, borderRadius: 3, border: "1px solid", borderColor: isAvailable ? "divider" : "rgba(211,47,47,.26)", background: isAvailable ? "rgba(255,255,255,.86)" : "linear-gradient(120deg, rgba(255,255,255,.95), rgba(255,243,242,.95))" }}>
-                  <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5}   sx={{ alignItems: { xs: "stretch", sm: "center" }, justifyContent: "space-between" }}>
-                    <Stack direction="row" spacing={1.25}  sx={{ minWidth: 0, flex: 1 , alignItems: "center"}}>
-                      <Avatar sx={{ width: 42, height: 42, bgcolor: isAvailable ? "rgba(21,154,104,.1)" : "rgba(211,47,47,.1)", color: isAvailable ? "success.main" : "error.main" }}>
-                        <Inventory2OutlinedIcon fontSize="small" />
-                      </Avatar>
-                      <Box sx={{ minWidth: 0 }}>
-                        <Typography variant="subtitle1" sx={{ fontWeight: 900, overflowWrap: "anywhere" }}>{ingredient.name}</Typography>
-                        <Stack direction="row" spacing={0.75} useFlexGap  sx={{ mt: 0.45 , flexWrap: "wrap"}}>
-                          <Chip size="small" color={isAvailable ? "success" : "error"} variant={isAvailable ? "outlined" : "filled"} label={isAvailable ? (isArabic ? "متوفرة" : "Available") : (isArabic ? "نافدة" : "Out of stock")} />
-                          <Chip size="small" variant="outlined" label={isArabic ? `${linkedItems.length} أصناف مرتبطة` : `${linkedItems.length} linked items`} />
+            {(menuLoading || branchLoading) ? (
+              <Stack direction="row" spacing={1.25} sx={{ alignItems: "center", justifyContent: "center", py: 6 }}><CircularProgress size={22} sx={{ color: palette.orange }} /><Typography sx={{ color: palette.muted }}>{tr("جارٍ تحميل الحالات…", "Loading availability…")}</Typography></Stack>
+            ) : !selectedBranchId || (menuError && !hasRows) ? null : displayedRows.length ? (
+              <Stack spacing={1}>
+                {displayedRows.map((record) => {
+                  const isIngredient = view === "ingredients";
+                  const available = isIngredient ? record.available === true : record.isAvailableForSale === true;
+                  const linked = isIngredient ? (linkedItems.get(String(record.id)) || []) : (record.ingredients || []);
+                  const unavailableIngredients = record.unavailableIngredients || [];
+                  return (
+                    <Box key={record.id} sx={{ p: { xs: 1.5, sm: 2 }, borderRadius: 2, border: `1px solid ${available ? palette.line : "rgba(215,123,75,.38)"}`, bgcolor: available ? "#20221e" : "#28211d" }}>
+                      <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5} sx={{ justifyContent: "space-between", alignItems: { xs: "stretch", sm: "center" } }}>
+                        <Stack direction="row" spacing={1.25} sx={{ minWidth: 0, alignItems: "flex-start" }}>
+                          <Box sx={{ display: "grid", placeItems: "center", flexShrink: 0, width: 40, height: 40, borderRadius: 1.75, bgcolor: available ? "rgba(168,199,170,.09)" : "rgba(215,123,75,.12)", color: available ? palette.green : palette.paleOrange }}>{isIngredient ? <Inventory2OutlinedIcon fontSize="small" /> : <StorefrontOutlinedIcon fontSize="small" />}</Box>
+                          <Box sx={{ minWidth: 0 }}>
+                            <Typography sx={{ color: palette.cream, fontWeight: 900, overflowWrap: "anywhere" }}>{record.name}</Typography>
+                            <Stack direction="row" spacing={0.75} useFlexGap sx={{ mt: 0.7, alignItems: "center", flexWrap: "wrap" }}>
+                              <StateChip available={available}>{isIngredient ? (available ? tr("متوفر", "Available") : tr("نافد", "Unavailable")) : (available ? tr("متاح للطلب", "Available to order") : tr("غير متاح للطلب", "Unavailable to order"))}</StateChip>
+                              {isIngredient && <Typography sx={{ color: palette.muted, fontSize: ".75rem" }}>{tr(`${linked.length.toLocaleString(locale)} صنف مرتبط`, `${linked.length.toLocaleString(locale)} linked items`)}</Typography>}
+                            </Stack>
+                            {!isIngredient && !available && <Box sx={{ mt: 0.8, color: palette.paleOrange, fontSize: ".76rem", lineHeight: 1.7 }}>
+                              {record.available !== true && <div>{tr("الصنف موقوف يدويًا.", "Item is manually disabled.")}</div>}
+                              {unavailableIngredients.length > 0 && <div>{tr("مكونات نافدة: ", "Unavailable ingredients: ")}{unavailableIngredients.map((ingredient) => ingredient.name).join(isArabic ? "، " : ", ")}</div>}
+                              {record.hasUnknownIngredient && <div>{tr("تعذّر التحقق من أحد المكونات المرتبطة.", "A linked ingredient could not be verified.")}</div>}
+                            </Box>}
+                          </Box>
                         </Stack>
+                        <Stack direction="row" sx={{ alignItems: "center", justifyContent: { xs: "space-between", sm: "flex-end" }, flexShrink: 0, gap: 0.5 }}>
+                          <Box sx={{ textAlign: { sm: "end" } }}>
+                            <Typography sx={{ color: palette.cream, fontSize: ".75rem", fontWeight: 800 }}>{isIngredient ? tr("توفر المكون", "Ingredient availability") : tr("التفعيل اليدوي", "Manual availability")}</Typography>
+                            <Typography sx={{ color: palette.muted, fontSize: ".7rem" }}>{record.available === true ? tr("مفعّل", "Enabled") : tr("موقوف", "Disabled")}</Typography>
+                          </Box>
+                          <Switch checked={record.available === true} onChange={() => changeAvailability(record, isIngredient ? "ingredient" : "item")} disabled={writesDisabled} sx={switchSx} slotProps={{ input: { "aria-label": isIngredient ? tr(`تغيير توفر المكون ${record.name}`, `Change availability of ingredient ${record.name}`) : tr(`تغيير التفعيل اليدوي للصنف ${record.name}`, `Change manual availability of item ${record.name}`) } }} />
+                          {isIngredient && canManage && <IconButton onClick={() => openEdit(record)} disabled={writesDisabled} aria-label={tr(`تعديل ${record.name}`, `Edit ${record.name}`)} sx={{ color: palette.paleOrange, "&.Mui-disabled": { color: "#6b665f" } }}><EditOutlinedIcon fontSize="small" /></IconButton>}
+                        </Stack>
+                      </Stack>
+                      <Box sx={{ borderTop: `1px solid ${palette.line}`, mt: 1.5, pt: 1.25 }}>
+                        <Typography sx={{ color: palette.muted, fontSize: ".72rem", fontWeight: 800, mb: 0.8 }}>{isIngredient ? tr("الأصناف المرتبطة", "Linked items") : tr("المكونات المرتبطة", "Linked ingredients")}</Typography>
+                        {linked.length ? <Stack direction="row" spacing={0.75} useFlexGap sx={{ flexWrap: "wrap" }}>{linked.map((entry) => <Chip key={entry.id} size="small" label={entry.name} sx={{ maxWidth: "100%", color: !isIngredient && entry.available !== true ? palette.paleOrange : palette.cream, bgcolor: "#30312b", borderRadius: 1.25, fontSize: ".72rem" }} />)}</Stack> : <Typography sx={{ color: palette.muted, fontSize: ".75rem" }}>{isIngredient ? tr("لا توجد أصناف مرتبطة بهذا المكون.", "No items are linked to this ingredient.") : record.hasUnknownIngredient ? tr("تعذّر عرض المكون المرتبط.", "The linked ingredient could not be displayed.") : tr("لا توجد مكونات مرتبطة بهذا الصنف.", "No ingredients are linked to this item.")}</Typography>}
                       </Box>
-                    </Stack>
-                    <Stack direction="row" spacing={1}   sx={{ alignItems: "center", justifyContent: "space-between" }}>
-                      <FormControlLabel
-                        sx={{ m: 0, "& .MuiFormControlLabel-label": { fontSize: ".82rem", fontWeight: 800 } }}
-                        control={<Switch checked={isAvailable} onChange={(event) => handleAvailabilityChange(ingredient, event.target.checked)} disabled={busyId === ingredient.id || Boolean(busyId)} color={isAvailable ? "success" : "error"} />}
-                        label={isAvailable ? (isArabic ? "تسجيل نفاد المادة" : "Mark out of stock") : (isArabic ? "تسجيل إعادة التوفر" : "Mark available")}
-                      />
-                      {canManage && (
-                        <IconButton aria-label={isArabic ? `تعديل ${ingredient.name}` : `Edit ${ingredient.name}`} onClick={() => openEdit(ingredient)} color="primary">
-                          <EditOutlinedIcon />
-                        </IconButton>
-                      )}
-                    </Stack>
-                  </Stack>
-                  <Divider sx={{ my: 1.35 }} />
-                  <Typography variant="caption" color="text.secondary" sx={{ display: "block", fontWeight: 800, mb: 0.75 }}>
-                    {isArabic ? (isAvailable ? "الأصناف التي تستخدم هذه المادة" : "الأصناف المتأثرة وغير المتاحة للطلب") : (isAvailable ? "Items using this ingredient" : "Affected items unavailable for ordering")}
-                  </Typography>
-                  {linkedItems.length ? (
-                    <Stack direction="row" spacing={0.75} useFlexGap  sx={{ flexWrap: "wrap" }}>
-                      {linkedItems.map((item) => (
-                        <Chip key={item.id} size="small" label={item.name} color={!isAvailable ? "error" : "default"} variant={!isAvailable ? "outlined" : "filled"} sx={{ maxWidth: "100%" }} />
-                      ))}
-                    </Stack>
-                  ) : (
-                    <Typography variant="body2" color="text.secondary">
-                      {isArabic ? "لم تُربط هذه المادة بأي صنف بعد." : "This ingredient is not linked to a menu item yet."}
-                    </Typography>
-                  )}
-                </Card>
-              );
-            })}
-          </Stack>
-        ) : (
-          <Card elevation={0} sx={{ py: { xs: 5, md: 7 }, px: 2, textAlign: "center", border: "1px dashed", borderColor: "divider", borderRadius: 3, background: "rgba(255,255,255,.55)" }}>
-            <Avatar sx={{ mx: "auto", mb: 1.5, width: 52, height: 52, bgcolor: "rgba(244,121,32,.1)", color: "primary.main" }}><Inventory2OutlinedIcon /></Avatar>
-            <Typography variant="h6" fontWeight={900}>{isArabic ? (search ? "لا توجد مواد تطابق البحث" : "لا توجد مواد مسجلة بعد") : (search ? "No matching ingredients" : "No ingredients yet")}</Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.75, maxWidth: 560, mx: "auto" }}>
-              {canManage
-                ? (isArabic ? "أضف المواد المشتركة أولًا، ثم اربط كل صنف بما يستهلكه من نموذج تعديل الصنف." : "Add shared ingredients first, then link each menu item to the ingredients it uses.")
-                : (isArabic ? "اطلب من المدير إضافة المواد وربطها بالأصناف لتفعيل متابعة النفاد." : "Ask a manager to add ingredients and link them to menu items.")}
-            </Typography>
-            {canManage && !search && <Button onClick={openAdd} startIcon={<AddRoundedIcon />} variant="contained" sx={{ mt: 2, borderRadius: 2.5, fontWeight: 900 }}>{isArabic ? "إضافة أول مادة" : "Add first ingredient"}</Button>}
-          </Card>
-        )}
+                    </Box>
+                  );
+                })}
+              </Stack>
+            ) : (
+              <Box sx={{ textAlign: "center", py: { xs: 4, md: 6 }, px: 1 }}>
+                <Inventory2OutlinedIcon sx={{ color: palette.orange, fontSize: 32, mb: 1 }} />
+                <Typography sx={{ fontWeight: 900 }}>{search.trim() || status !== "all" ? tr("لا توجد نتائج مطابقة", "No matching results") : view === "items" ? tr("لا توجد أصناف في هذا الفرع", "No items in this branch") : tr("لا توجد مكونات في هذا الفرع", "No ingredients in this branch")}</Typography>
+                <Typography sx={{ color: palette.muted, fontSize: ".8rem", mt: 0.75 }}>{search.trim() || status !== "all" ? tr("جرّب تغيير البحث أو الحالة.", "Try changing the search or status filter.") : view === "ingredients" ? (canManage ? tr("أضف مكونًا، ثم اربطه بالأصناف من نموذج تعديل الصنف.", "Add an ingredient, then link it to items in the item editor.") : tr("اطلب من المدير إضافة المكونات وربطها بالأصناف.", "Ask a manager to add and link ingredients.") ) : tr("تظهر هنا أصناف الفرع المحدد عند إضافتها إلى المنيو.", "Items for the selected branch will appear here when added to the menu.")}</Typography>
+              </Box>
+            )}
+          </Box>
+        </Box>
+        <Stack direction="row" spacing={1} sx={{ color: palette.muted, alignItems: "flex-start", px: 0.25 }}>
+          <SyncRoundedIcon sx={{ fontSize: 17, color: palette.orange, mt: "2px" }} />
+          <Typography sx={{ fontSize: ".76rem", lineHeight: 1.75 }}>{tr("تغيير حالة المكون يؤثر في كل الأصناف المرتبطة به. إعادة تفعيل الصنف لا تتجاوز حالة مكوناته، وربط المكونات يتم من تعديل الصنف.", "Changing an ingredient affects every linked item. Enabling an item does not override its ingredients; links are managed in the item editor.")}</Typography>
+        </Stack>
       </Stack>
 
-      <Dialog open={dialogOpen} onClose={closeDialog} fullWidth maxWidth="sm">
-        <DialogTitle sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 1, fontWeight: 900 }}>
-          {editingIngredient ? (isArabic ? "تعديل اسم المادة" : "Edit ingredient") : (isArabic ? "إضافة مادة جديدة" : "Add an ingredient")}
-          <IconButton onClick={closeDialog} disabled={saving} aria-label={isArabic ? "إغلاق" : "Close"}><CloseRoundedIcon /></IconButton>
+      <Dialog open={dialogOpen} onClose={closeDialog} fullWidth maxWidth="sm" language={language} slotProps={{ paper: { dir: isArabic ? "rtl" : "ltr", sx: { bgcolor: palette.panel, color: palette.cream, border: `1px solid ${palette.line}`, borderRadius: 2.5 } } }}>
+        <DialogTitle sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 1, fontWeight: 900, paddingInlineEnd: 12 }}>
+          {editingIngredient ? tr("تعديل اسم المكون", "Edit ingredient name") : tr("إضافة مكون جديد", "Add an ingredient")}
+          <IconButton onClick={closeDialog} disabled={saving} aria-label={tr("إغلاق", "Close")} sx={{ color: palette.muted }}><CloseRoundedIcon /></IconButton>
         </DialogTitle>
         <Box component="form" onSubmit={handleSave}>
-          <DialogContent dividers>
-            {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-            <TextField
-              autoFocus
-              fullWidth
-              required
-
-              label={isArabic ? "اسم المادة" : "Ingredient name"}
-              placeholder={isArabic ? "مثال: حليب، قهوة، دجاج" : "e.g. milk, coffee, chicken"}
-              value={draftName}
-              onChange={(event) => setDraftName(event.target.value)}
-              helperText={isArabic ? "استخدم اسمًا واحدًا واضحًا؛ سيظهر في قائمة المواد والأصناف المرتبطة." : "Use one clear name; it appears in inventory and linked menu items."}
-             slotProps={{ htmlInput: { maxLength: 120 } }}/>
+          <DialogContent dividers sx={{ borderColor: palette.line }}>
+            {error && <Alert severity="error" action={<Button color="inherit" size="small" onClick={() => void refreshMenu()}>{tr("تحديث البيانات", "Reload data")}</Button>} sx={{ mb: 2 }}>{error}</Alert>}
+            <TextField autoFocus fullWidth required label={tr("اسم المكون", "Ingredient name")} placeholder={tr("مثال: حليب، قهوة، دجاج", "e.g. milk, coffee, chicken")} value={draftName} onChange={(event) => setDraftName(event.target.value)} helperText={tr("يمكن ربط هذا المكون بالأصناف من نموذج تعديل الصنف.", "Link this ingredient to items in the item editor.")} sx={{ ...fieldSx, "& .MuiFormHelperText-root": { color: palette.muted } }} slotProps={{ htmlInput: { maxLength: 120 } }} />
           </DialogContent>
-          <DialogActions sx={{ p: 2 }}>
-            <Button onClick={closeDialog} disabled={saving} color="inherit">{isArabic ? "إلغاء" : "Cancel"}</Button>
-            <Button type="submit" variant="contained" disabled={saving || !draftName.trim()} sx={{ borderRadius: 2, fontWeight: 900 }}>
-              {saving ? (isArabic ? "جارٍ الحفظ…" : "Saving…") : (isArabic ? "حفظ" : "Save")}
-            </Button>
+          <DialogActions sx={{ p: 2, gap: 1 }}>
+            <Button onClick={closeDialog} disabled={saving} sx={{ color: palette.muted }}>{tr("إلغاء", "Cancel")}</Button>
+            <Button type="submit" variant="contained" disabled={writesDisabled || !draftName.trim()} sx={{ bgcolor: palette.orange, color: "#21140e", fontWeight: 900, "&:hover": { bgcolor: "#e68c5b" } }}>{saving ? tr("جارٍ الحفظ…", "Saving…") : tr("حفظ", "Save")}</Button>
           </DialogActions>
         </Box>
       </Dialog>

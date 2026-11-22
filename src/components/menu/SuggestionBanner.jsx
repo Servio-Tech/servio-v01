@@ -29,20 +29,19 @@ function SuggestionBanner() {
     <Paper
       elevation={2}
       sx={{
-        position: "fixed",
-        bottom: "120px", // ارتفاع متناسق فوق شريط السلة العائم
-        left: "16px",
-        right: "80px", // ترك مسافة مريحة لزر طلب المساعدة في اليمين
-        height: "52px", // ارتفاع نحيف متوافق مع ارتفاع زر SpeedDial
+        position: "relative",
+        width: "100%",
+        minHeight: "84px",
+        mb: 2.2,
         bgcolor: "background.paper",
-        borderRadius: "26px", // حواف كبسولية مدورة بالكامل لتماثل الأزرار العائمة
+        borderRadius: "20px",
         px: 1.2,
-        py: 0.5,
+        py: 1,
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
         gap: 1,
-        zIndex: 1030,
+        zIndex: "auto",
         border: "1.5px solid",
         borderColor: "primary.main", // إطار برتقالي مطابق للتصميم
         boxShadow: "0px 4px 14px rgba(255, 120, 0, 0.12)",
@@ -81,7 +80,7 @@ function SuggestionBanner() {
             </Typography>
             <Chip
               size="small"
-              label="اختيار سريع"
+              label={isArabic ? "اختيار سريع" : "Quick pick"}
               color="primary"
               sx={{
                 height: 18,

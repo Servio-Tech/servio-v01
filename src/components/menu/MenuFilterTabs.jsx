@@ -20,6 +20,7 @@ function MenuFilterTabs() {
 
   return (
     <Box
+      className="customer-menu-filter-tabs"
       sx={{
         width: "100%",
         overflowX: "auto",

@@ -1,0 +1,97 @@
+/* Scoped to owner and sign-in screens; no public-site palette is changed. */
+.owner-surface {
+  --owner-bg: #111210;
+  --owner-panel: #1b1c19;
+  --owner-panel-raised: #22231f;
+  --owner-border: rgba(235, 220, 198, .13);
+  --owner-cream: #f3eadc;
+  --owner-muted: #aaa69d;
+  --owner-orange: #db783e;
+  color: var(--owner-cream);
+  background: var(--owner-bg);
+  min-height: 100vh;
+  text-align: start;
+}
+.owner-surface h1, .owner-surface h2, .owner-surface h3, .owner-surface h4, .owner-surface h5, .owner-surface h6 { color: var(--owner-cream); }
+.owner-surface .MuiTypography-colorTextSecondary { color: var(--owner-muted); }
+.owner-surface .MuiButton-root { text-transform: none; }
+.owner-brand { flex-shrink: 0; }
+.owner-surface .owner-brand-name { font-size: 1.34rem; font-weight: 900; line-height: 1; letter-spacing: -.055em; color: #f3eadc; direction: ltr; }
+.owner-brand-name span { color: var(--owner-orange); }
+.owner-surface .owner-brand-caption { color: #a9a196; font-size: .59rem; font-weight: 800; letter-spacing: .14em; margin-top: 5px; direction: ltr; }
+.owner-surface .owner-eyebrow { color: #db8a58; font-weight: 800; font-size: .7rem; letter-spacing: .12em; }
+.owner-auth { display: flex; }
+.owner-auth-intro { width: 47%; min-height: 100vh; padding: clamp(32px, 4vw, 64px); position: relative; overflow: hidden; display: flex; flex-direction: column; justify-content: space-between; border-inline-end: 1px solid var(--owner-border); background: radial-gradient(circle at 12% 90%, rgba(175, 88, 40, .2), transparent 43%), #191a17; }
+.owner-auth-intro::after { content: ""; position: absolute; width: 560px; height: 560px; border-radius: 50%; border: 1px solid rgba(225, 175, 131, .13); box-shadow: 0 0 0 85px rgba(225, 175, 131, .025), 0 0 0 170px rgba(225, 175, 131, .02); top: -260px; inset-inline-end: -220px; pointer-events: none; }
+.owner-auth-intro > * { position: relative; z-index: 1; }
+.owner-auth-story { max-width: 500px; padding: 64px 0; }
+.owner-surface .owner-auth-headline { font-size: clamp(2.7rem, 4vw, 4.7rem); line-height: 1.12; letter-spacing: -.045em; font-weight: 900; margin-top: 20px; }
+.owner-surface .owner-auth-description { color: #bcb5a9; max-width: 435px; line-height: 1.9; font-size: 1rem; margin-top: 22px; }
+.owner-auth-art { margin-top: 48px; max-width: 390px; display: flex; gap: 14px; align-items: center; border: 1px solid rgba(243, 234, 220, .12); background: rgba(15, 16, 14, .42); border-radius: 16px; padding: 17px; }
+.owner-auth-art-icon { width: 46px; height: 46px; display: grid; place-items: center; color: #e79560; background: rgba(219, 120, 62, .12); border-radius: 12px; }
+.owner-auth-art span, .owner-auth-art strong { display: block; direction: ltr; text-align: start; }
+.owner-auth-art span { color: #a9a196; font-size: .59rem; letter-spacing: .12em; }
+.owner-auth-art strong { font-size: .76rem; letter-spacing: .05em; margin-top: 3px; }
+.owner-auth-art-line { flex: 1; border-top: 1px solid rgba(243, 234, 220, .12); }
+.owner-auth-art-dot { width: 8px; height: 8px; border-radius: 50%; background: #d97940; }
+.owner-surface .owner-auth-footnote, .owner-surface .owner-auth-bottom { font-size: .72rem; color: #7f7c74; letter-spacing: .04em; }
+.owner-auth-main { flex: 1; min-width: 0; min-height: 100vh; padding: 24px clamp(20px, 5vw, 80px); display: flex; flex-direction: column; background: radial-gradient(circle at 100% 0%, rgba(132, 71, 38, .1), transparent 38%), #111210; }
+.owner-auth-topbar { display: flex; justify-content: flex-end; align-items: center; min-height: 42px; }
+.owner-auth-mobile-brand { display: none !important; }
+.owner-auth-content { width: 100%; max-width: 510px; margin: auto; padding: 36px 0; }
+.owner-auth-bottom { text-align: center; direction: ltr; }
+.owner-surface .owner-auth-card.MuiPaper-root, .owner-surface .owner-auth-card.MuiCard-root { background: #1b1c19; border: 1px solid var(--owner-border); box-shadow: 0 24px 75px rgba(0, 0, 0, .2); border-radius: 20px; color: var(--owner-cream); overflow: hidden; }
+.owner-auth-icon { width: 50px; height: 50px; border: 1px solid rgba(219, 120, 62, .2); background: rgba(219, 120, 62, .1); color: #e79460; border-radius: 14px; display: grid; place-items: center; margin-bottom: 20px; }
+.owner-surface .MuiOutlinedInput-root { color: #f3eadc; background-color: #161714; border-radius: 10px; }
+.owner-surface .MuiOutlinedInput-notchedOutline { border-color: rgba(235, 220, 198, .2); }
+.owner-surface .MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline { border-color: rgba(235, 220, 198, .45); }
+.owner-surface .MuiInputLabel-root, .owner-surface .MuiFormHelperText-root, .owner-surface .MuiInputAdornment-root, .owner-surface .MuiSvgIcon-colorAction { color: #aaa69d; }
+.owner-surface .MuiIconButton-root { color: #bbb3a8; }
+.owner-surface .MuiButton-containedPrimary { color: #181411; background-color: #d77b42; box-shadow: none; }
+.owner-surface .MuiButton-containedPrimary:hover { background-color: #e58a50; }
+.owner-surface .MuiButton-outlined { border-color: rgba(226, 164, 116, .32); }
+.owner-surface .Mui-disabled { opacity: .65; }
+.owner-surface .MuiTabs-indicator { background: #dc8048; height: 3px; }
+.owner-surface .MuiTab-root { color: #aaa69d; text-transform: none; }
+.owner-surface .MuiTab-root.Mui-selected { color: #efae7e; }
+.owner-surface .owner-auth-link { color: #d69a71; text-decoration: none; }
+.owner-surface .owner-auth-link:hover { color: #f1bc97; text-decoration: underline; }
+.owner-shell { min-height: 100vh; display: flex; }
+.owner-sidebar { width: 245px; flex: 0 0 245px; min-height: 100vh; background: #191a17; border-inline-end: 1px solid var(--owner-border); padding: 30px 20px; display: flex; flex-direction: column; }
+.owner-sidebar-nav { margin-top: 62px; }
+.owner-sidebar-active { display: flex; align-items: center; gap: 12px; padding: 13px 14px; border-radius: 10px; color: #f1b184; background: rgba(218, 121, 63, .12); border: 1px solid rgba(218, 121, 63, .16); font-size: .87rem; font-weight: 800; }
+.owner-sidebar-bottom { margin-top: auto; padding: 18px 12px 2px; border-top: 1px solid var(--owner-border); }
+.owner-main { min-width: 0; flex: 1; }
+.owner-topbar { min-height: 80px; border-bottom: 1px solid var(--owner-border); padding: 15px clamp(18px, 3vw, 42px); display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.owner-topbar-brand { display: none !important; }
+.owner-content { max-width: 1600px; margin: 0 auto; padding: clamp(22px, 3vw, 42px); }
+.owner-stat { min-height: 130px; padding: 20px; border-radius: 15px; border: 1px solid var(--owner-border); background: #1b1c19; display: flex; flex-direction: column; justify-content: space-between; }
+.owner-stat-icon { width: 38px; height: 38px; border-radius: 10px; display: grid; place-items: center; background: rgba(219, 120, 62, .12); color: #df9566; }
+.owner-directory { border: 1px solid var(--owner-border); background: #1b1c19; border-radius: 17px; overflow: hidden; }
+.owner-directory-divider { border-color: var(--owner-border); }
+.owner-surface .owner-table th, .owner-surface .owner-table td { border-color: rgba(235, 220, 198, .09); }
+.owner-surface .owner-table th { color: #aaa69d; }
+.owner-surface .owner-account-card { background: #22231f; border: 1px solid var(--owner-border); }
+/* Dialogs render in a portal, so scope their dark styling to the dialog itself. */
+.owner-dialog .MuiDialog-paper { color: #f3eadc; background-color: #22231f !important; border: 1px solid rgba(235, 220, 198, .16); box-shadow: 0 25px 80px rgba(0, 0, 0, .5); }
+.owner-dialog .MuiDialogTitle-root, .owner-dialog .MuiTypography-root { color: #f3eadc; }
+.owner-dialog .MuiTypography-colorTextSecondary, .owner-dialog .MuiFormHelperText-root, .owner-dialog .MuiInputLabel-root { color: #aaa69d; }
+.owner-dialog .MuiOutlinedInput-root { color: #f3eadc; background: #171815; }
+.owner-dialog .MuiOutlinedInput-notchedOutline { border-color: rgba(235, 220, 198, .25); }
+.owner-dialog input[type="date"] { color-scheme: dark; }
+.owner-dialog .MuiButton-containedPrimary { color: #181411; background: #d77b42; }
+@media (max-width: 899px) {
+  .owner-auth-intro { display: none; }
+  .owner-auth-main { width: 100%; }
+  .owner-auth-topbar { justify-content: space-between; }
+  .owner-auth-mobile-brand { display: flex !important; }
+  .owner-sidebar { display: none; }
+  .owner-topbar-brand { display: flex !important; }
+}
+@media (max-width: 599px) {
+  .owner-auth-main { padding: 16px; }
+  .owner-auth-content { padding: 32px 0; }
+  .owner-topbar { padding: 14px 16px; flex-wrap: wrap; }
+  .owner-content { padding: 24px 16px; }
+  .owner-stat { min-height: 112px; }
+}

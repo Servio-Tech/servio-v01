@@ -1,98 +1,116 @@
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
 import supabase from "../supabase";
+import { resolveSubscriptionProfile, SUBSCRIPTION_RECHECK_MS, withSubscriptionTimeout } from "../utils/subscriptionStatus";
 
 const TenantContext = createContext(null);
 // هذه المسارات تخص التطبيق نفسه وليست معرف متجر؛ جميع المسارات الأخرى قد تحمل slug لمتجر عام.
-const RESERVED_ROUTES = new Set(["login", "register", "dashboard", "manager", "menu", "cashier", "auth", "track"]);
+const RESERVED_ROUTES = new Set(["login", "register", "dashboard", "manager", "menu", "cashier", "auth", "track", "owner-console"]);
 
 function getRouteContext(pathname) {
   const parts = pathname.split("/").filter(Boolean);
+  if (parts[0] === "owner-console") return { slug: null, tableNumber: null, isTracking: false, isOwner: true };
   if (parts[0] === "track") return { slug: parts[1] || null, tableNumber: null, isTracking: true };
   if (parts[0] === "menu") return { slug: parts[1] || null, tableNumber: parts[2] || null, isTracking: false };
   if (parts[0] && !RESERVED_ROUTES.has(parts[0])) return { slug: parts[0], tableNumber: parts[1] || null, isTracking: false };
   return { slug: null, tableNumber: null, isTracking: false };
 }
 
+const emptyResolution = (key, status = "checking", loading = true) => ({ key, tenant: null, storeInfo: null, profile: null, status, loading });
+
 export function TenantProvider({ children }) {
   const location = useLocation();
   const route = useMemo(() => getRouteContext(location.pathname), [location.pathname]);
-  const [tenant, setTenant] = useState(null);
-  const [storeInfo, setStoreInfo] = useState(null);
-  const [profile, setProfile] = useState(null);
-  const [loading, setLoading] = useState(true);
-
   const [authVersion, setAuthVersion] = useState(0);
+  const [checkVersion, setCheckVersion] = useState(0);
+  const [resolution, setResolution] = useState(() => emptyResolution(null));
+  const scope = `${route.isOwner ? "owner" : route.slug ? `public:${route.slug}` : "staff"}:${authVersion}`;
+  const refreshSubscription = useCallback(() => setCheckVersion((v) => v + 1), []);
+  const invalidateSession = useCallback(() => {
+    // Authentication changes must immediately remove the previous identity.
+    setResolution(emptyResolution(null));
+    setAuthVersion((v) => v + 1);
+  }, []);
 
-  // عند تسجيل الدخول أو الخروج نعيد حسم مستأجر لوحة الإدارة قبل تحميل الطلبات.
   useEffect(() => {
     const { data: listener } = supabase.auth.onAuthStateChange((event) => {
-      // المنيو العامة لا تعتمد على الجلسة؛ لذلك لا نعيد تحميلها مع أحداث تجديد التوكن.
-      if (route.slug) return;
-      if (event === "SIGNED_IN" || event === "SIGNED_OUT" || event === "USER_UPDATED") setAuthVersion((v) => v + 1);
+      if (route.slug || route.isOwner) return;
+      if (event === "SIGNED_IN" || event === "SIGNED_OUT" || event === "USER_UPDATED") invalidateSession();
     });
     return () => listener.subscription.unsubscribe();
-  }, [route.slug]);
+  }, [route.slug, route.isOwner, invalidateSession]);
+
+  // Only staff dashboards poll. A suspended screen also retries, so renewal can
+  // restore the UI. This is not a promise of complete Realtime revocation.
+  useEffect(() => {
+    if (!/^\/(manager|dashboard)(?:\/|$)/.test(location.pathname)) return undefined;
+    const onFocus = () => refreshSubscription();
+    window.addEventListener("focus", onFocus);
+    const timer = window.setInterval(refreshSubscription, SUBSCRIPTION_RECHECK_MS);
+    return () => { window.removeEventListener("focus", onFocus); window.clearInterval(timer); };
+  }, [location.pathname, refreshSubscription]);
 
   useEffect(() => {
     let cancelled = false;
     const resolveTenant = async () => {
-      setLoading(true);
+      if (route.isOwner) {
+        if (!cancelled) setResolution(emptyResolution(scope, "owner", false));
+        return;
+      }
+      // Preserve a resolved dashboard while a bounded background recheck runs;
+      // successful periodic checks do not unmount forms or discard unsaved work.
+      // Any negative result, timeout or error clears all private context below.
+      if (!cancelled) setResolution((previous) => previous.key === scope ? previous : emptyResolution(scope));
       try {
         if (route.slug) {
-          // بيانات المطعم العامة تُحمّل من RPCs محددة الأعمدة؛ لا يحتاج زائر المنيو إلى صفوف الإدارة.
-          const [{ data: tenantData }, { data: storeData }] = await Promise.all([
+          const [tenantResult, storeResult] = await withSubscriptionTimeout(() => Promise.all([
             supabase.rpc("get_public_tenant", { p_slug: route.slug }),
             supabase.rpc("get_public_store", { p_slug: route.slug }),
-          ]);
-          if (!cancelled) {
-            setTenant(tenantData?.[0] || null);
-            setStoreInfo(storeData?.[0] || null);
-          }
-        } else {
-          const { data: sessionData } = await supabase.auth.getSession();
-          if (!sessionData.session) {
-            if (!cancelled) { setProfile(null); setTenant(null); setStoreInfo(null); }
-            return;
-          }
-          // RPC يهيئ/يعيد ملف المستخدم بصلاحيات محكومة؛ واستعلام profiles أدناه مسار احتياطي عند تعذر RPC.
-          let { data: profileData, error: profileError } = await supabase.rpc("ensure_profile_for_current_user");
-          if (profileError || !profileData?.id) {
-            const fallback = await supabase.from("profiles").select("id, tenant_id, full_name, phone, role").eq("id", sessionData.session.user.id).maybeSingle();
-            profileData = fallback.data;
-          }
-          if (cancelled) return;
-          if (!profileData) { setProfile(null); return; }
-          setProfile((prev) => (prev && prev.id === profileData.id && prev.role === profileData.role && prev.tenant_id === profileData.tenant_id && prev.full_name === profileData.full_name && prev.phone === profileData.phone ? prev : profileData));
-          const [{ data: tenantData }, { data: storeData }] = await Promise.all([
-            supabase.from("tenants").select("*").eq("id", profileData.tenant_id).maybeSingle(),
-            supabase.from("store").select("*").eq("tenant_id", profileData.tenant_id).maybeSingle(),
-          ]);
-          if (!cancelled) {
-            setTenant(tenantData || null);
-            setStoreInfo(storeData || null);
-          }
+          ]));
+          if (!cancelled) setResolution({ ...emptyResolution(scope, "public", false), tenant: tenantResult.data?.[0] || null, storeInfo: storeResult.data?.[0] || null });
+          return;
         }
-      } finally {
-        if (!cancelled) setLoading(false);
+        const result = await resolveSubscriptionProfile(supabase);
+        if (cancelled) return;
+        if (result.status !== "active") {
+          setResolution(emptyResolution(scope, result.status, false));
+          return;
+        }
+        const profile = result.profile;
+        const [tenantResult, storeResult] = await withSubscriptionTimeout(() => Promise.all([
+          supabase.from("tenants").select("*").eq("id", profile.tenant_id).maybeSingle(),
+          supabase.from("store").select("*").eq("tenant_id", profile.tenant_id).maybeSingle(),
+        ]));
+        if (cancelled) return;
+        if (tenantResult.error || storeResult.error || !tenantResult.data || tenantResult.data.id !== profile.tenant_id) {
+          setResolution(emptyResolution(scope, "unavailable", false));
+          return;
+        }
+        setResolution({ key: scope, tenant: tenantResult.data, storeInfo: storeResult.data || null, profile, status: "active", loading: false });
+      } catch {
+        if (!cancelled) setResolution(emptyResolution(scope, "unavailable", false));
       }
     };
-    resolveTenant();
+    void resolveTenant();
     return () => { cancelled = true; };
-  }, [route.slug, authVersion]);
+  }, [route.slug, route.isOwner, scope, checkVersion]);
 
-  // tenantId القادم من سجل النشاط هو المفتاح الذي تستخدمه RLS وقنوات الطلبات في بقية السياقات.
+  // A route or authentication version change invalidates previous data even
+  // before the asynchronous effect gets a chance to run.
+  const current = resolution.key === scope ? resolution : emptyResolution(scope);
   const value = useMemo(() => ({
     slug: route.slug,
     tableNumber: route.tableNumber,
     isTracking: route.isTracking,
-    tenant,
-    tenantId: tenant?.id || profile?.tenant_id || null,
-    storeInfo,
-    profile,
-    loading,
+    tenant: route.isOwner ? null : current.tenant,
+    tenantId: route.isOwner ? null : (current.tenant?.id || current.profile?.tenant_id || null),
+    storeInfo: route.isOwner ? null : current.storeInfo,
+    profile: route.isOwner ? null : current.profile,
+    loading: route.isOwner ? false : current.loading,
+    subscriptionStatus: current.status,
+    refreshSubscription,
     isPublic: Boolean(route.slug),
-  }), [route, tenant, profile, storeInfo, loading]);
+  }), [route, current, refreshSubscription]);
 
   return <TenantContext.Provider value={value}>{children}</TenantContext.Provider>;
 }

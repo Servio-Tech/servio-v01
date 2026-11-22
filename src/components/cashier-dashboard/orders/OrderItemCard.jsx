@@ -45,12 +45,12 @@ function OrderItemCard({ order }) {
   const isAwaitingPayment = order.status === "awaiting_payment";
   const isReady = order.status === "ready";
   const statusVisual = order.status === "pending"
-    ? { accent: "#F47920", soft: "rgba(244,121,32,.10)", label: language === "ar" ? "جديد" : "New" }
+    ? { accent: "#e99462", soft: "rgba(233,148,98,.10)", label: language === "ar" ? "جديد" : "New" }
     : order.status === "preparing"
-      ? { accent: "#2878C8", soft: "rgba(40,120,200,.10)", label: language === "ar" ? "قيد التحضير" : "Preparing" }
+      ? { accent: "#91b6ce", soft: "rgba(145,182,206,.10)", label: language === "ar" ? "قيد التحضير" : "Preparing" }
       : isAwaitingPayment
-      ? { accent: "#B66A00", soft: "rgba(244,173,52,.16)", label: language === "ar" ? "ينتظر السداد" : "Awaiting payment" }
-      : { accent: "#159A68", soft: "rgba(21,154,104,.11)", label: language === "ar" ? "جاهز" : "Ready" };
+      ? { accent: "#eebc6e", soft: "rgba(238,188,110,.10)", label: language === "ar" ? "ينتظر السداد" : "Awaiting payment" }
+      : { accent: "#77c6a0", soft: "rgba(119,198,160,.10)", label: language === "ar" ? "جاهز" : "Ready" };
   useEffect(() => {
     setSelectedPaymentMethod(order.payment_method || null);
   }, [order.id, order.payment_method]);
@@ -152,16 +152,14 @@ function OrderItemCard({ order }) {
           boxSizing: "border-box",
           border: "1px solid",
           borderColor: statusVisual.accent,
-          borderTopWidth: 6,
+          borderTopWidth: 3,
           borderRadius: "16px",
-          background: "rgba(255,255,255,.96)",
-          backdropFilter: "blur(8px)",
-          WebkitBackdropFilter: "blur(8px)",
-          boxShadow: "0 8px 24px rgba(23,26,47,.055)",
+          background: "#211f1c",
+          boxShadow: "none",
           transition: "transform .2s ease, box-shadow .2s ease, border-color .2s ease",
           overflow: "hidden",
           "&:hover": {
-            boxShadow: "0 10px 26px rgba(23,26,47,.09)",
+            boxShadow: "0 10px 26px rgba(0,0,0,.16)",
             borderColor: "primary.light",
           },
         }}
@@ -191,7 +189,7 @@ function OrderItemCard({ order }) {
               fontWeight: 600,
               fontSize: "0.74rem",
               bgcolor: "rgba(244,121,32,.09)",
-              color: "warning.dark",
+              color: "warning.main",
               border: "1px solid",
               borderColor: "warning.100",
               px: 1,
@@ -207,7 +205,7 @@ function OrderItemCard({ order }) {
 
         <Box sx={{ mx: { xs: 1.25, sm: 1.5 }, mb: 1.15, p: 1.1, borderRadius: "12px", border: `1px solid ${statusVisual.accent}30`, bgcolor: statusVisual.soft, display: "flex", flexDirection: "column", gap: 0.55, minWidth: 0 }}>
           <PaymentStatusControl value={order.payment_status} method={selectedPaymentMethod} onChange={changePaymentStatus} onMethodChange={changePaymentMethod} disabled={sending || paymentSaving || (isReady && isPaid)} language={language} />
-          {isReady && isPaid && <Typography variant="caption" color="success.dark" sx={{ fontWeight: 800 }}>
+          {isReady && isPaid && <Typography variant="caption" color="success.main" sx={{ fontWeight: 800 }}>
             {language === "ar" ? "جاهز للاستلام — حالة الدفع مثبتة حتى يتم التسليم." : "Ready for pickup — payment status is locked until delivery."}
           </Typography>}
           {paymentError && <Typography variant="caption" color="error" sx={{ px: 0.25, overflowWrap: "anywhere" }}>{paymentError}</Typography>}
@@ -266,7 +264,7 @@ function OrderItemCard({ order }) {
                 mt: 1.1,
                 p: 1,
                 borderRadius: "10px",
-                bgcolor: "warning.50",
+                bgcolor: "rgba(238,188,110,.10)",
                 border: "1px solid",
                 borderColor: "warning.100",
                 display: "flex",
@@ -280,7 +278,7 @@ function OrderItemCard({ order }) {
               />
               <Typography
                 variant="caption"
-                sx={{ fontWeight: 700, color: "warning.dark", lineHeight: 1.45, minWidth: 0, overflowWrap: "anywhere" }}
+                sx={{ fontWeight: 700, color: "warning.main", lineHeight: 1.45, minWidth: 0, overflowWrap: "anywhere" }}
               >
                 {t("note")}: {order.notes}
               </Typography>
@@ -380,7 +378,7 @@ function OrderItemCard({ order }) {
           )}
           {isAwaitingPayment && (
             <Box sx={{ width: "100%", display: "grid", gap: 0.8 }}>
-              <Typography variant="caption" color="warning.dark" sx={{ fontWeight: 800 }}>
+              <Typography variant="caption" color="warning.main" sx={{ fontWeight: 800 }}>
                 {t("paymentRequired")}
               </Typography>
               <Button color="success" variant="contained" onClick={!isPaid ? settleAndDeliver : () => changeStatus("served")} disabled={sending || paymentSaving}>

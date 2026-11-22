@@ -7,7 +7,7 @@ export function validateAdminRegistration(formData) {
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return "email";
   if (String(formData.password).length < 6) return "password";
   if (String(formData.store_name).trim().length < 2) return "storeName";
-  if (!SLUG_PATTERN.test(slug)) return "slug";
+  if (!SLUG_PATTERN.test(slug) || slug === "owner-console") return "slug";
   return null;
 }
 
