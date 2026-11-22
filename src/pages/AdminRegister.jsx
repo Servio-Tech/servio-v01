@@ -35,11 +35,19 @@ const CURRENCIES = [
   { value: "USD", labelKey: "currencyUsd" },
 ];
 const fieldSx = {
-  mb: 1.65,
+  mb: 1.35,
   "& .MuiOutlinedInput-root": {
-    borderRadius: 2.2,
-    bgcolor: "rgba(255,255,255,.72)",
+    borderRadius: "14px",
+    bgcolor: "#fffdf8",
+    color: "#171512",
+    transition: "background-color .18s ease",
+    "& fieldset": { borderColor: "#ded8cb" },
+    "&:hover fieldset": { borderColor: "#b8ab99" },
+    "&.Mui-focused fieldset": { borderColor: "#c85b2a", borderWidth: "1.5px" },
   },
+  "& .MuiInputLabel-root": { color: "#706d66" },
+  "& .MuiInputLabel-root.Mui-focused": { color: "#a74621" },
+  "& .MuiInputAdornment-root, & .MuiSvgIcon-root": { color: "#706d66" },
 };
 
 function BrandIntro({ t, arabic }) {
@@ -49,12 +57,13 @@ function BrandIntro({ t, arabic }) {
         flex: 1,
         display: { xs: "none", md: "flex" },
         minHeight: "100vh",
-        p: 6,
-        color: "#fff",
+        p: { md: 5, lg: 6 },
+        color: "#171512",
         position: "relative",
         overflow: "hidden",
+        borderInlineEnd: "1px solid #e8e2d7",
         background:
-          "linear-gradient(145deg,#171A2F 0%,#262A49 65%,#D96210 150%)",
+          "radial-gradient(circle at 10% 86%, rgba(200,91,42,.12), transparent 40%), #f1e8dc",
       }}
     >
       <Box
@@ -65,9 +74,9 @@ function BrandIntro({ t, arabic }) {
           borderRadius: "50%",
           top: -230,
           insetInlineEnd: -180,
-          border: "1px solid rgba(255,255,255,.12)",
+          border: "1px solid rgba(33,30,26,.09)",
           boxShadow:
-            "0 0 0 80px rgba(255,255,255,.025), 0 0 0 160px rgba(255,255,255,.02)",
+            "0 0 0 80px rgba(33,30,26,.025), 0 0 0 160px rgba(33,30,26,.018)",
         }}
       />
       <Stack
@@ -78,7 +87,7 @@ function BrandIntro({ t, arabic }) {
           <Stack direction="row"  spacing={1.2} sx={{ alignItems: "center" }}>
             <Box
               component="img"
-              src="/logo-icon.webp"
+              src="/logo192.png"
               alt="SERVIO"
               sx={{ width: 54, height: 54, objectFit: "contain" }}
             />
@@ -87,6 +96,7 @@ function BrandIntro({ t, arabic }) {
                 fontWeight: 1000,
                 fontSize: "1.55rem",
                 letterSpacing: "-.06em",
+                color: "#171512",
               }}
             >
               SERVIO
@@ -95,7 +105,7 @@ function BrandIntro({ t, arabic }) {
           <Typography
             sx={{
               mt: 6,
-              color: "primary.light",
+              color: "#a74621",
               fontWeight: 900,
               letterSpacing: ".08em",
               fontSize: ".78rem",
@@ -111,6 +121,7 @@ function BrandIntro({ t, arabic }) {
               fontWeight: 1000,
               letterSpacing: "-.07em",
               maxWidth: 560,
+              color: "#171512",
             }}
           >
             {arabic
@@ -120,7 +131,7 @@ function BrandIntro({ t, arabic }) {
           <Typography
             sx={{
               mt: 2.5,
-              color: "rgba(255,255,255,.68)",
+              color: "#706d66",
               lineHeight: 1.9,
               maxWidth: 500,
               fontSize: "1.08rem",
@@ -129,7 +140,7 @@ function BrandIntro({ t, arabic }) {
             {t("registerIntro")}
           </Typography>
         </Box>
-        <Typography variant="body2" sx={{ color: "rgba(255,255,255,.5)" }}>
+        <Typography variant="body2" sx={{ color: "#83796e" }}>
           {t("homeFooterText")}
         </Typography>
       </Stack>
@@ -145,10 +156,10 @@ function AuthCard({ children }) {
         width: "100%",
         maxWidth: 620,
         borderRadius: 4,
-        border: "1px solid rgba(255,255,255,.8)",
-        bgcolor: "rgba(255,255,255,.88)",
-        backdropFilter: "blur(22px)",
-        boxShadow: "0 24px 80px rgba(23,26,47,.1)",
+        border: "1px solid #e8e2d7",
+        bgcolor: "#fffdf8",
+        boxShadow: "0 24px 70px rgba(35,29,22,.09)",
+        color: "#171512",
       }}
     >
       {children}
@@ -249,38 +260,41 @@ export default function AdminRegister() {
   if (emailSent)
     return (
       <Box
+        dir={arabic ? "rtl" : "ltr"}
         sx={{
           minHeight: "100vh",
           display: "grid",
           placeItems: "center",
           p: { xs: 2, md: 4 },
-          bgcolor: "#F7F8FB",
+          bgcolor: "#f7f4ed",
           background:
-            "radial-gradient(circle at 90% 0%, rgba(244,121,32,.13), transparent 28%)",
+            "radial-gradient(circle at 90% 0%, rgba(200,91,42,.10), transparent 30%)",
         }}
       >
+        <Box sx={{ position: "absolute", top: { xs: 14, sm: 20 }, insetInlineEnd: { xs: 14, sm: 20 } }}><LanguageToggle compact /></Box>
         <AuthCard>
           <CardContent sx={{ p: { xs: 3, sm: 5 }, textAlign: "center" }}>
             <Box
               component="img"
-              src="/logo-icon.webp"
+              src="/logo192.png"
               alt="SERVIO"
-              sx={{ width: 76, height: 76, objectFit: "contain", mb: 1 }}
+              sx={{ width: 64, height: 64, objectFit: "cover", borderRadius: "14px", mb: 1 }}
             />
             <Typography
               sx={{
                 fontWeight: 1000,
-                fontSize: "1.5rem",
-                letterSpacing: "-.06em",
-                mb: 3,
-              }}
-            >
-              SERVIO
-            </Typography>
-            <Typography variant="h5" fontWeight={950} mb={1}>
+              fontSize: "1.5rem",
+              letterSpacing: "-.06em",
+              color: "#171512",
+              mb: 3,
+            }}
+          >
+            SERVIO
+          </Typography>
+            <Typography variant="h5" fontWeight={950} mb={1} sx={{ color: "#171512" }}>
               {t("verifyEmail")}
             </Typography>
-            <Typography color="text.secondary" sx={{ lineHeight: 1.9 }}>
+            <Typography color="text.secondary" sx={{ lineHeight: 1.9, color: "#706d66" }}>
               {t("sentActivation")}
             </Typography>
             <Typography fontWeight={900} sx={{ direction: "ltr", my: 1 }}>
@@ -289,7 +303,7 @@ export default function AdminRegister() {
             <Typography
               variant="body2"
               color="text.secondary"
-              sx={{ lineHeight: 1.8, mb: 3 }}
+              sx={{ lineHeight: 1.8, mb: 3, color: "#706d66" }}
             >
               {t("activationHelp")}
             </Typography>
@@ -306,7 +320,7 @@ export default function AdminRegister() {
               variant="contained"
               onClick={resendConfirmation}
               disabled={loading}
-              sx={{ py: 1.35, borderRadius: 2.3 }}
+              sx={{ py: 1.35, borderRadius: 99, bgcolor: "#c85b2a", color: "#fff", "&:hover": { bgcolor: "#ad4820" } }}
             >
               {loading ? t("loading") : t("resend")}
             </Button>
@@ -314,7 +328,7 @@ export default function AdminRegister() {
               fullWidth
               variant="text"
               onClick={() => navigate("/login")}
-              sx={{ mt: 1 }}
+              sx={{ mt: 1, color: "#a74621", fontWeight: 800 }}
             >
               {t("backToLogin")}
             </Button>
@@ -325,12 +339,13 @@ export default function AdminRegister() {
 
   return (
     <Box
+      dir={arabic ? "rtl" : "ltr"}
       sx={{
         minHeight: "100vh",
         display: "flex",
-        bgcolor: "#F7F8FB",
+        bgcolor: "#f7f4ed",
         background:
-          "radial-gradient(circle at 90% 0%, rgba(244,121,32,.13), transparent 28%)",
+          "radial-gradient(circle at 90% 0%, rgba(200,91,42,.10), transparent 30%)",
       }}
     >
       <BrandIntro t={t} arabic={arabic} />
@@ -344,27 +359,30 @@ export default function AdminRegister() {
           justifyContent: "center",
           p: { xs: 1.5, sm: 3, md: 5 },
           position: "relative",
+          bgcolor: "transparent",
         }}
       >
-        <Box sx={{ position: "absolute", top: 18, insetInlineEnd: 18 }}>
-          <LanguageToggle />
+        <Box sx={{ position: "absolute", top: { xs: 14, sm: 20 }, insetInlineEnd: { xs: 14, sm: 20 }, zIndex: 2 }}>
+          <LanguageToggle compact />
         </Box>
         <Stack
 
-          spacing={0.6}
-          sx={{ mb: 3, display: { xs: "flex", md: "none" } , alignItems: "center"}}
+          direction="row"
+          spacing={1}
+          sx={{ mb: 2.5, mt: { xs: 2, sm: 0 }, display: { xs: "flex", md: "none" }, alignItems: "center", justifyContent: "center" }}
         >
           <Box
             component="img"
-            src="/logo-icon.webp"
+            src="/logo192.png"
             alt="SERVIO"
-            sx={{ width: 55, height: 55, objectFit: "contain" }}
+            sx={{ width: 38, height: 38, objectFit: "cover", borderRadius: "10px" }}
           />
           <Typography
             sx={{
               fontWeight: 1000,
               fontSize: "1.5rem",
               letterSpacing: "-.06em",
+              color: "#171512",
             }}
           >
             SERVIO
@@ -372,10 +390,10 @@ export default function AdminRegister() {
         </Stack>
         <AuthCard>
           <CardContent sx={{ p: { xs: 2.2, sm: 4 } }}>
-            <Typography variant="h5" sx={{ fontWeight: 950, mb: 0.7 }}>
+            <Typography variant="h5" sx={{ fontWeight: 950, mb: 0.7, color: "#171512" }}>
               {t("createBusiness")}
             </Typography>
-            <Typography color="text.secondary" sx={{ mb: 3, lineHeight: 1.8 }}>
+            <Typography color="text.secondary" sx={{ mb: 3, lineHeight: 1.8, color: "#706d66" }}>
               {arabic
                 ? "أنشئ مساحة نشاطك خلال دقائق، ثم أضف المنيو والطاولات والكاشير."
                 : "Create your workspace in minutes, then add your menu, tables, and cashiers."}
@@ -392,7 +410,7 @@ export default function AdminRegister() {
                   display: "flex",
                   gap: 1,
                   alignItems: "center",
-                  color: "primary.main",
+                  color: "#a74621",
                   fontWeight: 950,
                   mb: 1.5,
                 }}
@@ -435,7 +453,7 @@ export default function AdminRegister() {
                             ) : (
                               <LockOpenRoundedIcon
                                 fontSize="small"
-                                color="primary"
+                                sx={{ color: "#c85b2a" }}
                               />
                             )}
                           </IconButton>
@@ -461,7 +479,7 @@ export default function AdminRegister() {
                   </TextField>
                 </Grid>
               </Grid>
-              <Divider sx={{ my: 0.5 }} />
+              <Divider sx={{ my: 1.8, borderColor: "#e8e2d7" }} />
               <Typography
                 variant="subtitle2"
                 sx={{
@@ -560,7 +578,7 @@ export default function AdminRegister() {
                 fullWidth
                 size="large"
                 disabled={loading}
-                sx={{ py: 1.45, borderRadius: 2.5, fontWeight: 950 }}
+                sx={{ py: 1.45, borderRadius: 99, fontWeight: 900, bgcolor: "#c85b2a", color: "#fff", boxShadow: "0 10px 24px rgba(200,91,42,.18)", "&:hover": { bgcolor: "#ad4820", boxShadow: "0 12px 26px rgba(200,91,42,.24)" } }}
               >
                 {loading ? t("loading") : t("registerSubmit")}
               </Button>
@@ -576,7 +594,7 @@ export default function AdminRegister() {
                 component={RouterLink}
                 to="/login"
                 sx={{
-                  color: "primary.main",
+                  color: "#a74621",
                   fontWeight: 900,
                   textDecoration: "none",
                 }}
