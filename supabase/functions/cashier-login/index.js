@@ -7,11 +7,23 @@ const allowedOrigins = new Set([
   "http://127.0.0.1:3000",
 ]);
 
+const isServioPreviewOrigin = (origin) => {
+  if (!origin) return false;
+  try {
+    const url = new URL(origin);
+    return url.origin === origin &&
+      url.protocol === "https:" &&
+      /^servio-mvp-git-[a-z0-9-]+-servio-tech\.vercel\.app$/i.test(url.hostname);
+  } catch {
+    return false;
+  }
+};
+
 const genericError = "بيانات الدخول غير صحيحة";
 
 const cors = (origin) => {
   const allowed =
-    origin && allowedOrigins.has(origin)
+    origin && (allowedOrigins.has(origin) || isServioPreviewOrigin(origin))
       ? origin
       : "https://servio-mvp.vercel.app";
   return {
