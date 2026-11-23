@@ -146,7 +146,7 @@ function MetricCard({ title, value, detail }) {
 
 function Reports() {
   const theme = useTheme();
-  const darkTheme = useMemo(() => createTheme(theme, { palette: { mode: "dark", primary: { main: "#dd7b3b", dark: "#b85f2e", contrastText: "#fff8ef" }, secondary: { main: "#302923" }, background: { default: "#191714", paper: "#24211e" }, text: { primary: "#f7efe4", secondary: "#bdb0a2" }, divider: "#433a33" } }), [theme]);
+  const darkTheme = useMemo(() => createTheme(theme, { palette: { mode: "dark", primary: { main: "#f47920", dark: "#c65b0a", contrastText: "#171a2f" }, secondary: { main: "#302923" }, background: { default: "#191714", paper: "#24211e" }, text: { primary: "#f7efe4", secondary: "#bdb0a2" }, divider: "#433a33" } }), [theme]);
   const reportRef = useRef(null);
   const analytics = useAnalytics();
   const [exportBusy, setExportBusy] = useState("");
@@ -302,20 +302,20 @@ function Reports() {
             onChange={(_, value) => { if (value) setPeriod(value); }}
             aria-label={text.range}
             size="small"
-            sx={{ alignSelf: { xs: "stretch", sm: "flex-start" }, bgcolor: "background.paper", borderRadius: "9px", border: "1px solid #f47920", p: "2px", flexWrap: "wrap", "& .MuiToggleButtonGroup-grouped": { border: 0, borderRadius: "6px !important", m: "1px" }, "& .MuiToggleButton-root": { minWidth: 0, px: { xs: 0.75, sm: 1.5 }, py: { xs: 0.85, sm: 0.95 }, fontSize: { xs: ".82rem", sm: ".9rem" }, lineHeight: 1.2, fontWeight: 750, flex: { xs: 1, sm: "initial" }, whiteSpace: "nowrap" }, "& .MuiToggleButton-root.Mui-selected": { bgcolor: "primary.main", color: "primary.contrastText", "&:hover": { bgcolor: "primary.dark" } } }}
+            sx={{ alignSelf: { xs: "stretch", sm: "flex-start" }, bgcolor: "background.paper", borderRadius: "8px", border: "1px solid #f47920", p: "2px", flexWrap: "wrap", "& .MuiToggleButtonGroup-grouped": { border: 0, borderRadius: "6px !important", m: "1px" }, "& .MuiToggleButton-root": { minWidth: 0, minHeight: 34, px: { xs: 0.65, sm: 1.35 }, py: { xs: 0.55, sm: 0.75 }, fontSize: { xs: ".74rem", sm: ".88rem" }, lineHeight: 1.15, fontWeight: 750, flex: { xs: 1, sm: "initial" }, whiteSpace: "nowrap" }, "& .MuiToggleButton-root.Mui-selected": { bgcolor: "primary.main", color: "primary.contrastText", "&:hover": { bgcolor: "primary.dark" } } }}
           >
             <ToggleButton value="daily">{text.daily}</ToggleButton>
             <ToggleButton value="weekly">{text.weekly}</ToggleButton>
             <ToggleButton value="monthly">{text.monthly}</ToggleButton>
           </ToggleButtonGroup>
           <Stack direction="row" spacing={{ xs: 0.75, sm: 1 }} useFlexGap sx={{ width: { xs: "100%", sm: "auto" }, flexWrap: "wrap" }}>
-            <Button variant="outlined" startIcon={<RefreshRoundedIcon />} onClick={refreshReport} disabled={loading} sx={{ minWidth: 0, flex: { xs: "1 1 calc(50% - 6px)", sm: "0 0 auto" }, fontWeight: 750, borderRadius: "8px", border: "1px solid #f47920", px: { xs: 1, sm: 1.5 }, py: { xs: 0.8, sm: 0.9 }, fontSize: { xs: ".8rem", sm: ".875rem" }, lineHeight: 1.25, whiteSpace: "nowrap" }}>
+            <Button size="small" variant="outlined" startIcon={<RefreshRoundedIcon />} onClick={refreshReport} disabled={loading} sx={{ minWidth: 0, minHeight: 34, flex: { xs: "1 1 calc(50% - 6px)", sm: "0 0 auto" }, fontWeight: 750, borderRadius: "7px", border: "1px solid #f47920", px: { xs: 0.7, sm: 1.35 }, py: { xs: 0.45, sm: 0.7 }, fontSize: { xs: ".73rem", sm: ".85rem" }, lineHeight: 1.2, whiteSpace: "nowrap" }}>
               {text.refresh}
             </Button>
-            {["pdf", "xlsx", "csv"].map((kind) => <Button key={kind} variant={kind === "pdf" ? "contained" : "outlined"} startIcon={exportBusy === kind ? <CircularProgress size={16} color="inherit" /> : <FileDownloadOutlinedIcon />} onClick={() => handleExport(kind)} disabled={loading || analytics.ordersLoading || Boolean(error) || Boolean(exportBusy)} sx={{ minWidth: 0, flex: { xs: "1 1 calc(50% - 6px)", sm: "0 0 auto" }, fontWeight: 750, borderRadius: "8px", px: { xs: 1, sm: 1.5 }, py: { xs: 0.8, sm: 0.9 }, fontSize: { xs: ".8rem", sm: ".875rem" }, lineHeight: 1.25, whiteSpace: "nowrap" }}>
+            {["pdf", "xlsx", "csv"].map((kind) => <Button key={kind} size="small" variant={kind === "pdf" ? "contained" : "outlined"} startIcon={exportBusy === kind ? <CircularProgress size={16} color="inherit" /> : <FileDownloadOutlinedIcon />} onClick={() => handleExport(kind)} disabled={loading || analytics.ordersLoading || Boolean(error) || Boolean(exportBusy)} sx={{ minWidth: 0, minHeight: 34, flex: { xs: "1 1 calc(50% - 6px)", sm: "0 0 auto" }, fontWeight: 750, borderRadius: "7px", px: { xs: 0.7, sm: 1.35 }, py: { xs: 0.45, sm: 0.7 }, fontSize: { xs: ".73rem", sm: ".85rem" }, lineHeight: 1.2, whiteSpace: "nowrap" }}>
               {language === "ar" ? "تصدير" : "Export"} {kind.toUpperCase()}
             </Button>)}
-            <Button variant="contained" startIcon={<LocalPrintshopOutlinedIcon />} onClick={printReportTable} disabled={loading || Boolean(error)} sx={{ minWidth: 0, flex: { xs: "1 1 100%", sm: "0 0 auto" }, fontWeight: 750, borderRadius: "8px", border: "1px solid #f47920", px: { xs: 1, sm: 1.5 }, py: { xs: 0.8, sm: 0.9 }, fontSize: { xs: ".8rem", sm: ".875rem" }, lineHeight: 1.25, whiteSpace: "nowrap" }}>
+            <Button size="small" variant="contained" startIcon={<LocalPrintshopOutlinedIcon />} onClick={printReportTable} disabled={loading || Boolean(error)} sx={{ minWidth: 0, flex: { xs: "1 1 calc(50% - 6px)", sm: "0 0 auto" }, fontWeight: 750, borderRadius: "8px", border: "1px solid #f47920", px: { xs: 0.7, sm: 1.35 }, py: { xs: 0.45, sm: 0.7 }, fontSize: { xs: ".73rem", sm: ".85rem" }, lineHeight: 1.2, whiteSpace: "nowrap" }}>
               {text.print}
             </Button>
           </Stack>

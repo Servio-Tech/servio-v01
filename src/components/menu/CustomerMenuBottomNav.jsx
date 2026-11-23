@@ -1,6 +1,5 @@
 import ShoppingBagOutlinedIcon from "@mui/icons-material/ShoppingBagOutlined";
 import ChatBubbleOutlineRoundedIcon from "@mui/icons-material/ChatBubbleOutlineRounded";
-import HomeOutlinedIcon from "@mui/icons-material/HomeOutlined";
 import ReceiptLongOutlinedIcon from "@mui/icons-material/ReceiptLongOutlined";
 import RoomServiceOutlinedIcon from "@mui/icons-material/RoomServiceOutlined";
 import RateReviewOutlinedIcon from "@mui/icons-material/RateReviewOutlined";
@@ -21,6 +20,7 @@ export default function CustomerMenuBottomNav({ onOpenCart, onCallWaiter, onOpen
   const isEnglish = language === "en";
   const itemCount = cartItems.reduce((count, item) => count + Number(item.quantity || 0), 0);
   const latestOrder = getRecentCustomerOrders(slug, branchSlug, Date.now(), tableNumber)[0] || null;
+  const orderReference = latestOrder?.orderId ? String(latestOrder.orderId).slice(-6).toUpperCase() : "";
 
   const openTracking = () => {
     const target = buildCustomerMenuTrackingTarget(slug, latestOrder);
@@ -37,13 +37,9 @@ export default function CustomerMenuBottomNav({ onOpenCart, onCallWaiter, onOpen
         <span className="customer-menu-nav-icon-wrap"><ChatBubbleOutlineRoundedIcon fontSize="small" /></span>
         <span className="customer-menu-nav-label">{isEnglish ? "Chat" : "المحادثة"}<small>{isEnglish ? "Soon" : "قريبًا"}</small></span>
       </button>
-      <button className="customer-menu-nav-button" type="button" onClick={() => navigate("/")} aria-label={isEnglish ? "Home" : "الرئيسية"}>
-        <span className="customer-menu-nav-icon-wrap"><HomeOutlinedIcon fontSize="small" /></span>
-        <span className="customer-menu-nav-label">{isEnglish ? "Home" : "الرئيسية"}</span>
-      </button>
-      <button className="customer-menu-nav-button" type="button" onClick={openTracking} aria-label={isEnglish ? "Track order" : "تتبع الطلب"}>
+      <button className="customer-menu-nav-button" type="button" onClick={openTracking} aria-label={`${isEnglish ? "Track order" : "تتبع الطلب"}${orderReference ? ` #${orderReference}` : ""}`}>
         <span className="customer-menu-nav-icon-wrap"><ReceiptLongOutlinedIcon fontSize="small" /></span>
-        <span className="customer-menu-nav-label">{isEnglish ? "Track" : "التتبع"}</span>
+        <span className="customer-menu-nav-label">{isEnglish ? "Track" : "التتبع"}{orderReference && <small>#{orderReference}</small>}</span>
       </button>
       <button className="customer-menu-nav-button" type="button" onClick={onCallWaiter} aria-label={isEnglish ? "Call staff" : "طلب مساعدة الموظف"}>
         <span className="customer-menu-nav-icon-wrap"><RoomServiceOutlinedIcon fontSize="small" /></span>

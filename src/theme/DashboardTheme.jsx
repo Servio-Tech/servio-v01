@@ -9,7 +9,7 @@ const createDashboardTheme = (direction) => createTheme({
   direction,
   palette: {
     mode: "dark",
-    primary: { main: "#e99462", light: "#f5b184", dark: "#d77b49", contrastText: "#20130d" },
+    primary: { main: "#f47920", light: "#fdba74", dark: "#c65b0a", contrastText: "#171a2f" },
     secondary: { main: "#35302b", light: "#51483e", dark: "#201e1b", contrastText: "#f8f3e9" },
     background: { default: "#111110", paper: "#1b1a18" },
     text: { primary: "#f4f0e8", secondary: "#bfb7a9", disabled: "#777168" },
@@ -18,7 +18,7 @@ const createDashboardTheme = (direction) => createTheme({
     warning: { main: "#eebc6e" },
     error: { main: "#ef8d84" },
     info: { main: "#91b6ce" },
-    action: { hover: "rgba(246, 235, 218, 0.055)", selected: "rgba(233, 148, 98, 0.14)", disabled: "rgba(244, 240, 232, 0.38)", disabledBackground: "rgba(244, 240, 232, 0.08)" },
+    action: { hover: "rgba(246, 235, 218, 0.055)", selected: "rgba(244, 121, 32, 0.14)", disabled: "rgba(244, 240, 232, 0.38)", disabledBackground: "rgba(244, 240, 232, 0.08)" },
   },
   typography: {
     fontFamily: "'Tajawal', 'Inter', sans-serif",
@@ -43,7 +43,7 @@ const createDashboardTheme = (direction) => createTheme({
     MuiTableCell: { styleOverrides: { root: { borderColor: "rgba(233, 222, 207, 0.1)" }, head: { color: "#c9c0b4", fontWeight: 750 } } },
     MuiTableRow: { styleOverrides: { root: { "&.MuiTableRow-hover:hover": { backgroundColor: "rgba(246, 235, 218, 0.045)" } } } },
     MuiTabs: { styleOverrides: { root: { minHeight: 48 }, indicator: { height: 3, borderRadius: 3 } } },
-    MuiTab: { styleOverrides: { root: { minHeight: 48, textTransform: "none", color: "#bfb7a9", fontWeight: 700, "&.Mui-selected": { color: "#f2a675" } } } },
+    MuiTab: { styleOverrides: { root: { minHeight: 48, textTransform: "none", color: "#bfb7a9", fontWeight: 700, "&.Mui-selected": { color: "#fdba74" } } } },
     MuiDialog: { defaultProps: { className: "dashboard-theme-portal", dir: direction }, styleOverrides: { paper: { border: "1px solid rgba(233, 222, 207, 0.14)", borderRadius: 16, backgroundImage: "none" } } },
     MuiDrawer: { defaultProps: { className: "dashboard-theme-portal" }, styleOverrides: { paper: { backgroundImage: "none" } } },
     MuiPopover: { defaultProps: { className: "dashboard-theme-portal" } },

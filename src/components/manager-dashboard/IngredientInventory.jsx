@@ -15,13 +15,13 @@ import SearchRoundedIcon from "@mui/icons-material/SearchRounded";
 import StorefrontOutlinedIcon from "@mui/icons-material/StorefrontOutlined";
 import SyncRoundedIcon from "@mui/icons-material/SyncRounded";
 import {
-  filterAndSortAvailability, linkedItemsByIngredient, runScopedAction,
+  canChangeAvailability, filterAndSortAvailability, linkedItemsByIngredient, runScopedAction,
   scopeToBranch, summarizeAvailability,
 } from "./out-of-stock/availabilityModel";
 
 const palette = {
   ink: "#141513", panel: "#1d1f1b", raised: "#252722", line: "#393a33",
-  cream: "#f5f0e5", muted: "#b8b3a6", orange: "#d77b4b", paleOrange: "#f0b28a",
+  cream: "#f5f0e5", muted: "#b8b3a6", orange: "#f47920", paleOrange: "#fdba74",
   green: "#a8c7aa",
 };
 
@@ -46,8 +46,8 @@ function StateChip({ available, children }) {
   return <Chip size="small" label={children} sx={{
     height: 25, fontWeight: 800, borderRadius: 1.25,
     color: available ? palette.green : palette.paleOrange,
-    bgcolor: available ? "rgba(120,173,133,.12)" : "rgba(215,123,75,.14)",
-    border: `1px solid ${available ? "rgba(168,199,170,.25)" : "rgba(215,123,75,.3)"}`,
+    bgcolor: available ? "rgba(120,173,133,.12)" : "rgba(244,121,32,.14)",
+    border: `1px solid ${available ? "rgba(168,199,170,.25)" : "rgba(244,121,32,.3)"}`,
   }} />;
 }
 
@@ -158,7 +158,7 @@ function IngredientInventory({ canManage = false }) {
     setDraftName("");
   };
   const changeAvailability = async (record, type) => {
-    if (writesDisabled || String(record.branch_id) !== String(selectedBranchId)) return;
+    if (!canChangeAvailability({ type, canManage, writesDisabled, record, branchId: selectedBranchId })) return;
     const branchAtStart = selectedBranchId;
     setBusyId(`${type}:${record.id}`);
     setError("");
@@ -255,10 +255,10 @@ function IngredientInventory({ canManage = false }) {
                   const linked = isIngredient ? (linkedItems.get(String(record.id)) || []) : (record.ingredients || []);
                   const unavailableIngredients = record.unavailableIngredients || [];
                   return (
-                    <Box key={record.id} sx={{ p: { xs: 1.5, sm: 2 }, borderRadius: 2, border: `1px solid ${available ? palette.line : "rgba(215,123,75,.38)"}`, bgcolor: available ? "#20221e" : "#28211d" }}>
+                      <Box key={record.id} sx={{ p: { xs: 1.5, sm: 2 }, borderRadius: 2, border: `1px solid ${available ? palette.line : "rgba(244,121,32,.38)"}`, bgcolor: available ? "#20221e" : "#28211d" }}>
                       <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5} sx={{ justifyContent: "space-between", alignItems: { xs: "stretch", sm: "center" } }}>
                         <Stack direction="row" spacing={1.25} sx={{ minWidth: 0, alignItems: "flex-start" }}>
-                          <Box sx={{ display: "grid", placeItems: "center", flexShrink: 0, width: 40, height: 40, borderRadius: 1.75, bgcolor: available ? "rgba(168,199,170,.09)" : "rgba(215,123,75,.12)", color: available ? palette.green : palette.paleOrange }}>{isIngredient ? <Inventory2OutlinedIcon fontSize="small" /> : <StorefrontOutlinedIcon fontSize="small" />}</Box>
+                          <Box sx={{ display: "grid", placeItems: "center", flexShrink: 0, width: 40, height: 40, borderRadius: 1.75, bgcolor: available ? "rgba(168,199,170,.09)" : "rgba(244,121,32,.12)", color: available ? palette.green : palette.paleOrange }}>{isIngredient ? <Inventory2OutlinedIcon fontSize="small" /> : <StorefrontOutlinedIcon fontSize="small" />}</Box>
                           <Box sx={{ minWidth: 0 }}>
                             <Typography sx={{ color: palette.cream, fontWeight: 900, overflowWrap: "anywhere" }}>{record.name}</Typography>
                             <Stack direction="row" spacing={0.75} useFlexGap sx={{ mt: 0.7, alignItems: "center", flexWrap: "wrap" }}>
@@ -277,7 +277,7 @@ function IngredientInventory({ canManage = false }) {
                             <Typography sx={{ color: palette.cream, fontSize: ".75rem", fontWeight: 800 }}>{isIngredient ? tr("توفر المكون", "Ingredient availability") : tr("التفعيل اليدوي", "Manual availability")}</Typography>
                             <Typography sx={{ color: palette.muted, fontSize: ".7rem" }}>{record.available === true ? tr("مفعّل", "Enabled") : tr("موقوف", "Disabled")}</Typography>
                           </Box>
-                          <Switch checked={record.available === true} onChange={() => changeAvailability(record, isIngredient ? "ingredient" : "item")} disabled={writesDisabled} sx={switchSx} slotProps={{ input: { "aria-label": isIngredient ? tr(`تغيير توفر المكون ${record.name}`, `Change availability of ingredient ${record.name}`) : tr(`تغيير التفعيل اليدوي للصنف ${record.name}`, `Change manual availability of item ${record.name}`) } }} />
+                          <Switch checked={record.available === true} onChange={() => changeAvailability(record, isIngredient ? "ingredient" : "item")} disabled={!canChangeAvailability({ type: isIngredient ? "ingredient" : "item", canManage, writesDisabled, record, branchId: selectedBranchId })} sx={switchSx} slotProps={{ input: { "aria-label": isIngredient ? tr(`تغيير توفر المكون ${record.name}`, `Change availability of ingredient ${record.name}`) : tr(`تغيير التفعيل اليدوي للصنف ${record.name}`, `Change manual availability of item ${record.name}`) } }} />
                           {isIngredient && canManage && <IconButton onClick={() => openEdit(record)} disabled={writesDisabled} aria-label={tr(`تعديل ${record.name}`, `Edit ${record.name}`)} sx={{ color: palette.paleOrange, "&.Mui-disabled": { color: "#6b665f" } }}><EditOutlinedIcon fontSize="small" /></IconButton>}
                         </Stack>
                       </Stack>

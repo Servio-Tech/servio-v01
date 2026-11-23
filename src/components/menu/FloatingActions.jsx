@@ -23,7 +23,7 @@ function FloatingActions({ handleReview, handleCallWaiter }) {
 
   const actions = [
     {
-      icon: <NotificationsActiveIcon sx={{ color: "#c85c2c" }} />,
+      icon: <NotificationsActiveIcon sx={{ color: "#a54700" }} />,
       name: isEnglish ? "Call staff" : "طلب مساعدة الموظف",
       onClick: () => {
         handleDialClose();
@@ -31,7 +31,7 @@ function FloatingActions({ handleReview, handleCallWaiter }) {
       },
     },
     {
-      icon: <RateReviewIcon sx={{ color: "#c85c2c" }} />,
+      icon: <RateReviewIcon sx={{ color: "#a54700" }} />,
       name: isEnglish ? "Leave a review" : "شاركنا رأيك",
       onClick: () => {
         handleDialClose();
@@ -63,17 +63,17 @@ function FloatingActions({ handleReview, handleCallWaiter }) {
           ariaLabel={isEnglish ? "Service options" : "خيارات الخدمة"}
           sx={{
             "& .MuiFab-primary": {
-              backgroundColor: openDial ? "#c85c2c" : "rgba(200, 92, 44, 0.92)",
+              backgroundColor: openDial ? "#f47920" : "rgba(244, 121, 32, 0.96)",
               backdropFilter: "blur(8px)",
-              color: "#fff",
+              color: "#171a2f",
               boxShadow: openDial
-                ? "0 8px 25px rgba(200, 92, 44, 0.35)"
+                ? "0 8px 25px rgba(244, 121, 32, 0.35)"
                 : "0 4px 15px rgba(0,0,0,0.15)",
               border: "1px solid rgba(255, 255, 255, 0.3)",
               transition: "all 0.3s ease",
               "&:hover": {
-                backgroundColor: "#ad4822",
-                boxShadow: "0 6px 20px rgba(200, 92, 44, 0.38)",
+                backgroundColor: "#d96816",
+                boxShadow: "0 6px 20px rgba(244, 121, 32, 0.38)",
               },
             },
           }}

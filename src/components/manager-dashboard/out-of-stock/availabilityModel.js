@@ -4,6 +4,11 @@ export function scopeToBranch(rows = [], branchId) {
   return rows.filter((row) => row.branch_id && String(row.branch_id) === String(branchId));
 }
 
+export function canChangeAvailability({ type, canManage = false, writesDisabled = false, record, branchId }) {
+  if (writesDisabled || !branchId || !record?.branch_id || String(record.branch_id) !== String(branchId)) return false;
+  return type !== "ingredient" || canManage === true;
+}
+
 export function linkedItemsByIngredient(items = []) {
   const result = new Map();
   items.forEach((item) => {

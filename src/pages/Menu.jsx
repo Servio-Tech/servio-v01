@@ -7,7 +7,6 @@ import NotFound from "../components/NotFound";
 import ReviewSection from "../components/menu/ReviewSection";
 import CallWaiterConfirm from "../components/menu/CallWaiterConfirm";
 import SuggestionBanner from "../components/menu/SuggestionBanner";
-import CustomerTrackingBanner from "../components/menu/CustomerTrackingBanner";
 import CustomerMenuBottomNav from "../components/menu/CustomerMenuBottomNav";
 import MenuHero from "../components/menu/MenuHero";
 import TrialNotice from "../components/TrialNotice";
@@ -74,7 +73,6 @@ function Menu() {
         </div>
         <MenuHero />
         <div className="customer-menu-content">
-          <CustomerTrackingBanner slug={slug} branchSlug={branchSlug} tableNumber={tableNumber} />
           <SuggestionBanner />
           {slug === "mzaj-ryfy" && (
             <Alert severity="warning" sx={{ mb: 2, borderRadius: 2 }}>

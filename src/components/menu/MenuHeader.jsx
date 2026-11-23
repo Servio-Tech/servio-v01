@@ -56,9 +56,11 @@ function MenuHeader({ table }) {
             borderRadius: "12px",
             fontWeight: 700,
             fontSize: "0.875rem",
-            color: "secondary.contrastText",
-            backgroundColor: "#f8e5d8",
+            color: "#88400f",
+            backgroundColor: "#fff2e8",
+            border: "1px solid rgba(244, 121, 32, .22)",
             "& .MuiChip-icon": {
+              color: "#b65411",
               marginLeft: "4px",
               marginRight: "-2px",
             },

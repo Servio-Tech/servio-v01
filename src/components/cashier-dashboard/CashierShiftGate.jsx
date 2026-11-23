@@ -1,5 +1,6 @@
 // مكوّن واجهة `CashierShiftGate` ضمن مجموعة `cashier-dashboard`.
 import { FullscreenDialog as Dialog } from "../common/FullscreenOverlays";
+import { FullscreenDrawer as Drawer } from "../common/FullscreenOverlays";
 import { useEffect, useState } from "react";
 import { Alert, Box, Button, Chip, DialogActions, DialogContent, IconButton, InputAdornment, Paper, Skeleton, Stack, TextField, Typography, useMediaQuery } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
@@ -209,7 +210,7 @@ function ShiftDialog({
   );
 }
 
-export default function CashierShiftGate() {
+export default function CashierShiftGate({ compact = false, requireStart = true } = {}) {
   const { user } = useUser();
   const { language } = useLanguage();
   const { storeInfo = {} } = useStore();
@@ -222,6 +223,7 @@ export default function CashierShiftGate() {
   const [closeCash, setCloseCash] = useState("");
   const [notes, setNotes] = useState("");
   const [dialog, setDialog] = useState(null);
+  const [detailsOpen, setDetailsOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [actionError, setActionError] = useState("");
   const [now, setNow] = useState(() => Date.now());
@@ -237,7 +239,7 @@ export default function CashierShiftGate() {
       ? `${String(storeInfo.workday_start).slice(0, 5)} – ${String(storeInfo.workday_end).slice(0, 5)}`
       : null;
   const openedAt = currentShift?.opened_at;
-  const mandatoryStart = user?.role === "cashier" && statusReady && !currentShift?.id;
+  const mandatoryStart = requireStart && user?.role === "cashier" && statusReady && !currentShift?.id;
 
   useEffect(() => {
     if (!openedAt) return undefined;
@@ -305,6 +307,118 @@ export default function CashierShiftGate() {
     setActionError("");
     setDialog(null);
   };
+
+  const shiftDialog = (
+    <ShiftDialog
+      open={mandatoryStart || dialog === "start" || dialog === "close"}
+      kind={mandatoryStart ? "start" : dialog}
+      ar={ar}
+      currency={currency}
+      amount={mandatoryStart || dialog === "start" ? openCash : closeCash}
+      setAmount={mandatoryStart || dialog === "start" ? setOpenCash : setCloseCash}
+      notes={notes}
+      setNotes={setNotes}
+      busy={busy}
+      error={actionError}
+      schedule={schedule}
+      mobile={mobile}
+      lockClose={mandatoryStart}
+      onClose={mandatoryStart ? () => {} : closeDialog}
+      onConfirm={mandatoryStart || dialog === "start" ? start : finish}
+    />
+  );
+
+  if (compact) {
+    return (
+      <>
+        {error && (
+          <Alert severity="error" sx={{ mb: 1, borderRadius: 2.5 }} action={<Button color="inherit" size="small" onClick={() => void loadCurrentShift()}>{ar ? "إعادة المحاولة" : "Retry"}</Button>}>
+            {error}
+          </Alert>
+        )}
+
+        {loading && !statusReady ? (
+          <Paper variant="outlined" sx={{ p: 1.1, borderRadius: 2.5, borderColor: "divider" }}>
+            <Stack direction="row" spacing={1.2} sx={{ alignItems: "center" }}>
+              <Skeleton variant="rounded" width={34} height={34} />
+              <Box sx={{ flex: 1 }}><Skeleton width="38%" /><Skeleton width="55%" /></Box>
+            </Stack>
+          </Paper>
+        ) : currentShift?.id ? (
+          <Paper
+            component="section"
+            aria-label={ar ? "ملخص الوردية النشطة" : "Active shift summary"}
+            elevation={0}
+            sx={{ px: { xs: 1.1, sm: 1.5 }, py: .85, borderRadius: 2.5, border: "1px solid rgba(22,163,74,.2)", background: "linear-gradient(110deg, rgba(29,41,34,.94), rgba(27,26,24,.96))" }}
+          >
+            <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", gap: 1 }}>
+              <Stack direction="row" spacing={.9} sx={{ minWidth: 0, alignItems: "center" }}>
+                <CheckCircleRoundedIcon color="success" sx={{ fontSize: 19, flex: "0 0 auto" }} />
+                <Box sx={{ minWidth: 0 }}>
+                  <Typography variant="body2" fontWeight={900} sx={{ lineHeight: 1.25 }}>
+                    {ar ? "الوردية نشطة" : "Shift active"}
+                    <Typography component="span" variant="caption" color="text.secondary" sx={{ marginInlineStart: .8, fontWeight: 700 }}>
+                      {openedTime} · {formatDuration(elapsedMinutes, ar)}
+                    </Typography>
+                  </Typography>
+                </Box>
+              </Stack>
+              <Button
+                size="small"
+                variant="outlined"
+                startIcon={<AccessTimeRoundedIcon />}
+                onClick={() => setDetailsOpen(true)}
+                sx={{ flex: "0 0 auto", minHeight: 34, borderRadius: 2, px: 1, fontWeight: 850, whiteSpace: "nowrap" }}
+              >{ar ? "تفاصيل الوردية" : "Shift details"}</Button>
+            </Stack>
+          </Paper>
+        ) : (
+          <Paper
+            component="section"
+            aria-label={ar ? "الوردية غير نشطة" : "Shift not active"}
+            elevation={0}
+            sx={{ px: { xs: 1.1, sm: 1.5 }, py: .85, borderRadius: 2.5, border: "1px solid rgba(244,121,32,.2)", background: "rgba(52,37,29,.65)" }}
+          >
+            <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", gap: 1 }}>
+              <Typography variant="body2" fontWeight={850}>{ar ? "الوردية غير نشطة" : "Shift not active"}</Typography>
+              <Button size="small" variant="contained" startIcon={<PlayCircleOutlineRoundedIcon />} onClick={() => openDialog("start")} sx={{ minHeight: 34, borderRadius: 2, px: 1.1, fontWeight: 850, whiteSpace: "nowrap" }}>
+                {ar ? "بدء الوردية" : "Start shift"}
+              </Button>
+            </Stack>
+          </Paper>
+        )}
+
+        {currentShift?.id && (
+          <Drawer anchor={ar ? "right" : "left"} open={detailsOpen} onClose={() => setDetailsOpen(false)}>
+            <Box dir={ar ? "rtl" : "ltr"} role="dialog" aria-labelledby="shift-details-title" sx={{ width: { xs: "100vw", sm: 390 }, maxWidth: "100vw", minHeight: "100%", p: { xs: 2, sm: 2.5 }, bgcolor: "background.paper" }}>
+              <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", gap: 1, mb: 2.2 }}>
+                <Box>
+                  <Typography variant="overline" color="primary.main" fontWeight={850}>{ar ? "إدارة الوردية" : "SHIFT MANAGEMENT"}</Typography>
+                  <Typography id="shift-details-title" component="h2" variant="h6" fontWeight={950}>{ar ? "تفاصيل الوردية" : "Shift details"}</Typography>
+                </Box>
+                <IconButton aria-label={ar ? "إغلاق التفاصيل" : "Close details"} onClick={() => setDetailsOpen(false)}><CloseRoundedIcon /></IconButton>
+              </Stack>
+              {schedule && <Paper variant="outlined" sx={{ mb: 1.2, p: 1.25, borderRadius: 2.5 }}><Typography variant="caption" color="text.secondary">{ar ? "ساعات العمل" : "Working hours"}</Typography><Typography fontWeight={850}>{schedule}</Typography></Paper>}
+              <Stack spacing={1}>
+                <ShiftMetric icon={<AccessTimeRoundedIcon sx={{ fontSize: 16 }} />} label={ar ? "المدة المنقضية" : "Elapsed"} value={formatDuration(elapsedMinutes, ar)} />
+                <ShiftMetric icon={<AccountBalanceWalletOutlinedIcon sx={{ fontSize: 16 }} />} label={ar ? "رصيد بداية الدرج" : "Opening cash"} value={`${formatMoney(currentShift.opening_cash)} ${currency}`} />
+                <ShiftMetric icon={<CheckCircleRoundedIcon sx={{ fontSize: 16 }} />} label={ar ? "حالة تسجيل المبيعات" : "Sales tracking"} value={ar ? "يُسجّل تلقائيًا" : "Recording"} />
+              </Stack>
+              <Button
+                fullWidth
+                color="error"
+                variant="outlined"
+                startIcon={<StopCircleOutlinedIcon />}
+                onClick={() => { setDetailsOpen(false); openDialog("close"); }}
+                sx={{ mt: 2.2, minHeight: 46, borderRadius: 2.3, fontWeight: 900 }}
+              >{ar ? "إنهاء الوردية" : "End shift"}</Button>
+            </Box>
+          </Drawer>
+        )}
+        {shiftDialog}
+      </>
+    );
+  }
 
   return (
     <>
@@ -443,23 +557,7 @@ export default function CashierShiftGate() {
         </Paper>
       )}
 
-      <ShiftDialog
-        open={mandatoryStart || dialog === "start" || dialog === "close"}
-        kind={mandatoryStart ? "start" : dialog}
-        ar={ar}
-        currency={currency}
-        amount={mandatoryStart || dialog === "start" ? openCash : closeCash}
-        setAmount={mandatoryStart || dialog === "start" ? setOpenCash : setCloseCash}
-        notes={notes}
-        setNotes={setNotes}
-        busy={busy}
-        error={actionError}
-        schedule={schedule}
-        mobile={mobile}
-        lockClose={mandatoryStart}
-        onClose={mandatoryStart ? () => {} : closeDialog}
-        onConfirm={mandatoryStart || dialog === "start" ? start : finish}
-      />
+      {shiftDialog}
     </>
   );
 }

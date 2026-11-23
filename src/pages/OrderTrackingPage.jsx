@@ -53,6 +53,8 @@ const copy = {
     unavailable: "تعذر تحميل حالة الطلب الآن. سنحاول مجددًا تلقائيًا.",
     invalidTitle: "تعذر فتح التتبع",
     invalidBody: "رابط التتبع غير صالح أو لا يخص هذا الطلب. افتح صفحة التتبع من الجهاز الذي أرسل منه الطلب.",
+    emptyTitle: "لا يوجد طلب حديث للتتبع",
+    emptyBody: "بعد إرسال طلب من هذا الجهاز، سيظهر مرجعه هنا لتتمكن من متابعة حالته.",
     back: "العودة إلى منيو الطاولة",
     retry: "إعادة المحاولة",
     live: "تحديث تلقائي كل ثانية ما دامت الصفحة مفتوحة",
@@ -81,6 +83,8 @@ const copy = {
     unavailable: "The order status could not be loaded. We will retry automatically.",
     invalidTitle: "Tracking unavailable",
     invalidBody: "This tracking link is invalid or does not belong to this order. Open tracking on the device used to place the order.",
+    emptyTitle: "No recent order to track",
+    emptyBody: "After you place an order on this device, its reference will appear here so you can follow its status.",
     back: "Back to this table's menu",
     retry: "Try again",
     live: "Automatically refreshes every second while this page is open",
@@ -127,6 +131,7 @@ function OrderTrackingPage() {
   const [invalidLink, setInvalidLink] = useState(false);
   const [loadError, setLoadError] = useState("");
   const [customerOrders, setCustomerOrders] = useState([]);
+  const [customerOrdersReady, setCustomerOrdersReady] = useState(false);
   const [historyOrders, setHistoryOrders] = useState([]);
   const [openInvoice, setOpenInvoice] = useState(orderId);
 
@@ -144,6 +149,7 @@ function OrderTrackingPage() {
   useEffect(() => {
     const records = getRecentCustomerOrdersForSlug(slug);
     setCustomerOrders(records);
+    setCustomerOrdersReady(true);
     if (!orderId && records[0]) {
       navigate(getCustomerTrackingPath(slug, records[0]), { replace: true, state: { trackingToken: records[0].trackingToken, tableNumber: records[0].tableNumber } });
     }
@@ -274,10 +280,21 @@ function OrderTrackingPage() {
             <Typography color="text.secondary" sx={{ mt: .7, lineHeight: 1.8 }}>{text.subtitle}</Typography>
           </Box>
 
-          {tenantLoading ? (
+          {tenantLoading || (!orderId && !customerOrdersReady) ? (
             <Paper elevation={0} sx={{ p: 5, textAlign: "center", borderRadius: 4, border: "1px solid rgba(23,26,47,.07)" }}>
               <CircularProgress />
               <Typography color="text.secondary" sx={{ mt: 1.2 }}>{text.loading}</Typography>
+            </Paper>
+          ) : !orderId && customerOrders.length > 0 ? (
+            <Paper elevation={0} sx={{ p: 5, textAlign: "center", borderRadius: 4, border: "1px solid rgba(23,26,47,.07)" }}>
+              <CircularProgress />
+              <Typography color="text.secondary" sx={{ mt: 1.2 }}>{text.loading}</Typography>
+            </Paper>
+          ) : !orderId && !customerOrders.length ? (
+            <Paper elevation={0} sx={{ p: { xs: 2.5, sm: 3.5 }, textAlign: "center", borderRadius: 3.5, border: "1px solid rgba(23,26,47,.08)", bgcolor: "rgba(255,255,255,.82)" }}>
+              <Box sx={{ width: 52, height: 52, display: "grid", placeItems: "center", mx: "auto", mb: 1.5, borderRadius: 2, bgcolor: "rgba(244,121,32,.10)", color: "primary.main" }}><ReceiptLongRoundedIcon /></Box>
+              <Typography component="h2" variant="h6" fontWeight={900}>{text.emptyTitle}</Typography>
+              <Typography color="text.secondary" sx={{ mt: .7, lineHeight: 1.8 }}>{text.emptyBody}</Typography>
             </Paper>
           ) : invalidLink || !trackingToken ? (
             <Alert severity="warning" sx={{ borderRadius: 3, alignItems: "flex-start" }}>
