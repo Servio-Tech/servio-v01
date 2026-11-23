@@ -2,13 +2,20 @@
 BEGIN;
 -- Stable transaction time makes boundary comparisons exact.
 UPDATE public.tenant_subscriptions SET starts_at=now(),ends_at=NULL WHERE tenant_id='00000000-0000-0000-0000-000000000001';
+DO $$ BEGIN
+ IF pg_catalog.strpos(pg_catalog.pg_get_functiondef('servio_subscription_private.get_public_categories(text)'::pg_catalog.regprocedure),'public.is_public_tenant_active(')>0
+    OR pg_catalog.strpos(pg_catalog.pg_get_functiondef('servio_subscription_private.get_public_menu_items(text)'::pg_catalog.regprocedure),'public.is_public_tenant_active(')>0
+    OR pg_catalog.strpos(pg_catalog.pg_get_functiondef('servio_subscription_private.get_public_tables(text)'::pg_catalog.regprocedure),'public.is_public_tenant_active(')>0 THEN
+  RAISE EXCEPTION 'legacy public RPC copy still depends on the missing helper';
+ END IF;
+END $$;
 SELECT set_config('request.jwt.claim.role','anon',false);
 SET ROLE anon;
 DO $$ DECLARE j jsonb; oid uuid; token text; BEGIN
  IF NOT public.platform_subscription_tenant_active('00000000-0000-0000-0000-000000000001') THEN RAISE EXCEPTION 'starts_at boundary not inclusive'; END IF;
  IF (SELECT count(*) FROM public.get_public_tenant('starter')) <> 1 OR (SELECT count(*) FROM public.get_public_store('starter')) <> 1 THEN RAISE EXCEPTION 'active tenant/store unavailable'; END IF;
  IF (SELECT count(*) FROM public.get_public_branches('starter')) <> 1 OR public.resolve_branch_id('starter','main') IS NULL THEN RAISE EXCEPTION 'active branch unavailable'; END IF;
- IF (SELECT count(*) FROM public.get_public_categories('starter','main')) <> 1 OR (SELECT count(*) FROM public.get_public_menu_items('starter','main')) <> 1 OR (SELECT count(*) FROM public.get_public_menu_items('starter')) <> 1 OR (SELECT count(*) FROM public.get_public_menu_item_details('starter','main')) <> 1 OR (SELECT count(*) FROM public.get_public_menu_item_images('starter','main',ARRAY['d0000000-0000-0000-0000-000000000001'::uuid])) <> 1 OR (SELECT count(*) FROM public.get_public_tables('starter','main')) <> 1 THEN RAISE EXCEPTION 'active menu unavailable'; END IF;
+ IF (SELECT count(*) FROM public.get_public_categories('starter')) <> 1 OR (SELECT count(*) FROM public.get_public_categories('starter','main')) <> 1 OR (SELECT count(*) FROM public.get_public_menu_items('starter')) <> 1 OR (SELECT count(*) FROM public.get_public_menu_items('starter','main')) <> 1 OR (SELECT count(*) FROM public.get_public_menu_item_details('starter','main')) <> 1 OR (SELECT count(*) FROM public.get_public_menu_item_images('starter','main',ARRAY['d0000000-0000-0000-0000-000000000001'::uuid])) <> 1 OR (SELECT count(*) FROM public.get_public_tables('starter')) <> 1 OR (SELECT count(*) FROM public.get_public_tables('starter','main')) <> 1 THEN RAISE EXCEPTION 'active menu unavailable'; END IF;
  j := public.create_public_order_with_tracking('starter','[]'::jsonb,0,'1',NULL,'main');
  oid := (j->>'order_id')::uuid; token := j->>'tracking_token';
  IF public.get_public_order_tracking('starter',oid,token) IS NULL THEN RAISE EXCEPTION 'active tracking unavailable'; END IF;
@@ -34,7 +41,7 @@ SET ROLE anon;
 DO $$ BEGIN
  IF public.platform_subscription_tenant_active('00000000-0000-0000-0000-000000000001') THEN RAISE EXCEPTION 'ends_at boundary incorrectly inclusive'; END IF;
  IF (SELECT count(*) FROM public.tenants WHERE slug='starter') <> 0 OR (SELECT count(*) FROM public.get_public_tenant('starter')) <> 0 OR (SELECT count(*) FROM public.get_public_store('starter')) <> 0 OR (SELECT count(*) FROM public.get_public_branches('starter')) <> 0 OR public.resolve_branch_id('starter','main') IS NOT NULL THEN RAISE EXCEPTION 'expired public tenant exposed'; END IF;
- IF (SELECT count(*) FROM public.get_public_categories('starter','main')) <> 0 OR (SELECT count(*) FROM public.get_public_menu_items('starter','main')) <> 0 OR (SELECT count(*) FROM public.get_public_menu_items('starter')) <> 0 OR (SELECT count(*) FROM public.get_public_menu_item_details('starter','main')) <> 0 OR (SELECT count(*) FROM public.get_public_menu_item_images('starter','main',ARRAY['d0000000-0000-0000-0000-000000000001'::uuid])) <> 0 OR (SELECT count(*) FROM public.get_public_tables('starter','main')) <> 0 THEN RAISE EXCEPTION 'expired menu exposed'; END IF;
+ IF (SELECT count(*) FROM public.get_public_categories('starter')) <> 0 OR (SELECT count(*) FROM public.get_public_categories('starter','main')) <> 0 OR (SELECT count(*) FROM public.get_public_menu_items('starter')) <> 0 OR (SELECT count(*) FROM public.get_public_menu_items('starter','main')) <> 0 OR (SELECT count(*) FROM public.get_public_menu_item_details('starter','main')) <> 0 OR (SELECT count(*) FROM public.get_public_menu_item_images('starter','main',ARRAY['d0000000-0000-0000-0000-000000000001'::uuid])) <> 0 OR (SELECT count(*) FROM public.get_public_tables('starter')) <> 0 OR (SELECT count(*) FROM public.get_public_tables('starter','main')) <> 0 THEN RAISE EXCEPTION 'expired menu exposed'; END IF;
  IF (SELECT count(*) FROM public.claim_cashier_notification_deliveries('notify-secret','order','b0000000-0000-0000-0000-000000000002')) <> 0 THEN RAISE EXCEPTION 'expired tenant notification claim returned rows'; END IF;
  IF public.get_public_order_tracking('starter',current_setting('test.order_id')::uuid,current_setting('test.token')) IS NOT NULL THEN RAISE EXCEPTION 'expired tracking exposed'; END IF;
  BEGIN PERFORM public.create_public_order_with_tracking('starter','[]'::jsonb,0,'1',NULL,'main'); RAISE EXCEPTION 'expired order accepted'; EXCEPTION WHEN insufficient_privilege THEN NULL; END;

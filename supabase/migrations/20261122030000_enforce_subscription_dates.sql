@@ -150,6 +150,18 @@ BEGIN
     IF pg_catalog.strpos(v_definition, v_orig) = 0 THEN
       RAISE EXCEPTION 'Cannot safely copy function: %', r.oid::pg_catalog.regprocedure;
     END IF;
+    -- A restored pre-subscription schema can retain public RPC bodies that
+    -- reference the removed is_public_tenant_active helper. Copying those bodies
+    -- would fail compilation. When that helper is absent, route the private copy
+    -- through the replacement date-based subscription predicate instead.
+    IF pg_catalog.strpos(v_definition, 'public.is_public_tenant_active(') > 0
+       AND pg_catalog.to_regprocedure('public.is_public_tenant_active(uuid)') IS NULL THEN
+      IF pg_catalog.to_regprocedure('public.platform_subscription_tenant_active(uuid)') IS NULL THEN
+        RAISE EXCEPTION 'Legacy public RPC needs a tenant activity predicate, but no replacement subscription helper exists';
+      END IF;
+      v_definition := pg_catalog.replace(v_definition,
+        'public.is_public_tenant_active(', 'public.platform_subscription_tenant_active(');
+    END IF;
     v_definition := pg_catalog.replace(v_definition,v_orig,
       pg_catalog.format('FUNCTION servio_subscription_private.%I(',r.proname));
     EXECUTE v_definition;

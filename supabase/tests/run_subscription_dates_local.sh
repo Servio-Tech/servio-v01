@@ -48,6 +48,7 @@ out.append('GRANT EXECUTE ON FUNCTION public.verify_cashier_login(text,text,text
 pathlib.Path(sys.argv[2]).write_text('\n'.join(out)+'\n')
 PY
 "${PSQL[@]}" -f "$TMP/functions.sql" >/dev/null
+"${PSQL[@]}" -f "$ROOT/supabase/tests/subscription_dates_legacy_rpc_fixture.sql" >/dev/null
 "${PSQL[@]}" -f "$ROOT/supabase/migrations/20261121130000_tenant_subscriptions_and_branch_limits.sql" >/dev/null
 "${PSQL[@]}" -f "$ROOT/supabase/migrations/20261122020000_owner_user_blocks.sql" >/dev/null
 "${PSQL[@]}" -f "$ROOT/supabase/migrations/20261122030000_enforce_subscription_dates.sql" >/dev/null
