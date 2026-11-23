@@ -52,6 +52,7 @@ describe("QZ Tray printer integration", () => {
       ok: true,
       text: () => Promise.resolve(url === "/servio-qz-certificate.txt" ? "TEST CERTIFICATE" : "TEST SIGNATURE"),
     }));
+    renderReceiptHtmlToImages.mockClear();
     renderReceiptHtmlToImages.mockResolvedValue([{ data: "UE5H", width: 300, height: 600 }]);
   });
 

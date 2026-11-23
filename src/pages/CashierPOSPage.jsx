@@ -31,7 +31,6 @@ import PrinterBridgeStatus from "../components/cashier-dashboard/PrinterBridgeSt
 import CategoryPrintRoutingDrawer from "../components/manager-dashboard/menu-control/CategoryPrintRoutingDrawer";
 import { useShift } from "../context/ShiftContext";
 import { useUser } from "../context/UserContext";
-import NewTableOrderAlert from "../components/cashier-dashboard/orders/NewTableOrderAlert";
 import { toMinorUnits } from "../utils/taxUtils";
 import { buildKitchenOrderDelta } from "../utils/orderKitchenDelta";
 import { buildAddonChoices, normalizeAddonItemIds, normalizeAddonLimit, normalizeAddonOptions, normalizeSelectedAddons, toggleSelectedAddon } from "../utils/menuItemOptions";
@@ -754,7 +753,6 @@ function CashierPOSPage() {
 
   return (
     <Box className="cashier-pos-page" dir={language === "ar" ? "rtl" : "ltr"} sx={{ minHeight: "100vh", minWidth: 0, background: "radial-gradient(circle at 84% 4%, rgba(244,121,32,.14), transparent 23%), linear-gradient(135deg, #fff8f1 0%, #f7f8fb 46%, #eef1f7 100%)", py: { xs: 1.25, md: 3 }, pb: { xs: cart.length ? 12 : 1.25, md: 3 }, px: { xs: 1.25, sm: 2.5, lg: 4 }, "& .MuiPaper-root, & .MuiCard-root": { backdropFilter: "none", WebkitBackdropFilter: "none", boxShadow: "0 5px 16px rgba(23,26,47,.045)" } }}>
-      <NewTableOrderAlert />
       <Box sx={{ maxWidth: 1540, minWidth: 0, mx: "auto" }}>
         <CashierShiftGate />
         <Paper elevation={0} sx={{ p: { xs: 1.5, sm: 2.2, md: 2.6 }, mb: 2, borderRadius: { xs: 2.5, md: 3.5 }, border: "1px solid rgba(255,255,255,.2)", background: "linear-gradient(120deg, #171A2F 0%, #202744 66%, #2d3555 100%)", color: "#fff", boxShadow: "0 18px 40px rgba(23,26,47,.18)", position: "relative", overflow: "hidden", "&:after": { content: '""', position: "absolute", width: 220, height: 220, borderRadius: "50%", background: "rgba(244,121,32,.18)", insetInlineEnd: -85, top: -110 } }}>

@@ -75,6 +75,7 @@ function Menu() {
         <MenuHero />
         <div className="customer-menu-content">
           <CustomerTrackingBanner slug={slug} branchSlug={branchSlug} tableNumber={tableNumber} />
+          <SuggestionBanner />
           {slug === "mzaj-ryfy" && (
             <Alert severity="warning" sx={{ mb: 2, borderRadius: 2 }}>
               {language === "ar"
@@ -91,7 +92,6 @@ function Menu() {
           </div>
         </div>
       </div>
-      <SuggestionBanner />
       <CustomerMenuBottomNav
         onOpenCart={() => setCartOpen(true)}
         onCallWaiter={() => setCallingWaiterConfirmation(true)}

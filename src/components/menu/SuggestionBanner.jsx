@@ -62,13 +62,12 @@ function SuggestionBanner() {
     <Paper
       elevation={3}
       sx={{
-        position: "fixed",
-        zIndex: 1200,
-        left: "50%",
-        bottom: "calc(82px + env(safe-area-inset-bottom, 0px))",
-        transform: "translateX(-50%)",
-        width: "calc(100% - 16px)",
+        position: "relative",
+        zIndex: 1,
+        width: "100%",
         maxWidth: "720px",
+        mx: "auto",
+        mb: 2,
         minHeight: "72px",
         bgcolor: "background.paper",
         borderRadius: "16px",
