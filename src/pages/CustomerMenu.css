@@ -9,7 +9,7 @@
   background:
     radial-gradient(circle at 88% 2%, rgba(200, 92, 44, .11), transparent 23rem),
     linear-gradient(180deg, #f6efe5 0%, #fbf7f0 38%, #f4eee5 100%);
-  padding-bottom: calc(118px + env(safe-area-inset-bottom, 0px));
+  padding-bottom: calc(176px + env(safe-area-inset-bottom, 0px));
 }
 
 .customer-menu .customer-menu-page-shell {
@@ -220,20 +220,21 @@
 
 .customer-menu .customer-menu-bottom-nav {
   position: fixed;
-  z-index: 1000;
-  inset-inline-start: 50%;
-  bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+  z-index: 1100;
+  inset-inline: 0;
+  bottom: 0;
   display: grid;
-  width: min(500px, calc(100% - 28px));
-  min-height: 70px;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  width: 100%;
+  height: calc(76px + env(safe-area-inset-bottom, 0px));
+  min-height: 76px;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   align-items: center;
-  padding: 7px;
-  transform: translateX(-50%);
-  border: 1px solid rgba(255, 250, 241, .14);
-  border-radius: 24px;
-  background: rgba(33, 29, 26, .97);
-  box-shadow: 0 12px 36px rgba(30, 24, 20, .27);
+  padding: 5px 4px calc(5px + env(safe-area-inset-bottom, 0px));
+  border: 1px solid rgba(255, 250, 241, .12);
+  border-bottom: 0;
+  border-radius: 18px 18px 0 0;
+  background: rgba(33, 29, 26, .98);
+  box-shadow: 0 -8px 28px rgba(30, 24, 20, .2);
   color: var(--customer-menu-cream);
   direction: inherit;
   backdrop-filter: blur(18px);
@@ -244,7 +245,7 @@
   position: relative;
   display: flex;
   min-width: 0;
-  min-height: 54px;
+  min-height: 58px;
   flex-direction: column;
   align-items: center;
   justify-content: center;
@@ -282,7 +283,7 @@
   flex-direction: column;
   align-items: center;
   color: inherit;
-  font-size: .67rem;
+  font-size: .6rem;
   font-weight: 800;
   line-height: 1.05;
   white-space: nowrap;

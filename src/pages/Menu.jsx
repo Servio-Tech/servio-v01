@@ -4,7 +4,6 @@ import MenuFilterTabs from "../components/menu/MenuFilterTabs";
 import MenuItemsList from "../components/menu/MenuItemsList";
 import CartDrawer from "../components/cart/CartDrawer";
 import NotFound from "../components/NotFound";
-import FloatingActions from "../components/menu/FloatingActions";
 import ReviewSection from "../components/menu/ReviewSection";
 import CallWaiterConfirm from "../components/menu/CallWaiterConfirm";
 import SuggestionBanner from "../components/menu/SuggestionBanner";
@@ -83,7 +82,6 @@ function Menu() {
                 : "Allergen details for items added from the photographed menu are estimates based on suggested recipes, not verified by the kitchen. Ask staff about ingredients and possible cross-contact before ordering."}
             </Alert>
           )}
-          <SuggestionBanner />
           <div className="customer-menu-section-heading">
             <h2>{language === "en" ? "From the menu" : "من المنيو"}</h2>
             <p>{language === "en" ? "Made fresh for your table" : "محضّر بعناية لطاولتك"}</p>
@@ -93,17 +91,18 @@ function Menu() {
           </div>
         </div>
       </div>
-      <FloatingActions
-        handleReview={() => {
+      <SuggestionBanner />
+      <CustomerMenuBottomNav
+        onOpenCart={() => setCartOpen(true)}
+        onCallWaiter={() => setCallingWaiterConfirmation(true)}
+        onOpenReview={() => {
           if (storeInfo?.google_maps_review_url) {
             window.open(storeInfo.google_maps_review_url, "_blank", "noopener,noreferrer");
           } else {
             setReviewOpen(true);
           }
         }}
-        handleCallWaiter={() => setCallingWaiterConfirmation(true)}
       />
-      <CustomerMenuBottomNav onOpenCart={() => setCartOpen(true)} />
       <CartDrawer open={isCartOpen} close={() => setCartOpen(false)} cashierMode={isCashierQr} />
       <ReviewSection open={reviewOpen} close={() => setReviewOpen(false)} tableNumber={orderLocation} />
       <CallWaiterConfirm open={callingWaiterConfirmation} close={() => setCallingWaiterConfirmation(false)} tableNumber={orderLocation} />

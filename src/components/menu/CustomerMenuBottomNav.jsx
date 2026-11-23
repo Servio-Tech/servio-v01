@@ -2,6 +2,8 @@ import ShoppingBagOutlinedIcon from "@mui/icons-material/ShoppingBagOutlined";
 import ChatBubbleOutlineRoundedIcon from "@mui/icons-material/ChatBubbleOutlineRounded";
 import HomeOutlinedIcon from "@mui/icons-material/HomeOutlined";
 import ReceiptLongOutlinedIcon from "@mui/icons-material/ReceiptLongOutlined";
+import RoomServiceOutlinedIcon from "@mui/icons-material/RoomServiceOutlined";
+import RateReviewOutlinedIcon from "@mui/icons-material/RateReviewOutlined";
 import { useNavigate } from "react-router-dom";
 import { useCart } from "../../context/CartContext";
 import { useLanguage } from "../../context/LanguageContext";
@@ -10,7 +12,7 @@ import { useBranch } from "../../context/BranchContext";
 import { getRecentCustomerOrders } from "../../utils/customerTracking";
 import { buildCustomerMenuTrackingTarget } from "../../utils/customerMenuNavigation.js";
 
-export default function CustomerMenuBottomNav({ onOpenCart }) {
+export default function CustomerMenuBottomNav({ onOpenCart, onCallWaiter, onOpenReview }) {
   const { cartItems, tableNumber } = useCart();
   const { language } = useLanguage();
   const { slug } = useTenant();
@@ -42,6 +44,14 @@ export default function CustomerMenuBottomNav({ onOpenCart }) {
       <button className="customer-menu-nav-button" type="button" onClick={openTracking} aria-label={isEnglish ? "Track order" : "تتبع الطلب"}>
         <span className="customer-menu-nav-icon-wrap"><ReceiptLongOutlinedIcon fontSize="small" /></span>
         <span className="customer-menu-nav-label">{isEnglish ? "Track" : "التتبع"}</span>
+      </button>
+      <button className="customer-menu-nav-button" type="button" onClick={onCallWaiter} aria-label={isEnglish ? "Call staff" : "طلب مساعدة الموظف"}>
+        <span className="customer-menu-nav-icon-wrap"><RoomServiceOutlinedIcon fontSize="small" /></span>
+        <span className="customer-menu-nav-label">{isEnglish ? "Staff" : "الموظف"}</span>
+      </button>
+      <button className="customer-menu-nav-button" type="button" onClick={onOpenReview} aria-label={isEnglish ? "Leave a review" : "شاركنا رأيك"}>
+        <span className="customer-menu-nav-icon-wrap"><RateReviewOutlinedIcon fontSize="small" /></span>
+        <span className="customer-menu-nav-label">{isEnglish ? "Review" : "التقييم"}</span>
       </button>
     </nav>
   );

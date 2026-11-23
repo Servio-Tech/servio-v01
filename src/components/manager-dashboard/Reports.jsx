@@ -302,20 +302,20 @@ function Reports() {
             onChange={(_, value) => { if (value) setPeriod(value); }}
             aria-label={text.range}
             size="small"
-            sx={{ alignSelf: { xs: "stretch", sm: "flex-start" }, bgcolor: "background.paper", borderRadius: "10px", border: "2px solid #f47920", p: "3px", flexWrap: "wrap", "& .MuiToggleButtonGroup-grouped": { border: 0, borderRadius: "7px !important", m: "2px" }, "& .MuiToggleButton-root": { px: { xs: 1.8, sm: 2.6 }, py: 1.35, fontSize: "1rem", fontWeight: 800, flex: { xs: 1, sm: "initial" } }, "& .MuiToggleButton-root.Mui-selected": { bgcolor: "primary.main", color: "primary.contrastText", "&:hover": { bgcolor: "primary.dark" } } }}
+            sx={{ alignSelf: { xs: "stretch", sm: "flex-start" }, bgcolor: "background.paper", borderRadius: "9px", border: "1px solid #f47920", p: "2px", flexWrap: "wrap", "& .MuiToggleButtonGroup-grouped": { border: 0, borderRadius: "6px !important", m: "1px" }, "& .MuiToggleButton-root": { minWidth: 0, px: { xs: 0.75, sm: 1.5 }, py: { xs: 0.85, sm: 0.95 }, fontSize: { xs: ".82rem", sm: ".9rem" }, lineHeight: 1.2, fontWeight: 750, flex: { xs: 1, sm: "initial" }, whiteSpace: "nowrap" }, "& .MuiToggleButton-root.Mui-selected": { bgcolor: "primary.main", color: "primary.contrastText", "&:hover": { bgcolor: "primary.dark" } } }}
           >
             <ToggleButton value="daily">{text.daily}</ToggleButton>
             <ToggleButton value="weekly">{text.weekly}</ToggleButton>
             <ToggleButton value="monthly">{text.monthly}</ToggleButton>
           </ToggleButtonGroup>
-          <Stack direction="row" spacing={1}  useFlexGap sx={{ flexWrap: "wrap" }}>
-            <Button variant="outlined" startIcon={<RefreshRoundedIcon />} onClick={refreshReport} disabled={loading} sx={{ fontWeight: 800, borderRadius: "10px", border: "2px solid #f47920", px: 2, py: 1.15, fontSize: "1rem" }}>
+          <Stack direction="row" spacing={{ xs: 0.75, sm: 1 }} useFlexGap sx={{ width: { xs: "100%", sm: "auto" }, flexWrap: "wrap" }}>
+            <Button variant="outlined" startIcon={<RefreshRoundedIcon />} onClick={refreshReport} disabled={loading} sx={{ minWidth: 0, flex: { xs: "1 1 calc(50% - 6px)", sm: "0 0 auto" }, fontWeight: 750, borderRadius: "8px", border: "1px solid #f47920", px: { xs: 1, sm: 1.5 }, py: { xs: 0.8, sm: 0.9 }, fontSize: { xs: ".8rem", sm: ".875rem" }, lineHeight: 1.25, whiteSpace: "nowrap" }}>
               {text.refresh}
             </Button>
-            {["pdf", "xlsx", "csv"].map((kind) => <Button key={kind} variant={kind === "pdf" ? "contained" : "outlined"} startIcon={exportBusy === kind ? <CircularProgress size={16} color="inherit" /> : <FileDownloadOutlinedIcon />} onClick={() => handleExport(kind)} disabled={loading || analytics.ordersLoading || Boolean(error) || Boolean(exportBusy)} sx={{ fontWeight: 800, borderRadius: "10px", px: 2, py: 1.15, fontSize: ".9rem" }}>
+            {["pdf", "xlsx", "csv"].map((kind) => <Button key={kind} variant={kind === "pdf" ? "contained" : "outlined"} startIcon={exportBusy === kind ? <CircularProgress size={16} color="inherit" /> : <FileDownloadOutlinedIcon />} onClick={() => handleExport(kind)} disabled={loading || analytics.ordersLoading || Boolean(error) || Boolean(exportBusy)} sx={{ minWidth: 0, flex: { xs: "1 1 calc(50% - 6px)", sm: "0 0 auto" }, fontWeight: 750, borderRadius: "8px", px: { xs: 1, sm: 1.5 }, py: { xs: 0.8, sm: 0.9 }, fontSize: { xs: ".8rem", sm: ".875rem" }, lineHeight: 1.25, whiteSpace: "nowrap" }}>
               {language === "ar" ? "تصدير" : "Export"} {kind.toUpperCase()}
             </Button>)}
-            <Button variant="contained" startIcon={<LocalPrintshopOutlinedIcon />} onClick={printReportTable} disabled={loading || Boolean(error)} sx={{ fontWeight: 800, borderRadius: "10px", border: "2px solid #f47920", px: 2, py: 1.15, fontSize: "1rem" }}>
+            <Button variant="contained" startIcon={<LocalPrintshopOutlinedIcon />} onClick={printReportTable} disabled={loading || Boolean(error)} sx={{ minWidth: 0, flex: { xs: "1 1 100%", sm: "0 0 auto" }, fontWeight: 750, borderRadius: "8px", border: "1px solid #f47920", px: { xs: 1, sm: 1.5 }, py: { xs: 0.8, sm: 0.9 }, fontSize: { xs: ".8rem", sm: ".875rem" }, lineHeight: 1.25, whiteSpace: "nowrap" }}>
               {text.print}
             </Button>
           </Stack>
