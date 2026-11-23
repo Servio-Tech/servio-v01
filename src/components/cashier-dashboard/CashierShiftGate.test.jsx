@@ -45,3 +45,11 @@ test("keeps a verified closed-shift gate visible during a background recheck", (
   expect(screen.getByText("ابدأ ورديتك لتسجيل المبيعات")).toBeTruthy();
   expect(screen.getByRole("dialog")).toBeTruthy();
 });
+
+test("shows shift management without blocking the cashier workspace", () => {
+  render(<CashierShiftGate requireStart={false} />);
+
+  expect(screen.getByText("ابدأ ورديتك لتسجيل المبيعات")).toBeTruthy();
+  expect(screen.getByRole("button", { name: "بدء الوردية" })).toBeTruthy();
+  expect(screen.queryByRole("dialog")).toBeNull();
+});

@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { withIngredientAvailability } from "../../../utils/menuAvailability.js";
-import { filterAndSortAvailability, linkedItemsByIngredient, runScopedAction, scopeToBranch, summarizeAvailability } from "./availabilityModel.js";
+import { canChangeAvailability, filterAndSortAvailability, linkedItemsByIngredient, runScopedAction, scopeToBranch, summarizeAvailability } from "./availabilityModel.js";
 
 const ingredients = [
   { id: "milk", name: "حليب", available: true, branch_id: "a" },
@@ -71,4 +71,14 @@ test("branch guard blocks mismatched writes and preserves errors from failed cal
   assert.equal((await runScopedAction("a", "a", async () => { throw networkError; })).error, networkError);
   assert.equal((await runScopedAction("a", "a", async () => ({ error: networkError }))).error, networkError);
   assert.ok((await runScopedAction("a", "a", async () => undefined)).error);
+});
+
+test("cashiers can toggle manual item availability, while ingredient changes require manager permission", () => {
+  const item = { branch_id: "a" };
+  const ingredient = { branch_id: "a" };
+  assert.equal(canChangeAvailability({ type: "item", record: item, branchId: "a" }), true);
+  assert.equal(canChangeAvailability({ type: "ingredient", record: ingredient, branchId: "a" }), false);
+  assert.equal(canChangeAvailability({ type: "ingredient", canManage: true, record: ingredient, branchId: "a" }), true);
+  assert.equal(canChangeAvailability({ type: "item", record: item, branchId: "b" }), false);
+  assert.equal(canChangeAvailability({ type: "item", record: item, branchId: "a", writesDisabled: true }), false);
 });

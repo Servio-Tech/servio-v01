@@ -3,18 +3,15 @@ import DashboardHeader from "../components/cashier-dashboard/DashboardHeader";
 import LiveOrders from "../components/cashier-dashboard/orders/LiveOrders";
 import WaiterCallNotification from "../components/cashier-dashboard/orders/WaiterCallNotification";
 import CashierSalesDrawer from "../components/cashier-dashboard/orders/CashierSalesDrawer";
-import ReceiptLongRoundedIcon from "@mui/icons-material/ReceiptLongRounded";
 import PrintRoundedIcon from "@mui/icons-material/PrintRounded";
 import { useOrders } from "../context/OrdersContext";
 import { useStore } from "../context/StoreInfoContext";
 import { useLanguage } from "../context/LanguageContext";
 import { useBranch } from "../context/BranchContext";
 import supabase from "../supabase";
-import Button from "@mui/material/Button";
 import Container from "@mui/material/Container";
 import Stack from "@mui/material/Stack";
 import Box from "@mui/material/Box";
-import Typography from "@mui/material/Typography";
 import Paper from "@mui/material/Paper";
 import Tabs from "@mui/material/Tabs";
 import Tab from "@mui/material/Tab";
@@ -32,13 +29,11 @@ import AccessTimeRoundedIcon from "@mui/icons-material/AccessTimeRounded";
 import Inventory2OutlinedIcon from "@mui/icons-material/Inventory2Outlined";
 import NotificationsActiveRoundedIcon from "@mui/icons-material/NotificationsActiveRounded";
 import IngredientInventory from "../components/manager-dashboard/IngredientInventory";
-import CashierItemAvailability from "../components/cashier-dashboard/CashierItemAvailability";
 import { getPrinterSettings, printKitchenTicketGroups } from "../utils/qzPrinting";
 import { buildOrderReceiptGroups } from "../utils/categoryReceiptUtils";
 import NotificationSettingsCard from "../components/cashier-dashboard/NotificationSettingsCard";
 import { DashboardThemeProvider } from "../theme/DashboardTheme";
 import { useTenant } from "../context/TenantContext";
-import OrderTypeFilters from "../components/cashier-dashboard/orders/OrderTypeFilters";
 import useNewOrderBell from "../components/cashier-dashboard/orders/useNewOrderBell";
 
 const AUTO_PRINT_KEY = "servio.cashier.autoPrintAfterSave";
@@ -48,11 +43,12 @@ function Dashboard() {
   const [isSalesHistoryOpen, setIsSalesHistoryOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("orders");
   const [orderType, setOrderType] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
   const [testInvoice, setTestInvoice] = useState(null);
   const { orders = [], finishedOrders = [], ordersLoading, ordersLoadError, newTableOrderAlert } = useOrders();
   const { storeInfo = {} } = useStore();
   const { items = [], categoriesList = [], menuLoading, updateCategoryPrintRoutes } = useMenu();
-  const { t, language } = useLanguage();
+  const { language } = useLanguage();
   const { selectedBranchId } = useBranch();
   const { tenantId } = useTenant();
   const { bell, announcement } = useNewOrderBell({ tenantId, branchId: selectedBranchId, orders, ordersLoading, ordersLoadError });
@@ -201,86 +197,13 @@ function Dashboard() {
           >
             <DashboardHeader
               handleNotificationOpen={() => setIsNotificationOpen(true)}
+              totalSales={totalSales}
+              currency={currency}
+              salesLoading={ordersLoading || ordersLoadError}
+              onOpenSalesHistory={() => setIsSalesHistoryOpen(true)}
             />
           </Paper>
 
-          <Paper
-            elevation={0}
-            sx={{
-              p: { xs: 1.5, sm: 2, md: 2.25 },
-              borderRadius: { xs: 3, md: 4 },
-              border: "1px solid rgba(233,222,207,.12)",
-              background: "#1b1a18",
-              boxShadow: "none",
-            }}
-          >
-            <Stack
-              direction={{ xs: "column", sm: "row" }}
-              sx={{
-                alignItems: { xs: "stretch", sm: "center" },
-                justifyContent: "space-between",
-                gap: 2,
-              }}
-            >
-              <Box sx={{ minWidth: 0 }}>
-                <Typography
-                  variant="caption"
-                  sx={{ color: "text.secondary", fontWeight: 800 }}
-                >
-                  {t("totalSales")} ·{" "}
-                  {language === "ar" ? "اليوم التشغيلي" : "Workday"}
-                </Typography>
-                <Stack
-                  direction="row"
-
-                  spacing={1}
-                  sx={{ mt: 0.2 , alignItems: "baseline"}}
-                >
-                  <Typography
-                    sx={{
-                      fontSize: { xs: "1.45rem", sm: "1.8rem" },
-                      fontWeight: 950,
-                      color: "text.primary",
-                      letterSpacing: "-.04em",
-                    }}
-                  >
-                    {ordersLoading || ordersLoadError
-                      ? "—"
-                      : totalSales.toFixed(2)}
-                  </Typography>
-                  <Typography
-                    variant="body2"
-                    fontWeight={800}
-                    color="text.secondary"
-                  >
-                    {currency}
-                  </Typography>
-                </Stack>
-              </Box>
-              <Stack
-                direction={{ xs: "column", sm: "row" }}
-
-
-                spacing={1}
-                sx={{ width: { xs: "100%", sm: "auto" } , justifyContent: "flex-end", alignItems: { xs: "stretch", sm: "center" }}}
-              >
-                <Button
-                  variant="outlined"
-                  startIcon={<ReceiptLongRoundedIcon />}
-                  onClick={() => setIsSalesHistoryOpen(true)}
-                  sx={{
-                    borderRadius: 2.5,
-                    fontWeight: 800,
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  {t("orderHistory")}
-                </Button>
-              </Stack>
-            </Stack>
-          </Paper>
-
-          <CashierShiftGate />
           <Box
             sx={{
               display: "flex",
@@ -331,13 +254,7 @@ function Dashboard() {
                 value="inventory"
                 icon={<Inventory2OutlinedIcon />}
                 iconPosition="start"
-                label={language === "ar" ? "إدارة المخزون" : "Inventory"}
-              />
-              <Tab
-                value="availability"
-                icon={<Inventory2OutlinedIcon />}
-                iconPosition="start"
-                label={language === "ar" ? "توفر الأصناف" : "Item availability"}
+                label={language === "ar" ? "المخزون والتوفر" : "Inventory & availability"}
               />
               <Tab
                 value="printing"
@@ -360,23 +277,22 @@ function Dashboard() {
                 label={language === "ar" ? "الورديات" : "Shifts"}
               />
             </Tabs>
-            {activeTab === "orders" && (
-              <OrderTypeFilters
-                value={orderType}
-                onChange={setOrderType}
+            {activeTab === "orders" ? (
+              <LiveOrders
+                orderTypeFilter={orderType}
+                onOrderTypeChange={setOrderType}
+                statusFilter={statusFilter}
+                onStatusChange={setStatusFilter}
                 bell={bell}
                 announcement={announcement}
-                language={language}
               />
-            )}
-            {activeTab === "orders" ? (
-              <LiveOrders orderTypeFilter={orderType} />
             ) : activeTab === "shifts" ? (
-              <ShiftReports />
+              <Stack spacing={2.25}>
+                <CashierShiftGate requireStart={false} />
+                <ShiftReports />
+              </Stack>
             ) : activeTab === "inventory" ? (
               <IngredientInventory />
-            ) : activeTab === "availability" ? (
-              <CashierItemAvailability />
             ) : activeTab === "notifications" ? (
               <Box sx={{ maxWidth: 1100, mx: "auto", py: { xs: 1, md: 2 } }}>
                 <NotificationSettingsCard />

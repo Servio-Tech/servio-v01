@@ -36,13 +36,14 @@ function SuggestionBanner() {
           zIndex: 1200,
           insetInlineEnd: 12,
           bottom: "calc(90px + env(safe-area-inset-bottom, 0px))",
-          width: 48,
-          height: 48,
+          width: 44,
+          height: 44,
+          borderRadius: "12px",
           bgcolor: "#fffaf1",
-          color: "#c85c2c",
-          border: "1px solid rgba(200, 92, 44, .28)",
-          boxShadow: "0 6px 20px rgba(33, 29, 26, .2)",
-          "&:hover": { bgcolor: "#f8e5d8" },
+          color: "#a54700",
+          border: "1px solid rgba(244, 121, 32, .28)",
+          boxShadow: "0 6px 18px rgba(23, 26, 47, .16)",
+          "&:hover": { bgcolor: "#fff2e8" },
         }}
       >
         <Badge
@@ -78,8 +79,8 @@ function SuggestionBanner() {
         justifyContent: "space-between",
         gap: 1,
         border: "1.5px solid",
-        borderColor: "primary.main",
-        boxShadow: "0 8px 26px rgba(33, 29, 26, .2)",
+        borderColor: "#f47920",
+        boxShadow: "0 8px 26px rgba(23, 26, 47, .16)",
       }}
     >
       <Box sx={{ display: "flex", alignItems: "center", gap: 1, overflow: "hidden", minWidth: 0 }}>
@@ -91,15 +92,14 @@ function SuggestionBanner() {
         />
         <Box sx={{ overflow: "hidden", minWidth: 0, display: "flex", flexDirection: "column", justifyContent: "center" }}>
           <Box sx={{ display: "flex", alignItems: "center", gap: 0.55, mb: 0.2, minWidth: 0 }}>
-            <AutoAwesomeIcon sx={{ fontSize: ".78rem", color: "primary.main", flexShrink: 0 }} />
-            <Typography variant="caption" color="primary.main" sx={{ fontWeight: 800, fontSize: ".67rem", lineHeight: 1, whiteSpace: "nowrap" }}>
+            <AutoAwesomeIcon sx={{ fontSize: ".78rem", color: "#a54700", flexShrink: 0 }} />
+            <Typography variant="caption" sx={{ color: "#a54700", fontWeight: 800, fontSize: ".67rem", lineHeight: 1, whiteSpace: "nowrap" }}>
               {isArabic ? "قد يناسب طلبك" : "You may like this"}
             </Typography>
             <Chip
               size="small"
               label={isArabic ? "اختيار سريع" : "Quick pick"}
-              color="primary"
-              sx={{ display: { xs: "none", sm: "inline-flex" }, height: 18, borderRadius: "7px", fontSize: ".58rem", fontWeight: 900, "& .MuiChip-label": { px: 0.65 } }}
+              sx={{ display: { xs: "none", sm: "inline-flex" }, height: 18, borderRadius: "7px", fontSize: ".58rem", fontWeight: 900, bgcolor: "#f47920", color: "#171a2f", "& .MuiChip-label": { px: 0.65 } }}
             />
           </Box>
           <Typography variant="body2" sx={{ fontWeight: 750, fontSize: ".82rem", lineHeight: 1.2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
@@ -116,7 +116,7 @@ function SuggestionBanner() {
           variant="contained"
           disableElevation
           onClick={() => addToCart(currentSuggestion)}
-          sx={{ borderRadius: "12px", fontWeight: 800, px: 1.25, py: 0.45, minWidth: "auto", fontSize: ".72rem", whiteSpace: "nowrap" }}
+          sx={{ borderRadius: "12px", fontWeight: 800, px: 1.25, py: 0.45, minWidth: "auto", fontSize: ".72rem", whiteSpace: "nowrap", bgcolor: "#f47920", color: "#171a2f", "&:hover": { bgcolor: "#d96816" } }}
         >
           {isArabic ? "اطلب" : "Order"}
         </Button>
