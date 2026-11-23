@@ -6,6 +6,10 @@ import AdminRegister from "./pages/AdminRegister";
 import Home from "./pages/Home";
 import AuthCallback from "./pages/AuthCallback";
 import OrderTrackingPage from "./pages/OrderTrackingPage";
+import OwnerLogin from "./pages/OwnerLogin";
+import OwnerDashboard from "./pages/OwnerDashboard";
+import OwnerLocale from "./components/owner/OwnerLocale";
+import RequireOwner from "./components/owner/RequireOwner";
 import NotFound from "./components/NotFound";
 import RequireSession from "./components/RequireSession";
 import { useParams } from "react-router-dom";
@@ -28,6 +32,8 @@ function App() {
         <Route path="/login" element={<AdminLogin />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="/register" element={<AdminRegister />} />
+        <Route path="/owner-console/sign-in" element={<OwnerLocale><OwnerLogin /></OwnerLocale>} />
+        <Route path="/owner-console" element={<OwnerLocale><RequireOwner><OwnerDashboard /></RequireOwner></OwnerLocale>} />
         <Route path="/cashier/:slug" element={<CashierLoginRoute />} />
         <Route path="/track/:slug/:orderId?" element={<OrderTrackingPage />} />
         <Route path="/menu/:slug/:tableNumber?" element={<Menu />} />

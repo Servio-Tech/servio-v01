@@ -31,12 +31,15 @@ import { useMenu } from "../context/MenuContext";
 import AccessTimeRoundedIcon from "@mui/icons-material/AccessTimeRounded";
 import Inventory2OutlinedIcon from "@mui/icons-material/Inventory2Outlined";
 import NotificationsActiveRoundedIcon from "@mui/icons-material/NotificationsActiveRounded";
-import NewTableOrderAlert from "../components/cashier-dashboard/orders/NewTableOrderAlert";
 import IngredientInventory from "../components/manager-dashboard/IngredientInventory";
 import CashierItemAvailability from "../components/cashier-dashboard/CashierItemAvailability";
 import { getPrinterSettings, printKitchenTicketGroups } from "../utils/qzPrinting";
 import { buildOrderReceiptGroups } from "../utils/categoryReceiptUtils";
 import NotificationSettingsCard from "../components/cashier-dashboard/NotificationSettingsCard";
+import { DashboardThemeProvider } from "../theme/DashboardTheme";
+import { useTenant } from "../context/TenantContext";
+import OrderTypeFilters from "../components/cashier-dashboard/orders/OrderTypeFilters";
+import useNewOrderBell from "../components/cashier-dashboard/orders/useNewOrderBell";
 
 const AUTO_PRINT_KEY = "servio.cashier.autoPrintAfterSave";
 
@@ -44,13 +47,15 @@ function Dashboard() {
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const [isSalesHistoryOpen, setIsSalesHistoryOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("orders");
+  const [orderType, setOrderType] = useState("all");
   const [testInvoice, setTestInvoice] = useState(null);
-  const { finishedOrders = [], ordersLoading, ordersLoadError } = useOrders();
-  const { newTableOrderAlert } = useOrders();
+  const { orders = [], finishedOrders = [], ordersLoading, ordersLoadError, newTableOrderAlert } = useOrders();
   const { storeInfo = {} } = useStore();
   const { items = [], categoriesList = [], menuLoading, updateCategoryPrintRoutes } = useMenu();
   const { t, language } = useLanguage();
   const { selectedBranchId } = useBranch();
+  const { tenantId } = useTenant();
+  const { bell, announcement } = useNewOrderBell({ tenantId, branchId: selectedBranchId, orders, ordersLoading, ordersLoadError });
   const categoryPrinterNames = useMemo(
     () =>
       categoriesList
@@ -177,13 +182,11 @@ function Dashboard() {
       sx={{
         width: "100%",
         minHeight: "100vh",
-        background:
-          "radial-gradient(circle at 88% 8%, rgba(244,121,32,.14), transparent 24%), linear-gradient(135deg, #fff8f1 0%, #f7f8fb 44%, #eef1f7 100%)",
-        py: { xs: 2, sm: 3, md: 4 },
-        px: { xs: 2, sm: 3, md: 5 },
+        background: "radial-gradient(circle at 85% 0%, rgba(195,96,43,.10), transparent 25%), #111110",
+        py: { xs: 2, sm: 3, md: 3.5 },
+        px: { xs: 1.5, sm: 3, md: 4 },
       }}
     >
-      <NewTableOrderAlert />
       <Container maxWidth="xl" disableGutters>
         <Stack spacing={{ xs: 1.5, md: 2.25 }}>
           <Paper
@@ -191,10 +194,9 @@ function Dashboard() {
             sx={{
               p: { xs: 1.5, sm: 2, md: 2.5 },
               borderRadius: { xs: 3, md: 4 },
-              border: "1px solid rgba(255,255,255,.72)",
-              background: "rgba(255,255,255,.78)",
-              backdropFilter: "blur(18px)",
-              boxShadow: "0 14px 42px rgba(23,26,47,.06)",
+              border: "1px solid rgba(233,222,207,.12)",
+              background: "#1b1a18",
+              boxShadow: "none",
             }}
           >
             <DashboardHeader
@@ -207,10 +209,9 @@ function Dashboard() {
             sx={{
               p: { xs: 1.5, sm: 2, md: 2.25 },
               borderRadius: { xs: 3, md: 4 },
-              border: "1px solid rgba(255,255,255,.68)",
-              background: "rgba(255,255,255,.72)",
-              backdropFilter: "blur(18px)",
-              boxShadow: "0 16px 48px rgba(23,26,47,.06)",
+              border: "1px solid rgba(233,222,207,.12)",
+              background: "#1b1a18",
+              boxShadow: "none",
             }}
           >
             <Stack
@@ -298,10 +299,9 @@ function Dashboard() {
             sx={{
               p: { xs: 1.25, sm: 2, md: 2.5 },
               borderRadius: { xs: 3, md: 4 },
-              border: "1px solid rgba(255,255,255,.68)",
-              background: "rgba(255,255,255,.72)",
-              backdropFilter: "blur(18px)",
-              boxShadow: "0 16px 48px rgba(23,26,47,.06)",
+              border: "1px solid rgba(233,222,207,.12)",
+              background: "#1b1a18",
+              boxShadow: "none",
               minHeight: { xs: 0, md: "calc(100vh - 168px)" },
               minWidth: 0,
             }}
@@ -360,8 +360,17 @@ function Dashboard() {
                 label={language === "ar" ? "الورديات" : "Shifts"}
               />
             </Tabs>
+            {activeTab === "orders" && (
+              <OrderTypeFilters
+                value={orderType}
+                onChange={setOrderType}
+                bell={bell}
+                announcement={announcement}
+                language={language}
+              />
+            )}
             {activeTab === "orders" ? (
-              <LiveOrders />
+              <LiveOrders orderTypeFilter={orderType} />
             ) : activeTab === "shifts" ? (
               <ShiftReports />
             ) : activeTab === "inventory" ? (
@@ -415,4 +424,11 @@ function Dashboard() {
   );
 }
 
-export default Dashboard;
+export default function CashierDashboard() {
+  const { language } = useLanguage();
+  return (
+    <DashboardThemeProvider direction={language === "en" ? "ltr" : "rtl"}>
+      <Dashboard />
+    </DashboardThemeProvider>
+  );
+}

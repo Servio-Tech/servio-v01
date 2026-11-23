@@ -1,148 +1,132 @@
+import { useEffect, useState } from "react";
 import { useSuggestions } from "../../context/SuggestionsContext";
 import { useCart } from "../../context/CartContext";
 import { useLanguage } from "../../context/LanguageContext";
-
-// MUI COMPONENTS
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import Button from "@mui/material/Button";
 import IconButton from "@mui/material/IconButton";
 import Paper from "@mui/material/Paper";
 import Chip from "@mui/material/Chip";
+import Badge from "@mui/material/Badge";
 import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
 import CloseIcon from "@mui/icons-material/Close";
 
 function SuggestionBanner() {
-  const { suggestedItems, dismissSuggestion } = useSuggestions();
-  const { addToCart, cartItems } = useCart();
+  const { suggestedItems } = useSuggestions();
+  const { addToCart } = useCart();
   const { language } = useLanguage();
   const isArabic = language !== "en";
+  const currentSuggestion = suggestedItems?.[0];
+  const [expanded, setExpanded] = useState(true);
 
-  // عدم العرض إذا لم تكن هناك اقتراحات أو السلة فارغة
-  if (!suggestedItems || suggestedItems.length === 0 || cartItems.length === 0) {
-    return null;
+  useEffect(() => {
+    if (currentSuggestion) setExpanded(true);
+  }, [currentSuggestion?.id]);
+
+  if (!currentSuggestion) return null;
+
+  if (!expanded) {
+    return (
+      <IconButton
+        aria-label={isArabic ? `عرض الاقتراحات (${suggestedItems.length})` : `Show suggestions (${suggestedItems.length})`}
+        onClick={() => setExpanded(true)}
+        sx={{
+          position: "fixed",
+          zIndex: 1200,
+          insetInlineEnd: 12,
+          bottom: "calc(90px + env(safe-area-inset-bottom, 0px))",
+          width: 48,
+          height: 48,
+          bgcolor: "#fffaf1",
+          color: "#c85c2c",
+          border: "1px solid rgba(200, 92, 44, .28)",
+          boxShadow: "0 6px 20px rgba(33, 29, 26, .2)",
+          "&:hover": { bgcolor: "#f8e5d8" },
+        }}
+      >
+        <Badge
+          badgeContent={suggestedItems.length}
+          color="error"
+          max={9}
+          overlap="circular"
+          sx={{ "& .MuiBadge-badge": { fontWeight: 900, minWidth: 17, height: 17, fontSize: ".62rem" } }}
+        >
+          <AutoAwesomeIcon />
+        </Badge>
+      </IconButton>
+    );
   }
-
-  const currentSuggestion = suggestedItems[0];
 
   return (
     <Paper
-      elevation={2}
+      elevation={3}
       sx={{
-        position: "fixed",
-        bottom: "120px", // ارتفاع متناسق فوق شريط السلة العائم
-        left: "16px",
-        right: "80px", // ترك مسافة مريحة لزر طلب المساعدة في اليمين
-        height: "52px", // ارتفاع نحيف متوافق مع ارتفاع زر SpeedDial
+        position: "relative",
+        zIndex: 1,
+        width: "100%",
+        maxWidth: "720px",
+        mx: "auto",
+        mb: 2,
+        minHeight: "72px",
         bgcolor: "background.paper",
-        borderRadius: "26px", // حواف كبسولية مدورة بالكامل لتماثل الأزرار العائمة
+        borderRadius: "16px",
         px: 1.2,
-        py: 0.5,
+        py: 1,
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
         gap: 1,
-        zIndex: 1030,
         border: "1.5px solid",
-        borderColor: "primary.main", // إطار برتقالي مطابق للتصميم
-        boxShadow: "0px 4px 14px rgba(255, 120, 0, 0.12)",
+        borderColor: "primary.main",
+        boxShadow: "0 8px 26px rgba(33, 29, 26, .2)",
       }}
     >
-      {/* جهة التفاصيل والصورة */}
-      <Box sx={{ display: "flex", alignItems: "center", gap: 1, overflow: "hidden" }}>
+      <Box sx={{ display: "flex", alignItems: "center", gap: 1, overflow: "hidden", minWidth: 0 }}>
         <Box
           component="img"
           src={currentSuggestion.image || "/logo-icon.webp"}
           alt={currentSuggestion.name}
-          sx={{
-            width: 38,
-            height: 38,
-            borderRadius: "50%", // صورة دائريّة تتناسق مع حواف الكبسولة
-            objectFit: "cover",
-            flexShrink: 0,
-          }}
+          sx={{ width: 42, height: 42, borderRadius: "12px", objectFit: "cover", flexShrink: 0 }}
         />
-        <Box
-          sx={{
-            overflow: "hidden",
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "center",
-          }}
-        >
-          <Box sx={{ display: "flex", alignItems: "center", gap: 0.55, mb: 0.2 }}>
-            <AutoAwesomeIcon sx={{ fontSize: "0.75rem", color: "primary.main" }} />
-            <Typography
-              variant="caption"
-              color="primary.main"
-              sx={{ fontWeight: 800, fontSize: "0.65rem", lineHeight: 1 }}
-            >
+        <Box sx={{ overflow: "hidden", minWidth: 0, display: "flex", flexDirection: "column", justifyContent: "center" }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 0.55, mb: 0.2, minWidth: 0 }}>
+            <AutoAwesomeIcon sx={{ fontSize: ".78rem", color: "primary.main", flexShrink: 0 }} />
+            <Typography variant="caption" color="primary.main" sx={{ fontWeight: 800, fontSize: ".67rem", lineHeight: 1, whiteSpace: "nowrap" }}>
               {isArabic ? "قد يناسب طلبك" : "You may like this"}
             </Typography>
             <Chip
               size="small"
-              label="اختيار سريع"
+              label={isArabic ? "اختيار سريع" : "Quick pick"}
               color="primary"
-              sx={{
-                height: 18,
-                borderRadius: "7px",
-                fontSize: "0.58rem",
-                fontWeight: 900,
-                "& .MuiChip-label": { px: 0.65 },
-              }}
+              sx={{ display: { xs: "none", sm: "inline-flex" }, height: 18, borderRadius: "7px", fontSize: ".58rem", fontWeight: 900, "& .MuiChip-label": { px: 0.65 } }}
             />
           </Box>
-
-          <Typography
-            variant="body2"
-            sx={{
-              fontWeight: 700,
-              fontSize: "0.8rem",
-              lineHeight: 1.2,
-              whiteSpace: "nowrap",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-            }}
-          >
+          <Typography variant="body2" sx={{ fontWeight: 750, fontSize: ".82rem", lineHeight: 1.2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
             {currentSuggestion.name}
           </Typography>
-
-          <Typography
-            variant="caption"
-            color="text.secondary"
-            sx={{ fontWeight: 700, fontSize: "0.7rem", lineHeight: 1 }}
-          >
-            +{Number(currentSuggestion.price).toFixed(2)} ر.س
+          <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700, fontSize: ".7rem", lineHeight: 1 }}>
+            +{Number(currentSuggestion.price).toFixed(2)} {isArabic ? "ر.س" : "SAR"}
           </Typography>
         </Box>
       </Box>
-
-      {/* الأزرار: الطلب والإغلاق */}
-      <Box sx={{ display: "flex", alignItems: "center", gap: 0.3, flexShrink: 0 }}>
+      <Box sx={{ display: "flex", alignItems: "center", gap: 0.25, flexShrink: 0 }}>
         <Button
           size="small"
           variant="contained"
           disableElevation
           onClick={() => addToCart(currentSuggestion)}
-          sx={{
-            borderRadius: "16px",
-            fontWeight: 700,
-            px: 1.5,
-            py: 0.3,
-            minWidth: "auto",
-            fontSize: "0.72rem",
-            bgcolor: "primary.main",
-            "&:hover": { bgcolor: "primary.dark" },
-          }}
+          sx={{ borderRadius: "12px", fontWeight: 800, px: 1.25, py: 0.45, minWidth: "auto", fontSize: ".72rem", whiteSpace: "nowrap" }}
         >
           {isArabic ? "اطلب" : "Order"}
         </Button>
         <IconButton
           size="small"
-          onClick={() => dismissSuggestion(currentSuggestion.id)}
-          sx={{ color: "text.disabled", p: 0.3 }}
+          aria-label={isArabic ? "طي الاقتراح" : "Collapse suggestion"}
+          onClick={() => setExpanded(false)}
+          sx={{ color: "text.secondary", p: 0.55 }}
         >
-          <CloseIcon sx={{ fontSize: "0.95rem" }} />
+          <CloseIcon sx={{ fontSize: "1rem" }} />
         </IconButton>
       </Box>
     </Paper>

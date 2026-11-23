@@ -28,11 +28,11 @@ function WaiterCallNotification({ open, close }) {
       onClose={close}
       slotProps={{
         paper: {
-          dir: "rtl",
+          dir: language === "ar" ? "rtl" : "ltr",
           sx: {
             width: { xs: "100%", sm: 520 },
             p: { xs: 2, sm: 3 },
-            background: "linear-gradient(180deg,#f8fafc 0%,#eef2f7 100%)",
+            background: "#171614",
           },
         },
       }}
@@ -54,7 +54,7 @@ function WaiterCallNotification({ open, close }) {
             {t("waiterPending")}: {calls.length}
           </Typography>
         </Box>
-        <IconButton onClick={() => close()} sx={{ backgroundColor: "#ffffff" }}>
+        <IconButton aria-label={language === "ar" ? "إغلاق" : "Close"} onClick={() => close()} sx={{ backgroundColor: "rgba(255,255,255,.06)" }}>
           <CloseIcon />
         </IconButton>
       </Box>
@@ -67,13 +67,13 @@ function WaiterCallNotification({ open, close }) {
             p: 4,
             textAlign: "center",
             borderRadius: "16px",
-            border: "1px dashed #cbd5e1",
-            backgroundColor: "#ffffff",
+            border: "1px dashed rgba(233,222,207,.20)",
+            backgroundColor: "#211f1c",
             mt: 2,
           }}
         >
           <CheckCircleIcon sx={{ fontSize: 48, color: "success", mb: 1 }} />
-          <Typography variant="subtitle1" fontWeight="bold" color="secondary">
+          <Typography variant="subtitle1" fontWeight="bold" color="text.primary">
             {t("waiterEmpty")}
           </Typography>
         </Card>
@@ -85,8 +85,8 @@ function WaiterCallNotification({ open, close }) {
                 elevation={0}
                 sx={{
                   borderRadius: "14px",
-                  border: "1px solid #e2e8f0",
-                  backgroundColor: "#ffffff",
+                  border: "1px solid rgba(233,222,207,.12)",
+                  backgroundColor: "#211f1c",
                 }}
               >
                 <CardContent sx={{ p: 2, display: "flex", flexDirection: "column", gap: 1.5 }}>
@@ -113,10 +113,11 @@ function WaiterCallNotification({ open, close }) {
                     disabled={resolvingId === call.id}
                     sx={{
                       borderRadius: "8px",
-                      backgroundColor: "success",
+                      backgroundColor: "success.main",
+                      color: "#122219",
                       fontWeight: "bold",
                       boxShadow: "none",
-                      "&:hover": { backgroundColor: "success" },
+                      "&:hover": { backgroundColor: "success.dark" },
                     }}
                   >
                     {resolvingId === call.id ? "جاري الإرسال..." : t("waiterFulfilled")}

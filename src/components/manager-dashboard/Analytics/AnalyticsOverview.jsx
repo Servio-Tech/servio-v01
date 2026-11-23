@@ -1,226 +1,33 @@
-// MUI COMPONENTS
-import Box from "@mui/material/Box";
-import Typography from "@mui/material/Typography";
-import Card from "@mui/material/Card";
-import CardContent from "@mui/material/CardContent";
-import Chip from "@mui/material/Chip";
-import Button from "@mui/material/Button";
-
-// CONTEXTS
+import { Box, Card, CardContent, Chip, Typography } from "@mui/material";
 import { useAnalytics } from "../../../context/AnalyticsContext";
 import { useLanguage } from "../../../context/LanguageContext";
 
 function AnalyticsOverview() {
   const { t, language } = useLanguage();
-  const {
-    todaysOrders,
-    totalSalesToday,
-    aovToday,
-    salesGrowth,
-    aovGrowth,
-    ordersGrowth,
-    analyticsReady,
-    ordersLoadError,
-    reloadOrders,
-  } = useAnalytics();
-  const operationalDayLabel = language === "ar" ? "اليوم التشغيلي" : "Operational day";
-
-  // دالة مساعدة لتنسيق شريحة نسبة النمو ديناميكياً
-  const renderGrowthChip = (growthValue) => {
-    const val = Number(growthValue);
-    const isPositive = val >= 0;
-
-    return (
-      <Chip
-        label={`${isPositive ? "+" : ""} ${val}%`}
-        size="small"
-        sx={{
-          backgroundColor: isPositive ? "#e8f5e9" : "#ffebee",
-          color: isPositive ? "#2e7d32" : "#c62828",
-          fontWeight: 700,
-          borderRadius: "8px",
-          direction: "ltr", // للحفاظ على ترتيب الإشارة والنسبة المئوية
-        }}
-      />
-    );
-  };
-
-  return (
-    <Box sx={{ mb: 1, pt: 3 }}>
-      {/* HEADING */}
-      <Box sx={{ mb: 3 }}>
-        <Typography
-          variant="h4"
-          component="h1"
-          sx={{
-            fontWeight: 800,
-            mb: 0.2,
-            color: "text.primary",
-            textAlign: "start",
-          }}
-        >
-          {t("managerPerformance")}
-        </Typography>
-        <Typography
-          variant="subtitle1"
-          sx={{ color: "text.secondary", fontWeight: 600, textAlign: "start" }}
-        >
-          {t("managerBusiness")}
-        </Typography>
-      </Box>
-
-      {/* عند تعذر جلب الطلبات نعرض حالة واضحة بدل رقم صفر يوحي بعدم وجود مبيعات. */}
-      {ordersLoadError && (
-        <Box role="status" sx={{ mb: 2, color: "error.main", display: "flex", alignItems: "center", gap: 1 }}>
-          <Typography variant="body2">{t("unexpectedError")}</Typography>
-          <Button size="small" color="error" onClick={reloadOrders}>
-            {language === "ar" ? "إعادة المحاولة" : "Retry"}
-          </Button>
-        </Box>
-      )}
-
-      {/* ANALYTICS OVERVIEW CARDS */}
-      <Box
-        sx={{
-          display: "grid",
-          gridTemplateColumns: {
-            xs: "1fr",
-            sm: "repeat(2, 1fr)",
-            md: "repeat(3, 1fr)",
-          },
-          gap: 2.5,
-          "& > .MuiCard-root": { position: "relative", overflow: "hidden", "&::before": { content: '""', position: "absolute", insetInline: 0, top: 0, height: 6, background: "#F47920" } },
-          "& > .MuiCard-root:nth-of-type(2)::before": { background: "#2878C8" },
-          "& > .MuiCard-root:nth-of-type(3)::before": { background: "#159A68" },
-        }}
-      >
-        {/* CARD 1: TOTAL SALES */}
-        <Card
-          elevation={0}
-          sx={{
-            borderRadius: "16px",
-            border: "1px solid",
-            borderColor: "divider",
-            boxShadow: "0px 4px 20px rgba(0,0,0,0.02)",
-          }}
-        >
-          <CardContent sx={{ p: 2.5, "&:last-child": { pb: 2.5 } }}>
-            <Typography
-              variant="body2"
-              sx={{
-                color: "text.secondary",
-                fontWeight: 600,
-                mb: 1,
-                textAlign: "start",
-              }}
-            >
-              {language === "ar" ? `إجمالي المبيعات · ${operationalDayLabel}` : `Total sales · ${operationalDayLabel}`}
-            </Typography>
-            <Box
-              sx={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "end",
-              }}
-            >
-              <Typography variant="h4" sx={{ fontWeight: 700 }}>
-                {analyticsReady ? totalSalesToday : "—"}{" "}
-                <Typography
-                  component="span"
-                  variant="body2"
-                  sx={{ fontWeight: 700 }}
-                >
-                  {t("currencySar")}
-                </Typography>
-              </Typography>
-              {analyticsReady && renderGrowthChip(salesGrowth)}
-            </Box>
-          </CardContent>
-        </Card>
-
-        {/* CARD 2: AOV */}
-        <Card
-          elevation={0}
-          sx={{
-            borderRadius: "16px",
-            border: "1px solid",
-            borderColor: "divider",
-            boxShadow: "0px 4px 20px rgba(0,0,0,0.02)",
-          }}
-        >
-          <CardContent sx={{ p: 2.5, "&:last-child": { pb: 2.5 } }}>
-            <Typography
-              variant="body2"
-              sx={{
-                color: "text.secondary",
-                fontWeight: 600,
-                mb: 1,
-                textAlign: "start",
-              }}
-            >
-              {t("managerAov")}
-            </Typography>
-            <Box
-              sx={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "end",
-              }}
-            >
-              <Typography variant="h4" sx={{ fontWeight: 700 }}>
-                {analyticsReady ? aovToday : "—"}{" "}
-                <Typography
-                  component="span"
-                  variant="body2"
-                  sx={{ fontWeight: 700 }}
-                >
-                  {t("currencySar")}
-                </Typography>
-              </Typography>
-              {analyticsReady && renderGrowthChip(aovGrowth)}
-            </Box>
-          </CardContent>
-        </Card>
-
-        {/* CARD 3: TOTAL ORDERS */}
-        <Card
-          elevation={0}
-          sx={{
-            borderRadius: "16px",
-            border: "1px solid",
-            borderColor: "divider",
-            boxShadow: "0px 4px 20px rgba(0,0,0,0.02)",
-          }}
-        >
-          <CardContent sx={{ p: 2.5, "&:last-child": { pb: 2.5 } }}>
-            <Typography
-              variant="body2"
-              sx={{
-                color: "text.secondary",
-                fontWeight: 600,
-                mb: 1,
-                textAlign: "start",
-              }}
-            >
-              {language === "ar" ? `إجمالي الطلبات · ${operationalDayLabel}` : `Total orders · ${operationalDayLabel}`}
-            </Typography>
-            <Box
-              sx={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "end",
-              }}
-            >
-              <Typography variant="h4" sx={{ fontWeight: 700 }}>
-                {analyticsReady ? todaysOrders.length : "—"}
-              </Typography>
-              {analyticsReady && renderGrowthChip(ordersGrowth)}
-            </Box>
-          </CardContent>
-        </Card>
-      </Box>
+  const { todaysOrders, totalSalesToday, aovToday, salesGrowth, aovGrowth, ordersGrowth, analyticsReady } = useAnalytics();
+  const ar = language === "ar";
+  const metrics = [
+    { label: ar ? "مبيعات اليوم التشغيلي" : "Operational day sales", value: totalSalesToday, unit: t("currencySar"), growth: salesGrowth },
+    { label: t("managerAov"), value: aovToday, unit: t("currencySar"), growth: aovGrowth },
+    { label: ar ? "طلبات اليوم التشغيلي" : "Operational day orders", value: todaysOrders.length, growth: ordersGrowth },
+  ];
+  return <Box>
+    <Box sx={{ mb: 2 }}>
+      <Typography sx={{ color: "#ec8a4b", fontSize: ".72rem", fontWeight: 800, letterSpacing: ".12em", mb: .5 }}>SERVIO / {ar ? "اللمحة العامة" : "OVERVIEW"}</Typography>
+      <Typography component="h2" sx={{ color: "#f7efe4", fontSize: { xs: "1.2rem", md: "1.4rem" }, fontWeight: 800 }}>{t("managerPerformance")}</Typography>
+      <Typography sx={{ color: "#b4a99d", fontSize: ".84rem", mt: .4 }}>{ar ? "مقارنة اليوم التشغيلي باليوم السابق" : "Operational day compared with the previous day"}</Typography>
     </Box>
-  );
+    <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "repeat(3, minmax(0,1fr))" }, gap: 2 }}>
+      {metrics.map((metric) => <Card key={metric.label} elevation={0} sx={{ bgcolor: "#24211e", border: "1px solid #3d3731", borderRadius: "14px", color: "#f7efe4" }}>
+        <CardContent sx={{ p: 2.5, "&:last-child": { pb: 2.5 } }}>
+          <Typography sx={{ color: "#bdb0a2", fontSize: ".84rem", fontWeight: 600 }}>{metric.label}</Typography>
+          <Box sx={{ display: "flex", alignItems: "end", justifyContent: "space-between", gap: 1, mt: 2 }}>
+            <Typography sx={{ fontSize: { xs: "1.4rem", md: "1.75rem" }, fontWeight: 800, overflowWrap: "anywhere", lineHeight: 1.2 }}>{analyticsReady ? metric.value : "—"} <Box component="span" sx={{ fontSize: ".8rem", color: "#bdb0a2" }}>{metric.unit}</Box></Typography>
+            {analyticsReady && <Chip size="small" label={`${Number(metric.growth) >= 0 ? "+" : ""}${metric.growth}%`} sx={{ direction: "ltr", bgcolor: Number(metric.growth) >= 0 ? "#28392e" : "#402b28", color: Number(metric.growth) >= 0 ? "#a9cea9" : "#f1a397", fontWeight: 700 }} />}
+          </Box>
+        </CardContent>
+      </Card>)}
+    </Box>
+  </Box>;
 }
-
 export default AnalyticsOverview;

@@ -9,16 +9,20 @@ import PlaceOutlinedIcon from "@mui/icons-material/PlaceOutlined";
 
 // CONTEXTS
 import { useStore } from "../../context/StoreInfoContext";
+import { useLanguage } from "../../context/LanguageContext";
 
 function MenuHeader({ table }) {
   // Context: استخراج بيانات المحل (الاسم والوصف) لعرضها في الهيدر الرئيسي للمنيو
   const { storeInfo } = useStore();
+  const { language } = useLanguage();
+  const isArabic = language !== "en";
 
   return (
-    <Box sx={{ pb: 0.7 }}>
+    <Box className="customer-menu-header" sx={{ pb: 0.7 }}>
       {/* TITLE & TABLE NUMBER */}
       <Stack
         direction="row"
+        className="customer-menu-brand-row"
         sx={{
           justifyContent: "space-between",
           alignItems: "center",
@@ -29,7 +33,8 @@ function MenuHeader({ table }) {
         <Box>
           <Typography
             variant="h4"
-            component="h1"
+              component="h1"
+              className="customer-menu-title"
             sx={{ fontWeight: 900, letterSpacing: "-0.7px", mb: 0.5, fontSize: { xs: "1.65rem", sm: "2rem" } }}
           >
             {storeInfo?.store_name || "قائمة الطعام"}
@@ -37,13 +42,14 @@ function MenuHeader({ table }) {
         </Box>
 
         {/* TABLE NUMBER BADGE */}
-        <Chip
+        {table && <Chip
+          className="customer-menu-table-chip"
           icon={
             <PlaceOutlinedIcon
               sx={{ fontSize: "1.1rem !important", ml: "4px !important" }}
             />
           }
-          label={`طاولة ${table}`}
+          label={table === "كاشير" ? (isArabic ? "طلب الكاشير" : "Cashier order") : (isArabic ? `طاولة ${table}` : `Table ${table}`)}
           sx={{
             px: 1.5,
             py: 2.2,
@@ -51,17 +57,17 @@ function MenuHeader({ table }) {
             fontWeight: 700,
             fontSize: "0.875rem",
             color: "secondary.contrastText",
-            backgroundColor: "secondary.main",
+            backgroundColor: "#f8e5d8",
             "& .MuiChip-icon": {
               marginLeft: "4px",
               marginRight: "-2px",
             },
           }}
-        />
+        />}
       </Stack>
 
       {/* MENU SEARCH BAR COMPONENT */}
-      <MenuSearchBar />
+      <Box className="customer-menu-search"><MenuSearchBar /></Box>
     </Box>
   );
 }

@@ -21,8 +21,8 @@ function ShiftMetric({ icon, label, value }) {
         minWidth: 0,
         p: { xs: 1.1, sm: 1.35 },
         borderRadius: 2.5,
-        border: "1px solid rgba(23,26,47,.07)",
-        bgcolor: "rgba(255,255,255,.86)",
+        border: "1px solid rgba(233,222,207,.12)",
+        bgcolor: "rgba(255,255,255,.035)",
       }}
     >
       <Stack direction="row" spacing={0.75}  sx={{ color: "text.secondary" , alignItems: "center"}}>
@@ -337,8 +337,8 @@ export default function CashierShiftGate() {
             overflow: "hidden",
             borderRadius: 3.5,
             color: "common.white",
-            background: "linear-gradient(118deg, #171A2F 0%, #262B49 100%)",
-            boxShadow: "0 14px 34px rgba(23,26,47,.14)",
+            background: "linear-gradient(118deg, #211d1a 0%, #34251d 100%)",
+            boxShadow: "none",
             "&::after": {
               content: '""',
               position: "absolute",
@@ -391,8 +391,8 @@ export default function CashierShiftGate() {
             p: { xs: 1.5, sm: 2 },
             borderRadius: 3.5,
             border: "1px solid rgba(22,163,74,.18)",
-            background: "linear-gradient(115deg, rgba(22,163,74,.07), rgba(255,255,255,.96) 52%)",
-            boxShadow: "0 10px 28px rgba(23,26,47,.045)",
+            background: "linear-gradient(115deg, #1d2922, #1b1a18 65%)",
+            boxShadow: "none",
           }}
         >
           <Stack direction={{ xs: "column", sm: "row" }}    sx={{ justifyContent: "space-between", alignItems: { xs: "stretch", sm: "center" }, gap: 1.5 }}>

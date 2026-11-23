@@ -11,33 +11,28 @@ import SpeedDialAction from "@mui/material/SpeedDialAction";
 import NotificationsActiveIcon from "@mui/icons-material/NotificationsActive";
 import RateReviewIcon from "@mui/icons-material/RateReview";
 import RoomServiceIcon from "@mui/icons-material/RoomService";
-
-// CONTEXT
-import { useCart } from "../../context/CartContext";
+import { useLanguage } from "../../context/LanguageContext";
 
 function FloatingActions({ handleReview, handleCallWaiter }) {
   const [openDial, setOpenDial] = useState(false);
-  const { cartItems } = useCart();
-
-  // التبديل الديناميكي للموقع بناءً على وجود عناصر في السلة
-  const hasItemsInCart = cartItems && cartItems.length > 0;
-  const bottomPosition = hasItemsInCart ? 120 : 25;
+  const { language } = useLanguage();
+  const isEnglish = language === "en";
 
   const handleDialOpen = () => setOpenDial(true);
   const handleDialClose = () => setOpenDial(false);
 
   const actions = [
     {
-      icon: <NotificationsActiveIcon sx={{ color: "#ff9800" }} />,
-      name: "طلب مساعدة الموظف",
+      icon: <NotificationsActiveIcon sx={{ color: "#c85c2c" }} />,
+      name: isEnglish ? "Call staff" : "طلب مساعدة الموظف",
       onClick: () => {
         handleDialClose();
         handleCallWaiter();
       },
     },
     {
-      icon: <RateReviewIcon color="primary" />,
-      name: "شاركنا رأيك",
+      icon: <RateReviewIcon sx={{ color: "#c85c2c" }} />,
+      name: isEnglish ? "Leave a review" : "شاركنا رأيك",
       onClick: () => {
         handleDialClose();
         handleReview();
@@ -58,29 +53,27 @@ function FloatingActions({ handleReview, handleCallWaiter }) {
       <Box
         sx={{
           position: "fixed",
-          bottom: bottomPosition, // 👈 موضع متغير
-          right: 20,
+          bottom: "calc(150px + env(safe-area-inset-bottom, 0px))",
+          right: 16,
           zIndex: 1050,
-          transition: "bottom 0.3s cubic-bezier(0.4, 0, 0.2, 1)", // 👈 انيميشن الصعود والنزول
+          transition: "opacity 0.2s ease",
         }}
       >
         <SpeedDial
-          ariaLabel="خيارات الخدمة"
+          ariaLabel={isEnglish ? "Service options" : "خيارات الخدمة"}
           sx={{
             "& .MuiFab-primary": {
-              backgroundColor: openDial
-                ? "#ff9800"
-                : "rgba(255, 152, 0, 0.75)",
+              backgroundColor: openDial ? "#c85c2c" : "rgba(200, 92, 44, 0.92)",
               backdropFilter: "blur(8px)",
               color: "#fff",
               boxShadow: openDial
-                ? "0 8px 25px rgba(255, 152, 0, 0.4)"
+                ? "0 8px 25px rgba(200, 92, 44, 0.35)"
                 : "0 4px 15px rgba(0,0,0,0.15)",
               border: "1px solid rgba(255, 255, 255, 0.3)",
               transition: "all 0.3s ease",
               "&:hover": {
-                backgroundColor: "#f57c00",
-                boxShadow: "0 6px 20px rgba(255, 152, 0, 0.5)",
+                backgroundColor: "#ad4822",
+                boxShadow: "0 6px 20px rgba(200, 92, 44, 0.38)",
               },
             },
           }}

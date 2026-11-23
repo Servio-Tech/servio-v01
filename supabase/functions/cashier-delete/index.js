@@ -1,4 +1,4 @@
-// وظيفة خادمية لحذف هوية كاشير مع الاحتفاظ بسجل الكاشير والورديات التاريخية.
+// أرشفة الكاشير بدل حذف هوية Auth والبيانات المرتبطة بها تلقائيًا.
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -40,10 +40,26 @@ Deno.serve(async (request) => {
       await authenticatedClient.auth.getUser(token);
     if (authError || !authData.user)
       return json({ error: "جلسة المدير غير صالحة" }, 401);
+    const bannedUntil = authData.user.banned_until;
+    if (bannedUntil && (!Number.isFinite(Date.parse(bannedUntil)) || Date.parse(bannedUntil) > Date.now()))
+      return json({ error: "الحساب غير متاح" }, 403);
 
     const serviceClient = createClient(supabaseUrl, serviceRoleKey, {
       auth: { autoRefreshToken: false, persistSession: false },
     });
+    // Auth bans do not immediately invalidate already-issued JWTs. Do not
+    // authorize the service-role path until the server-side block check passes.
+    const { data: block, error: blockError } = await serviceClient
+      .from("platform_user_blocks")
+      .select("user_id")
+      .eq("user_id", authData.user.id)
+      .maybeSingle();
+    if (blockError || block)
+      return json({ error: "الحساب غير متاح" }, 403);
+    const { data: accountAllowed, error: accountAllowedError } =
+      await authenticatedClient.rpc("platform_current_user_allowed");
+    if (accountAllowedError || accountAllowed !== true)
+      return json({ error: "الحساب غير متاح" }, 403);
     const { data: manager, error: managerError } = await serviceClient
       .from("profiles")
       .select("tenant_id, role")
@@ -69,6 +85,8 @@ Deno.serve(async (request) => {
         p_cashier_id: cashierId,
       });
     if (disableError) {
+      if (disableError.code === "23514" && /LAST_ACTIVE_CASHIER/.test(disableError.message || ""))
+        return json({ error: "لا يمكن حذف آخر كاشير نشط للنشاط؛ أضف كاشير آخر أولاً" }, 409);
       if (disableError.code === "55000")
         return json(
           { error: "يجب إغلاق وردية هذا الكاشير قبل حذف حسابه" },
@@ -81,33 +99,13 @@ Deno.serve(async (request) => {
     const cashier = disabledRows?.[0];
     if (!cashier) return json({ error: "لم يتم إيقاف الحساب" }, 500);
 
-    if (cashier.auth_user_id) {
-      const { error: deleteAuthError } =
-        await serviceClient.auth.admin.deleteUser(cashier.auth_user_id);
-      if (
-        deleteAuthError &&
-        !/not found|does not exist/i.test(deleteAuthError.message)
-      ) {
-        return json(
-          {
-            error:
-              "تم إيقاف الحساب، لكن تعذر حذف جلسة الدخول؛ أعد المحاولة أو تواصل مع الدعم",
-          },
-          500,
-        );
-      }
-    }
-
-    const { error: unlinkError } = await serviceClient
-      .from("cashiers")
-      .update({ auth_user_id: null })
-      .eq("id", cashier.id)
-      .eq("tenant_id", manager.tenant_id);
-    if (unlinkError)
-      return json({ error: "تم إيقاف الدخول، لكن تعذر إنهاء ربط الحساب" }, 500);
-
+    // The DB trigger atomically prevents removing the last active cashier,
+    // fences sessions and preserves the Auth link and notification history.
+    // Keeping the identity is intentional until a retention policy exists.
     return json({
       success: true,
+      archived: true,
+      auth_identity_retained: Boolean(cashier.auth_user_id),
       cashier_id: cashier.id,
       full_name: cashier.full_name,
     });

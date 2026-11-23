@@ -2,6 +2,7 @@
 import { FullscreenDrawer as Drawer } from "../../common/FullscreenOverlays";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Alert, Box, Button, CircularProgress, Divider, FormControl, FormControlLabel, IconButton, InputLabel, MenuItem, Paper, Select, Stack, Switch, Typography } from "@mui/material";
+import { alpha } from "@mui/material/styles";
 import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import PrintRoundedIcon from "@mui/icons-material/PrintRounded";
 import RefreshRoundedIcon from "@mui/icons-material/RefreshRounded";
@@ -135,7 +136,7 @@ export default function CategoryPrintRoutingDrawer({ open, onClose, categories =
             const assignedPrinter = settings.categoryPrinters?.[id] || "__default__";
             const separate = Boolean(separateDraft[id]);
             const split = Boolean(splitDraft[id]);
-            return <Box key={category.id} sx={{ p: 1.6, borderRadius: 2.5, border: "1px solid", borderColor: separate || split ? "primary.light" : "divider", bgcolor: separate || split ? "rgba(244,121,32,.045)" : "background.paper" }}>
+            return <Box key={category.id} sx={{ p: 1.6, borderRadius: 2.5, border: "1px solid", borderColor: separate || split ? "primary.light" : "divider", bgcolor: separate || split ? (theme) => alpha(theme.palette.primary.main, .07) : "background.paper" }}>
               <Stack direction={{ xs: "column", sm: "row" }}    sx={{ alignItems: { xs: "stretch", sm: "center" }, justifyContent: "space-between", gap: 1 }}>
                 <Box sx={{ minWidth: 0 }}><Typography fontWeight={900} noWrap>{category.name}</Typography><Typography variant="caption" color="text.secondary">{separate ? text.enabled : text.disabled}</Typography></Box>
                 <FormControlLabel label={text.separate} labelPlacement="start" control={<Switch checked={separate} onChange={() => { setSeparateDraft((current) => ({ ...current, [id]: !current[id] })); setNotice(""); }} disabled={saving} color="primary" />} sx={{ m: 0, flexShrink: 0, alignSelf: { xs: "flex-start", sm: "auto" }, "& .MuiFormControlLabel-label": { fontSize: ".76rem", fontWeight: 800 } }} />

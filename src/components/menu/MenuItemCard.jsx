@@ -35,10 +35,11 @@ function MenuItemCard({ itemDetails, priority = false }) {
   return (
     <>
       <Card
+        className="customer-menu-item-card"
         sx={{
           display: "flex",
           justifyContent: "space-between",
-          p: 1.5,
+          p: 1.25,
           mb: 1.6,
           borderRadius: "20px",
           boxShadow: "0 12px 32px rgba(23,26,47,.055)",
@@ -63,6 +64,7 @@ function MenuItemCard({ itemDetails, priority = false }) {
           <Box sx={{ textAlign: "start" }}>
             <Typography
               variant="subtitle1"
+              className="customer-menu-item-title"
               sx={{
                 fontWeight: 800,
                 mb: 0.5,
@@ -98,6 +100,7 @@ function MenuItemCard({ itemDetails, priority = false }) {
           >
             <Typography
               variant="subtitle2"
+              className="customer-menu-item-price"
               sx={{
                 fontWeight: 800,
                 color: "primary.main",
@@ -142,17 +145,19 @@ function MenuItemCard({ itemDetails, priority = false }) {
             alignItems: "flex-start",
           }}
         >
-          <MenuItemImage
-            src={itemDetails.image}
-            alt={itemDetails.name}
-            imageLoading={itemDetails.imageLoading}
-            imageError={itemDetails.imageError}
-            loadImage={() => loadItemImage(itemDetails.id)}
-            priority={priority}
-            width={95}
-            height={95}
-            borderRadius="12px"
-          />
+          <Box className="customer-menu-item-image-frame">
+            <MenuItemImage
+              src={itemDetails.image}
+              alt={itemDetails.name}
+              imageLoading={itemDetails.imageLoading}
+              imageError={itemDetails.imageError}
+              loadImage={() => loadItemImage(itemDetails.id)}
+              priority={priority}
+              width={108}
+              height={108}
+              borderRadius="17px"
+            />
+          </Box>
 
           {hasAllergy && (
             <Tooltip title={isArabic ? "عرض تفاصيل مسببات الحساسية" : "View allergen details"} arrow>

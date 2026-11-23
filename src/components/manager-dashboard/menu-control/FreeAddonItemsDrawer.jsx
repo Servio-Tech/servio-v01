@@ -2,8 +2,11 @@
 import { FullscreenDrawer as Drawer } from "../../common/FullscreenOverlays";
 import { useEffect, useMemo, useState } from "react";
 import { Box, Button, Checkbox, Divider, IconButton, List, ListItemButton, Stack, Typography } from "@mui/material";
+import { alpha } from "@mui/material/styles";
 import CloseIcon from "@mui/icons-material/Close";
 import { normalizeAddonItemIds } from "../../../utils/menuItemOptions";
+import { useStore } from "../../../context/StoreInfoContext";
+import { formatMenuPrice } from "./menuControlUtils";
 
 function FreeAddonItemsDrawer({
   open,
@@ -14,6 +17,7 @@ function FreeAddonItemsDrawer({
   language = "ar",
   onSave,
 }) {
+  const { storeInfo } = useStore();
   const [draftIds, setDraftIds] = useState(() => normalizeAddonItemIds(selectedIds));
   const selectedSet = useMemo(() => new Set(draftIds), [draftIds]);
   const eligibleItems = useMemo(() => (items || [])
@@ -84,15 +88,15 @@ function FreeAddonItemsDrawer({
                 <ListItemButton
                   key={item.id}
                   component="label"
-                  sx={{ borderRadius: 2, mb: 0.6, alignItems: "flex-start", border: "1px solid", borderColor: selected ? "primary.main" : "divider", bgcolor: selected ? "rgba(244,121,32,.07)" : "background.paper" }}
+                  sx={{ borderRadius: 2, mb: 0.6, alignItems: "flex-start", border: "1px solid", borderColor: selected ? "primary.main" : "divider", bgcolor: selected ? (theme) => alpha(theme.palette.primary.main, .1) : "background.paper" }}
                 >
                   <Checkbox checked={selected} onChange={() => toggleItem(String(item.id))} tabIndex={-1} disableRipple sx={{ pt: 0, color: "primary.main" }} />
                   <Box sx={{ minWidth: 0, pt: 0.25 }}>
                     <Typography variant="body2" sx={{ fontWeight: 800 }}>{item.name}</Typography>
                     <Typography variant="caption" color="text.secondary" display="block">
-                      {language === "ar" ? "السعر عند الطلب منفردًا" : "Regular standalone price"}: {Number(item.price || 0).toFixed(2)} {language === "ar" ? "ر.س" : "SAR"}
+                      {language === "ar" ? "السعر عند الطلب منفردًا" : "Regular standalone price"}: {formatMenuPrice(item.price)} {storeInfo?.currency || ""}
                     </Typography>
-                    <Typography variant="caption" sx={{ color: "success.dark", fontWeight: 700 }}>
+                    <Typography variant="caption" sx={{ color: "success.main", fontWeight: 700 }}>
                       {item.isAvailableForSale === false
                         ? (language === "ar" ? "غير متاح حاليًا؛ أزله أو أعد إتاحته" : "Unavailable; remove it or make it available again")
                         : (language === "ar" ? "يُقدّم مجانًا كإضافة للصنف المرتبط" : "Free only as an add-on to the linked item")}

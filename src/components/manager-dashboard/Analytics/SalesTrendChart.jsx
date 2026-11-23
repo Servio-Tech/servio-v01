@@ -1,138 +1,22 @@
-// مكوّن واجهة `SalesTrendChart` ضمن مجموعة `Analytics`.
-// MUI COMPONENTS
-import Box from "@mui/material/Box";
-import Card from "@mui/material/Card";
-import CardContent from "@mui/material/CardContent";
-import Button from "@mui/material/Button";
-import ButtonGroup from "@mui/material/ButtonGroup";
-import Typography from "@mui/material/Typography";
-import { useTheme } from "@mui/material/styles";
-
-// CHART
+import { Box, Button, ButtonGroup, Card, Typography } from "@mui/material";
 import { BarChart } from "@mui/x-charts/BarChart";
-
-// CONTEXTS
 import { useAnalytics } from "../../../context/AnalyticsContext";
 import { useLanguage } from "../../../context/LanguageContext";
-
 function SalesTrendChart() {
-  const theme = useTheme();
-  const { t } = useLanguage();
-  const { setViewType, isDaily, currentLabels, currentSales } =
-    useAnalytics("daily");
-  const hordText = isDaily ? t("managerDaily") : t("managerWeekly");
-
-  return (
-    <Card
-      elevation={0}
-      sx={{
-        borderRadius: "16px",
-        border: "1px solid",
-        borderColor: "divider",
-        boxShadow: "0px 4px 20px rgba(0,0,0,0.02)",
-      }}
-    >
-      {/* HEADER SECTION */}
-      <Box
-        sx={{
-          p: 3,
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          flexWrap: "wrap",
-          gap: 2,
-        }}
-      >
-        <Box sx={{ textAlign: "start" }}>
-          <Typography variant="h6" sx={{ fontWeight: 700 }}>
-            {t("managerSalesTrend")} {hordText}
-          </Typography>
-          <Typography variant="body2" sx={{ color: "text.secondary" }}>
-            {t("managerReport")} {hordText}
-          </Typography>
-        </Box>
-
-        <ButtonGroup
-          sx={{ direction: "ltr" }}
-          size="small"
-          aria-label="analytics view toggle"
-        >
-          <Button
-            variant={!isDaily ? "contained" : "outlined"}
-            onClick={() => setViewType("weekly")}
-            sx={{ borderRadius: "8px" }}
-          >
-            {t("managerWeekly")}
-          </Button>
-          <Button
-            variant={isDaily ? "contained" : "outlined"}
-            onClick={() => setViewType("daily")}
-            sx={{ borderRadius: "8px" }}
-          >
-            {t("managerDaily")}
-          </Button>
-        </ButtonGroup>
-      </Box>
-
-      {/* CHART CONTENT */}
-      <CardContent
-        sx={{
-          pt: 0,
-          pb: 3,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        <Box sx={{ width: "100%", height: 320 }}>
-          <BarChart
-            xAxis={[
-              {
-                scaleType: "band",
-                data: currentLabels,
-                disableTicks: true,
-                tickLabelInterval: (_value, index) => !isDaily || index % 3 === 0 || index === currentLabels.length - 1,
-              },
-            ]}
-            yAxis={[
-              {
-                disableLine: true,
-                disableTicks: true,
-                valueFormatter: () => "",
-              },
-            ]}
-            series={[
-              {
-                data: currentSales,
-                label: t("managerSales"),
-                color: theme.palette.primary.main,
-                valueFormatter: (value) => `${value} ${t("currencySar")}`,
-              },
-            ]}
-            grid={{ horizontal: false }}
-            margin={{ left: 0, right: 40, top: 10, bottom: 15 }}
-            borderRadius={8}
-            sx={{
-              ".MuiChartsAxis-bottom .MuiChartsAxis-tickLabel": {
-                fill: theme.palette.text.secondary,
-                fontSize: "0.75rem",
-                fontWeight: 500,
-                fontFamily: theme.typography.fontFamily,
-              },
-              ".MuiChartsAxis-bottom .MuiChartsAxis-line": {
-                stroke: theme.palette.divider,
-                strokeWidth: 1,
-                opacity: 0.6,
-              },
-              ".MuiChartsAxis-left": {
-                display: "none",
-              },
-            }}
-          />
-        </Box>
-      </CardContent>
-    </Card>
-  );
+  const { t, language } = useLanguage();
+  const { setViewType, isDaily, currentLabels, currentSales } = useAnalytics();
+  const view = isDaily ? t("managerDaily") : t("managerWeekly");
+  return <Card elevation={0} sx={{ bgcolor: "#24211e", border: "1px solid #3d3731", borderRadius: "14px", color: "#f7efe4", p: { xs: 2, sm: 2.5 } }}>
+    <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 2 }}>
+      <Box><Typography sx={{ fontWeight: 800, fontSize: "1.05rem" }}>{t("managerSalesTrend")} · {view}</Typography><Typography sx={{ color: "#b4a99d", fontSize: ".8rem", mt: .4 }}>{language === "ar" ? "اليومي لليوم التشغيلي؛ والأسبوعي لآخر ٧ أيام" : "Daily is the operational day; weekly covers the last 7 days"}</Typography></Box>
+      <ButtonGroup className="reports-no-print" size="small" aria-label={language === "ar" ? "فترة اتجاه اللمحة" : "Overview trend period"} sx={{ direction: "ltr", "& .MuiButton-root": { color: "#eec9aa", borderColor: "#5c4b3f", fontWeight: 700 }, "& .MuiButton-contained": { bgcolor: "#b85f2e", color: "#fff8f1" } }}>
+        <Button variant={!isDaily ? "contained" : "outlined"} onClick={() => setViewType("weekly")}>{t("managerWeekly")}</Button>
+        <Button variant={isDaily ? "contained" : "outlined"} onClick={() => setViewType("daily")}>{t("managerDaily")}</Button>
+      </ButtonGroup>
+    </Box>
+    <Box sx={{ width: "100%", height: { xs: 240, sm: 300 }, mt: 2 }}>
+      <BarChart xAxis={[{ scaleType: "band", data: currentLabels, disableTicks: true, tickLabelInterval: (_value, index) => !isDaily || index % 3 === 0 || index === currentLabels.length - 1 }]} yAxis={[{ disableLine: true, disableTicks: true, valueFormatter: () => "" }]} series={[{ data: currentSales, label: t("managerSales"), color: "#d97a3b", valueFormatter: (value) => `${value} ${t("currencySar")}` }]} grid={{ horizontal: false }} margin={{ left: 0, right: 30, top: 10, bottom: 25 }} borderRadius={6} sx={{ ".MuiChartsAxis-bottom .MuiChartsAxis-tickLabel": { fill: "#b4a99d", fontSize: ".72rem" }, ".MuiChartsAxis-bottom .MuiChartsAxis-line": { stroke: "#5d5147" }, ".MuiChartsAxis-left": { display: "none" } }} />
+    </Box>
+  </Card>;
 }
-
 export default SalesTrendChart;

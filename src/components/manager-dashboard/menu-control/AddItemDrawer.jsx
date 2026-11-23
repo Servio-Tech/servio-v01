@@ -5,9 +5,10 @@ import { useMenu } from "../../../context/MenuContext";
 import { useLanguage } from "../../../context/LanguageContext";
 import { useTenant } from "../../../context/TenantContext";
 import { useBranch } from "../../../context/BranchContext";
+import { useStore } from "../../../context/StoreInfoContext";
 
 // MUI COMPONENTS
-import { styled } from "@mui/material/styles";
+import { alpha, styled } from "@mui/material/styles";
 
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
@@ -71,6 +72,7 @@ function AddItemDrawer({ open, onClose, itemToEdit = null }) {
   const { language, t } = useLanguage();
   const { tenantId } = useTenant();
   const { selectedBranchId } = useBranch();
+  const { storeInfo } = useStore();
   const [formData, setFormData] = useState(INITIAL_FORM_STATE);
   const [freeAddonDrawerOpen, setFreeAddonDrawerOpen] = useState(false);
   const [imageProcessing, setImageProcessing] = useState(false);
@@ -83,7 +85,7 @@ function AddItemDrawer({ open, onClose, itemToEdit = null }) {
     if (itemToEdit) {
       setFormData({
         name: itemToEdit.name || "",
-        price: itemToEdit.price || "",
+        price: itemToEdit.price ?? "",
         category_id: itemToEdit.category_id || "",
         description: itemToEdit.description || "",
         image: itemToEdit.image || "",
@@ -155,7 +157,7 @@ function AddItemDrawer({ open, onClose, itemToEdit = null }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.name || !formData.price) return;
+    if (!formData.name || formData.price === "" || formData.price == null) return;
     if (saving) return;
     setSubmitError("");
     setSaving(true);
@@ -252,7 +254,7 @@ function AddItemDrawer({ open, onClose, itemToEdit = null }) {
         />
 
         <TextField
-          label={t("menuPriceField")}
+          label={`${language === "ar" ? "السعر" : "Price"}${storeInfo?.currency ? ` (${storeInfo.currency})` : ""}`}
           name="price"
           type="number"
 
@@ -381,7 +383,7 @@ function AddItemDrawer({ open, onClose, itemToEdit = null }) {
           fullWidth
         />
 
-        <Box sx={{ p: 1.5, borderRadius: 2.5, border: "1px solid", borderColor: "divider", bgcolor: "rgba(244,121,32,.035)", display: "flex", flexDirection: "column", gap: 1.25 }}>
+        <Box sx={{ p: 1.5, borderRadius: 2.5, border: "1px solid", borderColor: "divider", bgcolor: (theme) => alpha(theme.palette.primary.main, .055), display: "flex", flexDirection: "column", gap: 1.25 }}>
           <Box>
             <Typography variant="subtitle2" sx={{ fontWeight: 900 }}>
               {language === "ar" ? "مكملات الصنف ضمن السعر" : "Item complements included in price"}

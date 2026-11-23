@@ -1,10 +1,9 @@
 import { useState } from "react";
+import Box from "@mui/material/Box";
 import { useLanguage } from "../context/LanguageContext";
-
-// COMPONENTS
+import { DashboardThemeProvider } from "../theme/DashboardTheme";
 import ManagerSidebar from "../components/manager-dashboard/ManagerSidebar";
 import ManagerHeader from "../components/manager-dashboard/ManagerHeader";
-import Analytics from "../components/manager-dashboard/Analytics";
 import Reports from "../components/manager-dashboard/Reports";
 import MenuControl from "../components/manager-dashboard/menu-control/MenuControl";
 import QRCodeGenerate from "../components/manager-dashboard/settings/QRCodesGenerate";
@@ -14,79 +13,35 @@ import ShiftReports from "../components/manager-dashboard/ShiftReports";
 import IngredientInventory from "../components/manager-dashboard/IngredientInventory";
 import BranchTabs from "../components/manager-dashboard/BranchTabs";
 
-// MUI COMPONENTS
-import Box from "@mui/material/Box";
-
 function ManagerDashboard() {
   const { language } = useLanguage();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState("manager");
-
-  const handleDrawerToggle = () => {
-    setMobileOpen((prev) => !prev);
-  };
+  const [activeTab, setActiveTab] = useState("reports");
+  const handleDrawerToggle = () => setMobileOpen((open) => !open);
 
   return (
-    <Box data-language={language} sx={{ display: "flex", minHeight: "100vh", width: "100%", minWidth: 0, overflowX: "clip", background: "radial-gradient(circle at 82% 5%, rgba(244,121,32,.13), transparent 24%), linear-gradient(135deg, #fff8f1 0%, #f7f8fb 48%, #eef1f7 100%)" }}>
-      {/* الشريط الجانبي */}
-      <ManagerSidebar
-        mobileOpen={mobileOpen}
-        handleDrawerToggle={handleDrawerToggle}
-        activeTab={activeTab}
-        onSelectTab={setActiveTab}
-      />
-
-      {/* منطقة المحتوى الرئيسي */}
-      <Box
-        component="main"
-        sx={{
-          flexGrow: 1,
-          minWidth: 0,
-          minHeight: "100vh",
-          background: "transparent",
-          display: "flex",
-          flexDirection: "column",
-        }}
-      >
-        {/* الهيدر الثابت مع الفاصل البصري */}
-        <Box
-          sx={{
-            position: "sticky",
-            top: { xs: 8, md: 12 },
-            zIndex: (theme) => theme.zIndex.appBar,
-            px: { xs: 1.25, sm: 2.5, lg: 3 },
-            pt: { xs: 1, md: 1.5 },
-          }}
-        >
-          <Box
-            sx={{
-              border: "1px solid",
-              borderColor: "rgba(255,255,255,.65)",
-              background: "rgba(255,255,255,.74)",
-              backdropFilter: "blur(18px)",
-              WebkitBackdropFilter: "blur(18px)",
-              borderRadius: { xs: 3, md: 4 },
-              boxShadow: "0 12px 40px rgba(23,26,47,.06)",
-            }}
-          >
+    <DashboardThemeProvider direction={language === "ar" ? "rtl" : "ltr"}>
+      <Box data-language={language} sx={{ display: "flex", minHeight: "100vh", width: "100%", minWidth: 0, bgcolor: "background.default" }}>
+        <ManagerSidebar mobileOpen={mobileOpen} handleDrawerToggle={handleDrawerToggle} activeTab={activeTab} onSelectTab={setActiveTab} />
+        <Box component="main" sx={{ flex: "1 1 0", minWidth: 0, minHeight: "100vh", display: "flex", flexDirection: "column" }}>
+          <Box sx={{ position: "sticky", top: 0, zIndex: (theme) => theme.zIndex.appBar, borderBottom: "1px solid", borderColor: "divider", bgcolor: "rgba(17,17,16,.94)", backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)" }}>
             <ManagerHeader onDrawerToggle={handleDrawerToggle} />
           </Box>
-        </Box>
-
-        {/* عرض الصفحة بناءً على التبويب المحدد */}
-        <Box sx={{ flexGrow: 1, minWidth: 0, width: "100%", p: { xs: 1.25, sm: 2.5, lg: 3 }, pt: { xs: 2, md: 2.5 } }}>
-          <BranchTabs />
-          {activeTab === "manager" && <Analytics />}
-          {activeTab === "history" && <OrdersHistory />}
-          {activeTab === "reports" && <Reports />}
-          {activeTab === "shifts" && <ShiftReports managerOnlyFeatures />}
-          {activeTab === "menu" && <MenuControl />}
-          {activeTab === "inventory" && <IngredientInventory canManage />}
-          {activeTab === "settings" && <SettingsLayout />}
-          {activeTab === "qrGen" && <QRCodeGenerate />}
+          <Box sx={{ flexGrow: 1, width: "100%", minWidth: 0, px: { xs: 2, sm: 3, lg: 4 }, py: { xs: 2.5, md: 3.5 } }}>
+            <Box className="dashboard-manager-branches"><BranchTabs /></Box>
+            <Box className={`dashboard-manager-content dashboard-manager-content--${activeTab}`} sx={{ minWidth: 0 }}>
+              {activeTab === "reports" && <Reports />}
+              {activeTab === "history" && <OrdersHistory />}
+              {activeTab === "shifts" && <ShiftReports managerOnlyFeatures />}
+              {activeTab === "menu" && <MenuControl />}
+              {activeTab === "inventory" && <IngredientInventory canManage />}
+              {activeTab === "settings" && <SettingsLayout />}
+              {activeTab === "qrGen" && <QRCodeGenerate />}
+            </Box>
+          </Box>
         </Box>
       </Box>
-    </Box>
+    </DashboardThemeProvider>
   );
 }
 

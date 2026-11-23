@@ -73,7 +73,7 @@ export default function CashierItemAvailability() {
             const available = item.isAvailableForSale ?? item.available;
             return (
               <Card key={item.id} elevation={0} sx={{ display: "grid", gridTemplateColumns: "96px minmax(0,1fr)", overflow: "hidden", border: "1px solid", borderColor: available ? "divider" : "warning.light", borderRadius: 3, opacity: available ? 1 : 0.78 }}>
-                {item.image ? <CardMedia component="img" image={item.image} alt={item.name} sx={{ width: 96, height: "100%", minHeight: 132, objectFit: "cover" }} /> : <Box sx={{ width: 96, minHeight: 132, display: "grid", placeItems: "center", bgcolor: "grey.100" }}>{item.imageLoading ? <CircularProgress size={24} /> : <Inventory2OutlinedIcon color="disabled" />}</Box>}
+                {item.image ? <CardMedia component="img" image={item.image} alt={item.name} sx={{ width: 96, height: "100%", minHeight: 132, objectFit: "cover" }} /> : <Box sx={{ width: 96, minHeight: 132, display: "grid", placeItems: "center", bgcolor: "rgba(255,255,255,.04)" }}>{item.imageLoading ? <CircularProgress size={24} /> : <Inventory2OutlinedIcon color="disabled" />}</Box>}
                 <CardContent sx={{ p: 1.35, minWidth: 0, "&:last-child": { pb: 1.35 } }}>
                   <Typography sx={{ fontWeight: 900, overflowWrap: "anywhere" }}>{item.name}</Typography>
                   <Typography variant="body2" color="text.secondary" sx={{ mt: 0.25 }}>{Number(item.price || 0).toFixed(2)}</Typography>
