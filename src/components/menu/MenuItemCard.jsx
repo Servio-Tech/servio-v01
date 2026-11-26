@@ -21,65 +21,80 @@ import WarningAmberIcon from "@mui/icons-material/WarningAmber";
 // CONTEXTS
 import { useCart } from "../../context/CartContext";
 import { useLanguage } from "../../context/LanguageContext";
+import { useTenant } from "../../context/TenantContext";
+import { buildAddonChoices, normalizeAddonLimit } from "../../utils/menuItemOptions";
 
 function MenuItemCard({ itemDetails, priority = false }) {
   const { addToCart } = useCart();
-  const { loadItemImage } = useMenu();
+  const { loadItemImage, items = [] } = useMenu();
   const { language } = useLanguage();
+  const { storeInfo } = useTenant();
   const isArabic = language !== "en";
+  const currency = storeInfo?.currency || (isArabic ? "ر.س" : "SAR");
+  const formattedPrice = Number(itemDetails.price || 0).toLocaleString(
+    isArabic ? "ar-SA" : "en-SA",
+    { minimumFractionDigits: 2, maximumFractionDigits: 2 },
+  );
 
   const hasAllergy = itemDetails.allergens && itemDetails.allergens.length > 0;
+  const addonChoices = buildAddonChoices(itemDetails, items);
+  const needsCustomization =
+    normalizeAddonLimit(itemDetails.max_addons, addonChoices.length) > 0 &&
+    addonChoices.length > 0;
 
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
   return (
     <>
       <Card
+        id={`customer-menu-item-${itemDetails.id}`}
         className="customer-menu-item-card"
         sx={{
-          display: "flex",
-          justifyContent: "space-between",
-          p: 1.25,
-          mb: 1.6,
-          borderRadius: "20px",
-          boxShadow: "0 12px 32px rgba(23,26,47,.055)",
-          border: "1px solid",
-          borderColor: "rgba(255,255,255,.78)",
-          background: "rgba(255,255,255,.9)",
-          backdropFilter: "blur(14px)",
-          WebkitBackdropFilter: "blur(14px)",
-          transition: "transform .2s ease, box-shadow .2s ease",
+          display: "grid",
+          gridTemplateColumns: { xs: "minmax(0, 1fr) 100px", sm: "minmax(0, 1fr) 124px" },
+          gap: 1.5,
         }}
       >
         <Box
-          onClick={() => setIsDrawerOpen(true)}
+          className="customer-menu-item-content"
           sx={{
             display: "flex",
             flexDirection: "column",
             justifyContent: "space-between",
-            flex: 1,
-            pl: 1.5,
+            minWidth: 0,
           }}
         >
-          <Box sx={{ textAlign: "start" }}>
+          <Box
+            component="button"
+            type="button"
+            className="customer-menu-item-open"
+            onClick={() => setIsDrawerOpen(true)}
+            aria-haspopup="dialog"
+          >
             <Typography
               variant="subtitle1"
+              component="span"
               className="customer-menu-item-title"
               sx={{
-                fontWeight: 800,
-                mb: 0.5,
-                fontSize: "1rem",
+                fontWeight: 850,
+                mb: 0.55,
+                fontSize: "1.02rem",
+                lineHeight: 1.35,
                 color: "text.primary",
+                overflowWrap: "anywhere",
               }}
             >
               {itemDetails.name}
             </Typography>
             <Typography
               variant="body2"
+              component="span"
+              className="customer-menu-item-description"
               sx={{
                 color: "text.secondary",
-                fontSize: "0.8rem",
-                fontWeight: 500,
+                fontSize: "0.82rem",
+                fontWeight: 550,
+                lineHeight: 1.55,
                 display: "-webkit-box",
                 WebkitLineClamp: 2,
                 WebkitBoxOrient: "vertical",
@@ -91,28 +106,36 @@ function MenuItemCard({ itemDetails, priority = false }) {
           </Box>
 
           <Box
+            className="customer-menu-item-actions"
             sx={{
               display: "flex",
               justifyContent: "space-between",
               alignItems: "center",
-              mt: 1.5,
+              flexWrap: "wrap",
+              gap: 1,
+              mt: 1.4,
             }}
           >
             <Typography
               variant="subtitle2"
               className="customer-menu-item-price"
               sx={{
-                fontWeight: 800,
+                fontWeight: 900,
                 color: "primary.main",
-                fontSize: "0.95rem",
+                fontSize: ".96rem",
+                whiteSpace: "nowrap",
               }}
             >
-              {itemDetails.price} ر.س
+              {formattedPrice} {currency}
             </Typography>
 
             <Button
               onClick={(e) => {
                 e.stopPropagation();
+                if (needsCustomization) {
+                  setIsDrawerOpen(true);
+                  return;
+                }
                 addToCart(itemDetails);
               }}
               variant="contained"
@@ -122,27 +145,40 @@ function MenuItemCard({ itemDetails, priority = false }) {
                 backgroundColor: "primary.main",
                 color: "primary.contrastText",
                 borderRadius: "8px",
-                px: 1.5,
-                py: 0.5,
-                fontWeight: 700,
-                boxShadow: "none",
+                px: { xs: 1, sm: 1.5 },
+                py: 0.65,
+                minHeight: 38,
+                fontWeight: 800,
+                fontSize: { xs: ".7rem", sm: ".8rem" },
+                boxShadow: "0 4px 10px rgba(244, 121, 32, .18)",
                 "&:hover": {
                   backgroundColor: "primary.dark",
-                  boxShadow: "none",
+                  boxShadow: "0 6px 14px rgba(244, 121, 32, .25)",
                 },
               }}
             >
-              {isArabic ? "اطلب" : "Order"}
+              {needsCustomization
+                ? (isArabic ? "اختر الإضافات" : "Customize")
+                : (isArabic ? "أضف للسلة" : "Add to cart")}
             </Button>
           </Box>
         </Box>
 
         <Box
+          component="button"
+          type="button"
+          className="customer-menu-item-open"
           onClick={() => setIsDrawerOpen(true)}
+          aria-label={isArabic ? `عرض تفاصيل ${itemDetails.name}` : `View ${itemDetails.name} details`}
+          aria-haspopup="dialog"
           sx={{
             position: "relative",
             display: "flex",
-            alignItems: "flex-start",
+            alignItems: "center",
+            justifyContent: "center",
+            width: { xs: 100, sm: 124 },
+            minHeight: { xs: 100, sm: 124 },
+            flexShrink: 0,
           }}
         >
           <Box className="customer-menu-item-image-frame">
@@ -153,9 +189,9 @@ function MenuItemCard({ itemDetails, priority = false }) {
               imageError={itemDetails.imageError}
               loadImage={() => loadItemImage(itemDetails.id)}
               priority={priority}
-              width={108}
-              height={108}
-              borderRadius="17px"
+              width={{ xs: 100, sm: 124 }}
+              height={{ xs: 100, sm: 124 }}
+              borderRadius="18px"
             />
           </Box>
 
@@ -165,7 +201,7 @@ function MenuItemCard({ itemDetails, priority = false }) {
                 sx={{
                   position: "absolute",
                   top: 6,
-                  left: 6,
+                  insetInlineStart: 6,
                   backgroundColor: "error.main",
                   color: "white",
                   borderRadius: "50%",

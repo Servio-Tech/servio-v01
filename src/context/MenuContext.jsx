@@ -48,6 +48,9 @@ export const MenuProvider = ({ children }) => {
       return () => { active = false; };
     }
 
+    setSearchQuery("");
+    setSelectedCategory("all");
+
     if (isTracking) {
       setItems([]);
       setCategoriesList([]);
@@ -161,7 +164,13 @@ export const MenuProvider = ({ children }) => {
           setMenuItemIngredients(nextIngredientLinks);
           setItems(nextItems);
         }
-        setCategoriesList(categoriesResult.data || []);
+        const nextCategories = categoriesResult.data || [];
+        setCategoriesList(nextCategories);
+        setSelectedCategory((current) => (
+          current === "all" || nextCategories.some((category) => category.id === current)
+            ? current
+            : "all"
+        ));
         if (isPublic) {
           setAddonComplements([]);
         } else {

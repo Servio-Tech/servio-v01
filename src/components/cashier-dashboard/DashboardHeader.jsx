@@ -31,22 +31,25 @@ function DashboardHeader({ handleNotificationOpen, totalSales = 0, currency = "S
   const userName = user?.name || "Cashier";
   const { language, t } = useLanguage();
   const ar = language === "ar";
-  const currentDate = new Date().toLocaleDateString(ar ? "ar-EG" : "en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
+  const currentDate = new Intl.DateTimeFormat(ar ? "ar-SA" : "en-SA", { weekday: "long", year: "numeric", month: "long", day: "numeric" }).format(new Date());
   const salesLabel = ar ? "إجمالي المبيعات اليوم" : "Today's sales";
+  const formattedSales = salesLoading
+    ? "—"
+    : new Intl.NumberFormat(ar ? "ar-SA" : "en-SA", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(totalSales) || 0);
 
   return (
-    <Box sx={{ width: "100%" }}>
+    <Box sx={{ width: "100%", minWidth: 0 }}>
       <Stack
         direction={{ xs: "column", sm: "row" }}
-        sx={{ justifyContent: "space-between", alignItems: { xs: "stretch", sm: "center" }, width: "100%", gap: { xs: 1, sm: 1.5 } }}
+        sx={{ justifyContent: "space-between", alignItems: { xs: "stretch", md: "center" }, width: "100%", gap: { xs: 1.4, sm: 1.8 } }}
       >
         <Box sx={{ textAlign: "start", minWidth: 0 }}>
           <Typography variant="overline" sx={{ color: "primary.main", fontWeight: 900, letterSpacing: 1.2 }}>
-            {t("liveOperations")}
+            {ar ? `مرحبًا، ${userName}` : `Welcome, ${userName}`}
           </Typography>
           <Typography
             variant="h5"
-            component="h2"
+            component="h1"
             sx={{ fontSize: { xs: "1.2rem", sm: "1.45rem", md: "1.7rem" }, fontWeight: 900, color: "text.primary", letterSpacing: "-0.03em", lineHeight: 1.15 }}
           >
             {t("currentOrders")}
@@ -64,27 +67,27 @@ function DashboardHeader({ handleNotificationOpen, totalSales = 0, currency = "S
           useFlexGap
           sx={{
             alignItems: "center",
-            justifyContent: { xs: "flex-start", sm: "flex-end" },
-            gap: { xs: 0.55, sm: 0.8 },
-            flex: { xs: "1 1 auto", sm: "0 0 auto" },
+            justifyContent: { xs: "flex-start", md: "flex-end" },
+            gap: { xs: 0.7, sm: 0.8 },
+            flex: { xs: "1 1 auto", md: "0 1 auto" },
             minWidth: 0,
-            overflowX: { xs: "auto", sm: "visible" },
-            pb: { xs: 0.2, sm: 0 },
+            flexWrap: "wrap",
+            pb: 0.2,
           }}
         >
           <Tooltip title={salesLabel}>
             <Box
               role="group"
-              aria-label={`${salesLabel}: ${salesLoading ? "—" : Number(totalSales || 0).toFixed(2)} ${currency}`}
-              sx={{ display: "flex", alignItems: "center", gap: 0.65, px: 1, py: 0.55, flex: "0 0 auto", border: "1px solid", borderColor: "rgba(244,121,32,.3)", borderRadius: 2.4, bgcolor: "rgba(244,121,32,.08)", whiteSpace: "nowrap" }}
+              aria-label={`${salesLabel}: ${formattedSales} ${currency}`}
+              sx={{ display: "flex", alignItems: "center", gap: 0.85, px: 1.25, py: 0.75, flex: { xs: "1 1 145px", sm: "0 0 auto" }, minHeight: 44, border: "1px solid", borderColor: "rgba(244,121,32,.3)", borderRadius: 2.4, bgcolor: "rgba(244,121,32,.08)", whiteSpace: "nowrap" }}
             >
-              <PointOfSaleRoundedIcon sx={{ color: "primary.main", fontSize: 19 }} />
+              <PointOfSaleRoundedIcon sx={{ color: "primary.main", fontSize: 21 }} />
               <Box>
-                <Typography sx={{ color: "text.secondary", fontSize: ".62rem", lineHeight: 1.15, fontWeight: 800 }}>
-                  {ar ? "مبيعات اليوم" : "Today"}
+                <Typography sx={{ color: "text.secondary", fontSize: ".72rem", lineHeight: 1.25, fontWeight: 800 }}>
+                  {ar ? "مبيعات اليوم" : "Today's sales"}
                 </Typography>
-                <Typography dir="ltr" sx={{ color: "text.primary", fontSize: ".88rem", lineHeight: 1.2, fontWeight: 950, fontVariantNumeric: "tabular-nums" }}>
-                  {salesLoading ? "—" : Number(totalSales || 0).toFixed(2)} <Box component="span" sx={{ fontSize: ".68rem", color: "text.secondary" }}>{currency}</Box>
+                <Typography dir="ltr" sx={{ color: "text.primary", fontSize: ".96rem", lineHeight: 1.25, fontWeight: 950, fontVariantNumeric: "tabular-nums" }}>
+                  {formattedSales} <Box component="span" sx={{ fontSize: ".68rem", color: "text.secondary" }}>{currency}</Box>
                 </Typography>
               </Box>
             </Box>
@@ -96,7 +99,7 @@ function DashboardHeader({ handleNotificationOpen, totalSales = 0, currency = "S
               variant="outlined"
               onClick={onOpenSalesHistory}
               startIcon={<ReceiptLongRoundedIcon />}
-              sx={{ minWidth: { xs: 38, sm: "auto" }, width: { xs: 38, sm: "auto" }, minHeight: 38, px: { xs: 0, sm: 1.2 }, borderRadius: 2.4, fontWeight: 850, whiteSpace: "nowrap", flex: "0 0 auto", "& .MuiButton-startIcon": { mx: { xs: 0, sm: 0.7 } } }}
+              sx={{ minWidth: { xs: 42, sm: "auto" }, width: { xs: 42, sm: "auto" }, minHeight: 42, px: { xs: 0, sm: 1.2 }, borderRadius: 2.4, fontWeight: 850, whiteSpace: "nowrap", flex: "0 0 auto", "& .MuiButton-startIcon": { mx: { xs: 0, sm: 0.7 } } }}
             >
               <Box component="span" sx={{ display: { xs: "none", sm: "inline" } }}>{t("orderHistory")}</Box>
             </Button>
@@ -108,7 +111,7 @@ function DashboardHeader({ handleNotificationOpen, totalSales = 0, currency = "S
           <IconButton
             aria-label={ar ? "نداءات النادل" : "Waiter calls"}
             onClick={handleNotificationOpen}
-            sx={{ color: "text.secondary", border: "1px solid", borderColor: "divider", borderRadius: 2.4, p: 1, flex: "0 0 auto", "&:hover": { color: "primary.main", backgroundColor: "rgba(244,121,32,.06)" } }}
+            sx={{ color: "text.secondary", border: "1px solid", borderColor: "divider", borderRadius: 2.4, width: 42, height: 42, flex: "0 0 auto", "&:hover": { color: "primary.main", backgroundColor: "rgba(244,121,32,.06)" } }}
           >
             <Badge badgeContent={calls.length} color="error">
               <NotificationsIcon sx={{ fontSize: { xs: 19, md: 21 } }} />
@@ -116,13 +119,14 @@ function DashboardHeader({ handleNotificationOpen, totalSales = 0, currency = "S
           </IconButton>
           <Avatar
             {...stringAvatar(userName)}
-            sx={{ width: { xs: 36, md: 40 }, height: { xs: 36, md: 40 }, fontSize: { xs: "0.875rem", md: "0.95rem" }, fontWeight: 800, backgroundColor: "primary.main", color: "primary.contrastText", boxShadow: "0 8px 20px rgba(244,121,32,.16)", flex: "0 0 auto" }}
+            aria-label={userName}
+            sx={{ width: 40, height: 40, fontSize: ".9rem", fontWeight: 800, backgroundColor: "primary.main", color: "primary.contrastText", boxShadow: "0 8px 20px rgba(244,121,32,.16)", flex: "0 0 auto" }}
           />
           <Tooltip title={t("logout")}>
             <IconButton
               aria-label={t("logout")}
               onClick={() => logout(navigate)}
-              sx={{ color: "text.secondary", border: "1px solid", borderColor: "divider", borderRadius: 2.4, p: 1, flex: "0 0 auto", "&:hover": { color: "primary.main", borderColor: "primary.light" } }}
+              sx={{ color: "text.secondary", border: "1px solid", borderColor: "divider", borderRadius: 2.4, width: 42, height: 42, flex: "0 0 auto", "&:hover": { color: "primary.main", borderColor: "primary.light" } }}
             >
               <LogoutIcon fontSize="small" />
             </IconButton>

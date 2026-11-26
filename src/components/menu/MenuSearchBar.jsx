@@ -4,9 +4,12 @@ import { TextField } from "@mui/material";
 
 // CONTEXTS
 import { useMenu } from "../../context/MenuContext";
+import { useLanguage } from "../../context/LanguageContext";
 
 function MenuSearchBar() {
   const { searchQuery, setSearchQuery } = useMenu();
+  const { language } = useLanguage();
+  const isEnglish = language === "en";
 
   return (
     <TextField
@@ -14,18 +17,18 @@ function MenuSearchBar() {
       size="small"
       value={searchQuery}
       onChange={(e) => setSearchQuery(e.target.value)}
-      placeholder="ابحث عن صنفك المفضل..."
+      slotProps={{ htmlInput: { "aria-label": isEnglish ? "Search menu items" : "ابحث في أصناف المنيو" } }}
+      placeholder={isEnglish ? "Search the menu..." : "ابحث عن صنفك المفضل..."}
       variant="outlined"
       sx={{
-        background: "rgba(248,249,250,.72)",
-        backdropFilter: "blur(10px)",
-        WebkitBackdropFilter: "blur(10px)",
+        background: "#f7f5f0",
         "& .MuiOutlinedInput-root": {
+          borderRadius: "8px",
           "& fieldset": {
             borderColor: "divider",
           },
           "&.Mui-focused fieldset": {
-            borderColor: "secondary.light",
+            borderColor: "primary.main",
           },
         },
       }}

@@ -84,8 +84,8 @@ function ManagerSidebar({ mobileOpen, handleDrawerToggle, activeTab, onSelectTab
         </Box>
         <Box sx={{ flexGrow: 1, pt: 2.5 }}>
           {groups.map((group) => (
-            <Box key={group.en} sx={{ mb: 2.7 }}>
-              <Typography component="div" sx={{ px: 1.4, mb: 0.9, color: "#a69e93", fontSize: ".68rem", fontWeight: 800, letterSpacing: ar ? 0 : ".12em" }}>
+            <Box key={group.en} sx={{ mb: 2.4 }}>
+              <Typography component="div" sx={{ px: 1.4, mb: 1, color: "#a69e93", fontSize: ".74rem", fontWeight: 800, letterSpacing: ar ? 0 : ".12em" }}>
                 {ar ? group.ar : group.en}
               </Typography>
               <List disablePadding sx={{ display: "flex", flexDirection: "column", gap: 0.35 }}>

@@ -14,7 +14,7 @@ export default function LanguageToggle({ compact = false, dark = false }) {
     py: compact ? 0.25 : 0.35,
     fontSize: compact ? ".67rem" : ".72rem",
     fontWeight: 900,
-    color: dark ? "rgba(255,255,255,.7)" : "text.secondary",
+    color: dark ? "rgba(255,255,255,.78)" : "text.secondary",
     transition: "background-color .18s ease, color .18s ease, box-shadow .18s ease",
     "&.Mui-selected": {
       bgcolor: dark ? "primary.main" : "secondary.main",
@@ -38,11 +38,10 @@ export default function LanguageToggle({ compact = false, dark = false }) {
       aria-label={t("language")}
       sx={{
         direction: "ltr",
-        border: `1px solid ${dark ? "rgba(255,255,255,.22)" : "rgba(23,26,47,.14)"}`,
+        border: `1px solid ${dark ? "rgba(255,255,255,.24)" : "rgba(23,26,47,.14)"}`,
         borderRadius: 99,
         p: "2px",
-        backgroundColor: dark ? "rgba(255,255,255,.09)" : "rgba(255,255,255,.82)",
-        backdropFilter: "blur(10px)",
+        backgroundColor: dark ? "#292b31" : "#ffffff",
       }}
     >
       <ToggleButton value="ar" aria-label={t("arabicLanguage")} sx={buttonStyles}>

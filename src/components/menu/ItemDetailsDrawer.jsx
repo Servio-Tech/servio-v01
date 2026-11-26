@@ -1,6 +1,6 @@
 // مكوّن واجهة `ItemDetailsDrawer` ضمن مجموعة `menu`.
 import { FullscreenSwipeableDrawer as SwipeableDrawer } from "../common/FullscreenOverlays";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import MenuItemImage from "./MenuItemImage";
 
 // MUI COMPONENTS
@@ -10,6 +10,8 @@ import Typography from "@mui/material/Typography";
 import IconButton from "@mui/material/IconButton";
 import Button from "@mui/material/Button";
 import Alert from "@mui/material/Alert";
+import Chip from "@mui/material/Chip";
+import Stack from "@mui/material/Stack";
 
 // ICONS
 import CloseIcon from "@mui/icons-material/Close";
@@ -22,22 +24,42 @@ import { useCart } from "../../context/CartContext";
 import { useLanguage } from "../../context/LanguageContext";
 import { useTenant } from "../../context/TenantContext";
 import { useMenu } from "../../context/MenuContext";
+import { buildAddonChoices, normalizeAddonLimit, toggleSelectedAddon } from "../../utils/menuItemOptions";
 
 function ItemDetailsDrawer({ open, onClose, itemDetails }) {
   const [quantity, setQuantity] = useState(1);
   const { addToCart } = useCart();
   const { language } = useLanguage();
-  const { slug } = useTenant();
-  const { loadItemImage } = useMenu();
+  const { slug, storeInfo } = useTenant();
+  const { loadItemImage, items = [] } = useMenu();
+  const [selectedAddons, setSelectedAddons] = useState([]);
+  const isEnglish = language === "en";
+  const addonChoices = buildAddonChoices(itemDetails, items);
+  const maxAddons = normalizeAddonLimit(itemDetails?.max_addons, addonChoices.length);
+  const currency = storeInfo?.currency || (isEnglish ? "SAR" : "ر.س");
 
   const handleIncrease = () => setQuantity((prev) => prev + 1);
   const handleDecrease = () => setQuantity((prev) => (prev > 1 ? prev - 1 : 1));
+  const handleAddonToggle = (choice) => {
+    setSelectedAddons((current) => toggleSelectedAddon(current, choice, addonChoices, maxAddons));
+  };
 
   const hasAllergy = itemDetails?.allergens && itemDetails.allergens.length > 0;
   const hasDraftAllergenData =
     slug === "mzaj-ryfy" && itemDetails?.tags?.includes("وصفة مبدئية");
 
-  const bottomBarHeight = "80px";
+  const bottomBarHeight = "112px";
+  const formatPrice = (value) => Number(value || 0).toLocaleString(
+    isEnglish ? "en-SA" : "ar-SA",
+    { minimumFractionDigits: 2, maximumFractionDigits: 2 },
+  );
+
+  useEffect(() => {
+    if (open) {
+      setQuantity(1);
+      setSelectedAddons([]);
+    }
+  }, [open, itemDetails?.id]);
 
   return (
     <SwipeableDrawer
@@ -54,6 +76,7 @@ function ItemDetailsDrawer({ open, onClose, itemDetails }) {
             maxHeight: "90dvh",
             backgroundColor: "background.paper",
             overflow: "hidden",
+            direction: isEnglish ? "ltr" : "rtl",
           },
         },
       }}
@@ -69,7 +92,7 @@ function ItemDetailsDrawer({ open, onClose, itemDetails }) {
           sx={{
             position: "absolute",
             top: 8,
-            left: "50%",
+            insetInlineStart: "50%",
             transform: "translateX(-50%)",
             width: "40px",
             height: "4px",
@@ -81,10 +104,11 @@ function ItemDetailsDrawer({ open, onClose, itemDetails }) {
 
         <IconButton
           onClick={onClose}
+          aria-label={isEnglish ? "Close item details" : "إغلاق تفاصيل الصنف"}
           sx={{
             position: "absolute",
             top: 12,
-            right: 12,
+            insetInlineEnd: 12,
             backgroundColor: "rgba(255, 255, 255, 0.8)",
             backdropFilter: "blur(4px)",
             "&:hover": { backgroundColor: "rgba(255, 255, 255, 1)" },
@@ -112,7 +136,7 @@ function ItemDetailsDrawer({ open, onClose, itemDetails }) {
               mb: 1.5,
             }}
           >
-            <Typography variant="h5" sx={{ fontWeight: 800 }}>
+            <Typography variant="h5" component="h2" sx={{ fontWeight: 850, lineHeight: 1.3 }}>
               {itemDetails?.name}
             </Typography>
             <Typography
@@ -121,36 +145,87 @@ function ItemDetailsDrawer({ open, onClose, itemDetails }) {
                 fontWeight: 800,
                 color: "primary.main",
                 whiteSpace: "nowrap",
-                ml: 2,
+                marginInlineStart: 2,
               }}
             >
-              {itemDetails?.price} ر.س
+              {formatPrice(itemDetails?.price)} {currency}
             </Typography>
           </Box>
 
           <Typography
             variant="body1"
-            sx={{ color: "text.secondary", lineHeight: 1.6, mb: 3 }}
+            sx={{ color: "text.secondary", lineHeight: 1.8, mb: 2.5 }}
           >
             {itemDetails?.description}
           </Typography>
+
+          {maxAddons > 0 && addonChoices.length > 0 && (
+            <Box sx={{ mb: 2.5 }}>
+              <Stack direction="row" sx={{ justifyContent: "space-between", alignItems: "center", mb: 1 }}>
+                <Box>
+                  <Typography fontWeight={850}>
+                    {isEnglish ? "Optional add-ons" : "إضافات اختيارية"}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    {isEnglish ? `Free · choose up to ${maxAddons}` : `مجانية · اختر حتى ${maxAddons}`}
+                  </Typography>
+                </Box>
+                <Chip
+                  size="small"
+                  label={`${selectedAddons.length} / ${maxAddons}`}
+                  color={selectedAddons.length >= maxAddons ? "primary" : "default"}
+                  sx={{ fontWeight: 800 }}
+                />
+              </Stack>
+              <Box
+                role="group"
+                aria-label={isEnglish ? "Choose optional add-ons" : "اختر الإضافات الاختيارية"}
+                sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}
+              >
+                {addonChoices.map((choice) => {
+                  const selected = selectedAddons.some((addon) => (
+                    addon.id ? addon.id === choice.id : addon.name === choice.name
+                  ));
+                  return (
+                    <Chip
+                      key={choice.key}
+                      label={choice.name}
+                      clickable
+                      aria-pressed={selected}
+                      disabled={!selected && selectedAddons.length >= maxAddons}
+                      color={selected ? "primary" : "default"}
+                      variant={selected ? "filled" : "outlined"}
+                      onClick={() => handleAddonToggle(choice)}
+                    />
+                  );
+                })}
+              </Box>
+              {quantity > 1 && (
+                <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 1 }}>
+                  {isEnglish
+                    ? "The selected add-ons apply to each item."
+                    : "تُطبّق الإضافات المختارة على كل الكمية."}
+                </Typography>
+              )}
+            </Box>
+          )}
 
           {hasDraftAllergenData ? (
             <Alert
               severity="warning"
               icon={<WarningAmberIcon />}
-              sx={{ borderRadius: "12px", mb: 3, fontWeight: 600 }}
+              sx={{ borderRadius: "8px", mb: 3, fontWeight: 600 }}
             >
               {hasAllergy ? (
                 <>
-                  {language === "ar" ? "مسببات حساسية محتملة وفق الوصفة المقترحة:" : "Potential allergens based on the suggested recipe:"}{" "}
-                  {itemDetails.allergens.join(language === "ar" ? "، " : ", ")}.{" "}
-                  {language === "ar" ? "هذه القائمة تقديرية وغير مؤكدة بمكونات المطبخ؛ اسأل الموظف عن المكونات والتلامس العرضي." : "This estimate is not verified against the kitchen’s ingredients; ask staff about ingredients and cross-contact."}
+                  {isEnglish ? "Potential allergens based on the suggested recipe:" : "مسببات حساسية محتملة وفق الوصفة المقترحة:"}{" "}
+                  {itemDetails.allergens.join(isEnglish ? ", " : "، ")}.{" "}
+                  {isEnglish ? "This estimate is not verified against the kitchen’s ingredients; ask staff about ingredients and cross-contact." : "هذه القائمة تقديرية وغير مؤكدة بمكونات المطبخ؛ اسأل الموظف عن المكونات والتلامس العرضي."}
                 </>
               ) : (
-                language === "ar"
-                  ? "لم يُحدَّد مسبب شائع في الوصفة المقترحة، لكن مكونات التحضير والتلامس العرضي غير مؤكدة. اسأل الموظف قبل الطلب."
-                  : "No common allergen is listed for the suggested recipe, but actual ingredients and cross-contact are unverified. Please ask staff before ordering."
+                isEnglish
+                  ? "No common allergen is listed for the suggested recipe, but actual ingredients and cross-contact are unverified. Please ask staff before ordering."
+                  : "لم يُحدَّد مسبب شائع في الوصفة المقترحة، لكن مكونات التحضير والتلامس العرضي غير مؤكدة. اسأل الموظف قبل الطلب."
               )}
             </Alert>
           ) : (
@@ -158,10 +233,10 @@ function ItemDetailsDrawer({ open, onClose, itemDetails }) {
               <Alert
                 severity="error"
                 icon={<WarningAmberIcon />}
-                sx={{ borderRadius: "12px", mb: 3, fontWeight: 600 }}
+                sx={{ borderRadius: "8px", mb: 3, fontWeight: 600 }}
               >
-                يحتوي هذا الصنف على مسببات الحساسية:{" "}
-                {itemDetails.allergens.join("، ")}
+                {isEnglish ? "This item contains these allergens: " : "يحتوي هذا الصنف على مسببات الحساسية: "}
+                {itemDetails.allergens.join(isEnglish ? ", " : "، ")}
               </Alert>
             )
           )}
@@ -171,18 +246,21 @@ function ItemDetailsDrawer({ open, onClose, itemDetails }) {
       <Box
         sx={{
           minHeight: bottomBarHeight,
-          p: 2,
+          px: 2,
+          py: 1.5,
+          pb: "calc(12px + env(safe-area-inset-bottom, 0px))",
           backgroundColor: "background.paper",
           borderTop: "1px solid",
           borderColor: "divider",
           display: "flex",
           justifyContent: "space-between",
-          alignItems: "start",
-          boxShadow: "0px -4px 20px rgba(0,0,0,0.08)",
+          alignItems: "center",
+          gap: 1.5,
         }}
       >
         <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
           <IconButton
+            aria-label={isEnglish ? "Decrease quantity" : "تقليل الكمية"}
             onClick={handleDecrease}
             size="small"
             sx={{ border: "1px solid", borderColor: "divider" }}
@@ -191,13 +269,16 @@ function ItemDetailsDrawer({ open, onClose, itemDetails }) {
           </IconButton>
 
           <Typography
+            aria-live="polite"
+            aria-label={isEnglish ? `Quantity ${quantity}` : `الكمية ${quantity}`}
             variant="h6"
-            sx={{ fontWeight: 700, minWidth: "20px", textAlign: "center" }}
+            sx={{ fontWeight: 700, minWidth: "24px", textAlign: "center" }}
           >
             {quantity}
           </Typography>
 
           <IconButton
+            aria-label={isEnglish ? "Increase quantity" : "زيادة الكمية"}
             onClick={handleIncrease}
             size="small"
             sx={{
@@ -214,21 +295,21 @@ function ItemDetailsDrawer({ open, onClose, itemDetails }) {
           variant="contained"
           size="large"
           onClick={() => {
-            addToCart(itemDetails, quantity);
+            addToCart({ ...itemDetails, selected_addons: selectedAddons }, quantity);
             onClose();
             setQuantity(1);
+            setSelectedAddons([]);
           }}
           sx={{
             flex: 1,
-            mr: 2,
-            borderRadius: "12px",
+            borderRadius: "8px",
             fontWeight: 800,
             py: 1.2,
           }}
         >
-          {language === "en"
-            ? `Order (${itemDetails?.price * quantity} SAR)`
-            : `اطلب (${itemDetails?.price * quantity} ر.س)`}
+          {isEnglish
+            ? `Add · ${formatPrice(itemDetails?.price * quantity)} ${currency}`
+            : `أضف للسلة · ${formatPrice(itemDetails?.price * quantity)} ${currency}`}
         </Button>
       </Box>
     </SwipeableDrawer>

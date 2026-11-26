@@ -42,3 +42,10 @@ test("لا يستبدل بيانات المتجر عند إرجاع الخادم
   await waitFor(() => expect(supabase.rpc).toHaveBeenCalled());
   expect(await screen.findByText("مقهى جديد")).toBeTruthy();
 });
+
+test("does not query a store before a tenant is available", () => {
+  useTenant.mockReturnValue({ slug: null, tenantId: null, isPublic: false, isTracking: false });
+  render(<StoreInfoProvider><StoreProbe /></StoreInfoProvider>);
+
+  expect(supabase.from).not.toHaveBeenCalled();
+});

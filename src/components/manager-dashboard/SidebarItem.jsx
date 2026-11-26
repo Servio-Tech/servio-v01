@@ -11,7 +11,7 @@ function SidebarItem({ navItem, isSelected, onSelect }) {
         onClick={onSelect}
         aria-current={isSelected ? "page" : undefined}
         sx={{
-          position: "relative", minHeight: 44, borderRadius: 2, px: 1.4, py: 0.8, gap: 1.4,
+          position: "relative", minHeight: 48, borderRadius: 2, px: 1.5, py: 0.9, gap: 1.5,
           color: isSelected ? "#f1a678" : "#c6beb2",
           transition: "background-color .18s ease, color .18s ease",
           "&:hover": { bgcolor: "rgba(255,255,255,.055)", color: "#f4f0e8" },
@@ -20,7 +20,7 @@ function SidebarItem({ navItem, isSelected, onSelect }) {
         }}
       >
         <ListItemIcon sx={{ minWidth: 0, color: "inherit", "& .MuiSvgIcon-root": { fontSize: 21 } }}>{navItem.icon}</ListItemIcon>
-        <ListItemText primary={navItem.label} primaryTypographyProps={{ fontSize: ".875rem", fontWeight: isSelected ? 800 : 600, sx: { textAlign: "start", lineHeight: 1.4 } }} />
+        <ListItemText primary={navItem.label} primaryTypographyProps={{ fontSize: ".92rem", fontWeight: isSelected ? 800 : 600, sx: { textAlign: "start", lineHeight: 1.4 } }} />
       </ListItemButton>
     </ListItem>
   );

@@ -16,11 +16,36 @@ import ShiftSettings from "./ShiftSettings";
 import AccessTimeRoundedIcon from "@mui/icons-material/AccessTimeRounded";
 
 function CustomTabPanel({ children, value, index, ...other }) {
-  return <div role="tabpanel" hidden={value !== index} id={`settings-tabpanel-${index}`} aria-labelledby={`settings-tab-${index}`} {...other}>{value === index && <Box sx={{ pt: 3 }}>{children}</Box>}</div>;
+  return <div role="tabpanel" hidden={value !== index} id={`settings-tabpanel-${index}`} aria-labelledby={`settings-tab-${index}`} {...other}>{value === index && <Box sx={{ pt: { xs: 2, sm: 2.75 } }}>{children}</Box>}</div>;
 }
 function SettingsLayout() {
   const { t, language } = useLanguage();
   const [activeTab, setActiveTab] = useState(0);
-  return <Box sx={{ p: { xs: 2, md: 3 }, maxWidth: 1000, mx: "auto" }}><Box sx={{ mb: 3 }}><Typography variant="h4" component="h1" sx={{ fontWeight: 800, mb: 0.2, color: "text.primary", textAlign: "start" }}>{t("managerSettingsTitle")}</Typography><Typography variant="subtitle1" sx={{ color: "text.secondary", fontWeight: 600, textAlign: "start" }}>{t("managerSettingsHint")}</Typography></Box><Paper variant="outlined" sx={{ borderRadius: "16px", p: { xs: 2, sm: 3 }, borderColor: "divider" }}><Box sx={{ borderBottom: 1, borderColor: "divider" }}><Tabs value={activeTab} onChange={(_, value) => setActiveTab(value)} aria-label={t("managerSettingsTitle")} textColor="primary" indicatorColor="primary" variant="scrollable" scrollButtons="auto"><Tab icon={<StorefrontIcon />} iconPosition="start" label={t("managerStoreTab")} sx={{ fontWeight: 700, minHeight: 48 }} /><Tab icon={<PersonIcon />} iconPosition="start" label={t("managerProfileTab")} sx={{ fontWeight: 700, minHeight: 48 }} /><Tab icon={<PeopleAltIcon />} iconPosition="start" label={t("managerCashiersTab")} sx={{ fontWeight: 700, minHeight: 48 }} /><Tab icon={<AccessTimeRoundedIcon />} iconPosition="start" label={language === "ar" ? "ساعات الدوام" : "Working hours"} sx={{ fontWeight: 700, minHeight: 48 }} /></Tabs></Box><CustomTabPanel value={activeTab} index={0}><StoreInfoSettings /></CustomTabPanel><CustomTabPanel value={activeTab} index={1}><UserProfileSettings /></CustomTabPanel><CustomTabPanel value={activeTab} index={2}><CashierManagement /></CustomTabPanel><CustomTabPanel value={activeTab} index={3}><ShiftSettings /></CustomTabPanel></Paper></Box>;
+  return (
+    <Box sx={{ width: "100%", maxWidth: 1180, mx: "auto", pb: 2 }}>
+      <Box sx={{ mb: { xs: 2, sm: 2.75 } }}>
+        <Typography variant="h4" component="h1" sx={{ fontWeight: 850, mb: 0.4, color: "text.primary", textAlign: "start", fontSize: { xs: "1.65rem", sm: "2rem" } }}>
+          {t("managerSettingsTitle")}
+        </Typography>
+        <Typography variant="body2" sx={{ color: "text.secondary", fontWeight: 550, textAlign: "start", maxWidth: 720 }}>
+          {t("managerSettingsHint")}
+        </Typography>
+      </Box>
+      <Paper variant="outlined" sx={{ borderRadius: 3, p: { xs: 1.25, sm: 2.25, md: 3 }, borderColor: "divider", overflow: "hidden" }}>
+        <Box sx={{ borderBottom: 1, borderColor: "divider", mx: { xs: -1.25, sm: -2.25, md: -3 }, px: { xs: 1, sm: 1.5, md: 2 } }}>
+          <Tabs value={activeTab} onChange={(_, value) => setActiveTab(value)} aria-label={t("managerSettingsTitle")} textColor="primary" indicatorColor="primary" variant="scrollable" scrollButtons="auto" allowScrollButtonsMobile>
+            <Tab id="settings-tab-0" aria-controls="settings-tabpanel-0" icon={<StorefrontIcon />} iconPosition="start" label={t("managerStoreTab")} sx={{ fontWeight: 750, minHeight: 54, px: { xs: 1, sm: 1.5 } }} />
+            <Tab id="settings-tab-1" aria-controls="settings-tabpanel-1" icon={<PersonIcon />} iconPosition="start" label={t("managerProfileTab")} sx={{ fontWeight: 750, minHeight: 54, px: { xs: 1, sm: 1.5 } }} />
+            <Tab id="settings-tab-2" aria-controls="settings-tabpanel-2" icon={<PeopleAltIcon />} iconPosition="start" label={t("managerCashiersTab")} sx={{ fontWeight: 750, minHeight: 54, px: { xs: 1, sm: 1.5 } }} />
+            <Tab id="settings-tab-3" aria-controls="settings-tabpanel-3" icon={<AccessTimeRoundedIcon />} iconPosition="start" label={language === "ar" ? "ساعات الدوام" : "Working hours"} sx={{ fontWeight: 750, minHeight: 54, px: { xs: 1, sm: 1.5 } }} />
+          </Tabs>
+        </Box>
+        <CustomTabPanel value={activeTab} index={0}><StoreInfoSettings /></CustomTabPanel>
+        <CustomTabPanel value={activeTab} index={1}><UserProfileSettings /></CustomTabPanel>
+        <CustomTabPanel value={activeTab} index={2}><CashierManagement /></CustomTabPanel>
+        <CustomTabPanel value={activeTab} index={3}><ShiftSettings /></CustomTabPanel>
+      </Paper>
+    </Box>
+  );
 }
 export default SettingsLayout;

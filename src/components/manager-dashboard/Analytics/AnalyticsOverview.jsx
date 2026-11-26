@@ -18,7 +18,7 @@ function AnalyticsOverview() {
       <Typography sx={{ color: "#b4a99d", fontSize: ".84rem", mt: .4 }}>{ar ? "مقارنة اليوم التشغيلي باليوم السابق" : "Operational day compared with the previous day"}</Typography>
     </Box>
     <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "repeat(3, minmax(0,1fr))" }, gap: 2 }}>
-      {metrics.map((metric) => <Card key={metric.label} elevation={0} sx={{ bgcolor: "#24211e", border: "1px solid #3d3731", borderRadius: "14px", color: "#f7efe4" }}>
+      {metrics.map((metric) => <Card key={metric.label} elevation={0} sx={{ bgcolor: "#24211e", border: "1px solid #3d3731", borderRadius: "10px", color: "#f7efe4" }}>
         <CardContent sx={{ p: 2.5, "&:last-child": { pb: 2.5 } }}>
           <Typography sx={{ color: "#bdb0a2", fontSize: ".84rem", fontWeight: 600 }}>{metric.label}</Typography>
           <Box sx={{ display: "flex", alignItems: "end", justifyContent: "space-between", gap: 1, mt: 2 }}>

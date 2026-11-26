@@ -922,7 +922,7 @@ function CashierPOSPage() {
         open={cartDrawerOpen}
         onClose={() => setCartDrawerOpen(false)}
         sx={{ display: { xs: "block", sm: "none" } }}
-        slotProps={{ paper: { sx: { maxHeight: "92dvh", overflowY: "auto", borderTopLeftRadius: 22, borderTopRightRadius: 22, bgcolor: "background.paper" } } }}
+        slotProps={{ paper: { sx: { maxHeight: "92dvh", overflowY: "auto", borderTopLeftRadius: 10, borderTopRightRadius: 10, bgcolor: "background.paper" } } }}
       >
         <Box sx={{ width: "100%", maxWidth: 680, mx: "auto" }}>{renderCartContents(true)}</Box>
       </Drawer>

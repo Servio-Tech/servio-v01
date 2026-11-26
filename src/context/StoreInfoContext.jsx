@@ -7,21 +7,29 @@ import { createRequestGuard } from "../utils/requestGuard";
 const StoreInfoContext = createContext();
 
 export function StoreInfoProvider({ children }) {
-  const { slug, tenantId, isPublic, isTracking } = useTenant();
+  const { slug, tenantId, isPublic, isTracking, storeInfo: resolvedStoreInfo } = useTenant();
   const [storeInfo, setStoreInfo] = useState({});
   const guard = useRef(createRequestGuard()).current;
 
   const refreshStoreInfo = useCallback(async () => {
-    if (isTracking || (isPublic && !slug)) return;
-    const query = isPublic
-      ? supabase.rpc("get_public_store", { p_slug: slug })
-      : supabase.from("store").select("*").eq("tenant_id", tenantId).maybeSingle();
+    if (isTracking) return null;
+    if (isPublic) {
+      if (!slug) return null;
+      const next = resolvedStoreInfo || {};
+      setStoreInfo(next);
+      return next;
+    }
+    if (!tenantId) {
+      setStoreInfo({});
+      return null;
+    }
+    const query = supabase.from("store").select("*").eq("tenant_id", tenantId).maybeSingle();
     const { data, error } = await query;
     if (error) return null;
-    const next = isPublic ? data?.[0] || {} : data || {};
+    const next = data || {};
     setStoreInfo(next);
     return next;
-  }, [isTracking, isPublic, slug, tenantId]);
+  }, [isTracking, isPublic, slug, tenantId, resolvedStoreInfo]);
 
   useEffect(() => { void refreshStoreInfo(); }, [refreshStoreInfo]);
 

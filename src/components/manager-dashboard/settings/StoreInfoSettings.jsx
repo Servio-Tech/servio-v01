@@ -13,6 +13,7 @@ import MenuItem from "@mui/material/MenuItem";
 import Snackbar from "@mui/material/Snackbar";
 import Alert from "@mui/material/Alert";
 import IconButton from "@mui/material/IconButton";
+import Divider from "@mui/material/Divider";
 
 // MUI ICONS
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
@@ -33,8 +34,9 @@ const CURRENCIES = [
 ];
 
 function StoreInfoSettings() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { storeInfo, updateStoreInfo } = useStore();
+  const isArabic = language === "ar";
 
   const [formData, setFormData] = useState({
     store_name: storeInfo?.store_name || "",
@@ -82,6 +84,7 @@ function StoreInfoSettings() {
       setFormData((prev) => ({ ...prev, logo_url }));
     } catch (error) {
       console.error(t("managerLogoError"), error);
+      setToast({ open: true, message: t("managerLogoError"), severity: "error" });
     }
   };
 
@@ -111,9 +114,19 @@ function StoreInfoSettings() {
     <Box
       component="form"
       onSubmit={handleSubmit}
-      sx={{ pt: 1, maxWidth: 900, mx: "auto" }}
+      sx={{ pt: 0.5, maxWidth: 1000, mx: "auto" }}
     >
       <Grid container spacing={{ xs: 2, sm: 2.5 }}>
+        <Grid size={{ xs: 12 }}>
+          <Box sx={{ mb: 0.25 }}>
+            <Typography variant="overline" sx={{ color: "primary.main", fontWeight: 850, letterSpacing: isArabic ? 0 : ".1em" }}>
+              {isArabic ? "هوية النشاط" : "BUSINESS IDENTITY"}
+            </Typography>
+            <Typography variant="h6" component="h2" sx={{ fontWeight: 850, mt: -0.5 }}>
+              {isArabic ? "بيانات المتجر وشعاره" : "Store details and branding"}
+            </Typography>
+          </Box>
+        </Grid>
         {/* Logo Upload Section */}
         <Grid size={{ xs: 12 }}>
           <Paper
@@ -124,8 +137,9 @@ function StoreInfoSettings() {
               flexDirection: { xs: "column", sm: "row" },
               alignItems: "center",
               gap: 2,
-              borderRadius: "12px",
+              borderRadius: 3,
               backgroundColor: "background.default",
+              borderColor: "divider",
             }}
           >
             <Avatar
@@ -133,8 +147,8 @@ function StoreInfoSettings() {
               alt={formData.store_name}
               variant="rounded"
               sx={{
-                width: 100,
-                height: 100,
+                width: 88,
+                height: 88,
                 border: "1px solid",
                 borderColor: "divider",
               }}
@@ -225,6 +239,16 @@ function StoreInfoSettings() {
             } }}/>
         </Grid>
 
+        <Grid size={{ xs: 12 }} sx={{ pt: 1 }}>
+          <Divider sx={{ mb: 1.5 }} />
+          <Typography variant="subtitle1" component="h2" sx={{ fontWeight: 850 }}>
+            {isArabic ? "بيانات التواصل والعملة" : "Contact and currency"}
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.3 }}>
+            {isArabic ? "تظهر هذه المعلومات في تجربة العميل وإيصالات الطلب." : "These details appear in the customer experience and order receipts."}
+          </Typography>
+        </Grid>
+
         {/* Phone Number */}
         <Grid size={{ xs: 12, sm: 6, md: 4 }}>
           <TextField
@@ -267,6 +291,16 @@ function StoreInfoSettings() {
               </MenuItem>
             ))}
           </TextField>
+        </Grid>
+
+        <Grid size={{ xs: 12 }} sx={{ pt: 1 }}>
+          <Divider sx={{ mb: 1.5 }} />
+          <Typography variant="subtitle1" component="h2" sx={{ fontWeight: 850 }}>
+            {isArabic ? "العنوان والإيصال والتقييم" : "Address, receipts and reviews"}
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.3 }}>
+            {isArabic ? "خصص التفاصيل التي يحتاجها العميل بعد إتمام الطلب." : "Add the details customers need after placing an order."}
+          </Typography>
         </Grid>
 
         {/* Address */}
@@ -324,12 +358,13 @@ function StoreInfoSettings() {
             variant="contained"
             startIcon={<SaveIcon />}
             disabled={saving}
-            fullWidth={{ xs: true, sm: false }}
             sx={{
               px: 4,
               py: 1,
-              borderRadius: "8px",
-              fontWeight: 700,
+              width: { xs: "100%", sm: "auto" },
+              borderRadius: 2,
+              fontWeight: 800,
+              minHeight: 44,
             }}
           >
             {saving ? "جاري الإرسال..." : t("managerSave")}

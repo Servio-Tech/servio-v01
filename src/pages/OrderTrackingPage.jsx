@@ -16,17 +16,19 @@ import {
 } from "@mui/material";
 import ArrowBackRoundedIcon from "@mui/icons-material/ArrowBackRounded";
 import RefreshRoundedIcon from "@mui/icons-material/RefreshRounded";
-import StorefrontRoundedIcon from "@mui/icons-material/StorefrontRounded";
 import ReceiptLongRoundedIcon from "@mui/icons-material/ReceiptLongRounded";
 import ExpandMoreRoundedIcon from "@mui/icons-material/ExpandMoreRounded";
+import DoneAllRoundedIcon from "@mui/icons-material/DoneAllRounded";
 import TrialNotice from "../components/TrialNotice";
+import CustomerMenuBottomNav from "../components/menu/CustomerMenuBottomNav";
+import CustomerPageHeader from "../components/menu/CustomerPageHeader";
 import supabase from "../supabase";
 import { useTenant } from "../context/TenantContext";
 import { useLanguage } from "../context/LanguageContext";
-import { buildMenuReturnPath } from "../utils/orderTrackingRoutes";
+import { buildCustomerMenuPath } from "../utils/customerMenuNavigation";
 import { getCustomerTrackingPath, getRecentCustomerOrdersForSlug } from "../utils/customerTracking";
 
-const POLL_INTERVAL_MS = 1_000;
+const POLL_INTERVAL_MS = 5_000;
 const FINISHED_STATUSES = new Set(["awaiting_payment", "ready", "served", "unclaimed", "cancelled"]);
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const TRACKING_STORAGE_PREFIX = "servio.orderTracking.";
@@ -43,6 +45,7 @@ const copy = {
     pending: "تم استلام الطلب",
     preparing: "قيد التحضير",
     ready: "جاهز للتسليم",
+    awaiting_payment: "جاهز، بانتظار السداد",
     served: "تم التسليم",
     cancelled: "تم إلغاء الطلب",
     unclaimed: "لم يُستلم الطلب",
@@ -57,7 +60,13 @@ const copy = {
     emptyBody: "بعد إرسال طلب من هذا الجهاز، سيظهر مرجعه هنا لتتمكن من متابعة حالته.",
     back: "العودة إلى منيو الطاولة",
     retry: "إعادة المحاولة",
-    live: "تحديث تلقائي كل ثانية ما دامت الصفحة مفتوحة",
+    live: "تتحدث الحالة تلقائيًا كل 5 ثوانٍ أثناء التحضير.",
+    terminal: "وصل الطلب إلى هذه المرحلة؛ لن تحتاج إلى إبقاء الصفحة مفتوحة.",
+    liveBadge: "مباشر",
+    updatedBadge: "تم التحديث",
+    lastUpdated: "آخر تحديث",
+    refreshStatus: "تحديث",
+    refreshing: "جارٍ التحديث",
     storeFallback: "طلبك لدى",
     statusLabel: "الحالة الحالية",
     unavailableStatus: "حالة الطلب",
@@ -73,6 +82,7 @@ const copy = {
     pending: "Order received",
     preparing: "Preparing",
     ready: "Ready for pickup",
+    awaiting_payment: "Ready, awaiting payment",
     served: "Delivered",
     cancelled: "Order cancelled",
     unclaimed: "Not collected",
@@ -87,7 +97,13 @@ const copy = {
     emptyBody: "After you place an order on this device, its reference will appear here so you can follow its status.",
     back: "Back to this table's menu",
     retry: "Try again",
-    live: "Automatically refreshes every second while this page is open",
+    live: "Status refreshes automatically every 5 seconds while your order is being prepared.",
+    terminal: "Your order reached this stage; you do not need to keep this page open.",
+    liveBadge: "LIVE",
+    updatedBadge: "UPDATED",
+    lastUpdated: "Last updated",
+    refreshStatus: "Refresh",
+    refreshing: "Refreshing",
     storeFallback: "Your order at",
     statusLabel: "Current status",
     unavailableStatus: "Order status",
@@ -96,19 +112,31 @@ const copy = {
 
 const statusText = (status, text) => text[status] || text.unavailableStatus;
 
-function InvoiceDetails({ order, language }) {
+function InvoiceDetails({ order, language, currency, id }) {
   const items = Array.isArray(order?.items) ? order.items : [];
-  const money = (value) => `${Number(value || 0).toFixed(2)} ${language === "ar" ? "ر.س" : "SAR"}`;
+  const money = (value) => `${Number(value || 0).toLocaleString(language === "ar" ? "ar-SA" : "en-SA", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${currency}`;
   return (
-    <Paper elevation={0} sx={{ mt: 1.2, p: 1.5, borderRadius: 2.5, bgcolor: "#FFF8F2", border: "1px solid rgba(244,121,32,.2)" }}>
+    <Paper id={id} role="region" aria-label={language === "ar" ? "فاتورة الطلب" : "Order invoice"} elevation={0} sx={{ mt: 1.2, p: { xs: 1.25, sm: 1.75 }, borderRadius: 2.5, bgcolor: "background.paper", border: "1px solid rgba(244,121,32,.3)" }}>
       <Stack spacing={.75}>
-        {items.map((item, index) => (
-          <Stack key={`${item.id || item.name}-${index}`} direction="row"   sx={{ justifyContent: "space-between", gap: 1 }}>
-            <Typography variant="body2" sx={{ minWidth: 0, overflowWrap: "anywhere" }}>{item.name} × {item.quantity || 1}</Typography>
-            <Typography variant="body2" fontWeight={850} whiteSpace="nowrap">{money(Number(item.price || 0) * Number(item.quantity || 1))}</Typography>
-          </Stack>
-        ))}
-        <Box sx={{ borderTop: "1px dashed rgba(23,26,47,.18)", pt: .9, mt: .35 }}>
+        {items.map((item, index) => {
+          const addons = Array.isArray(item.selected_addons)
+            ? item.selected_addons.map((addon) => addon?.name).filter(Boolean)
+            : [];
+          return (
+            <Stack key={`${item.id || item.name}-${index}`} direction="row" sx={{ justifyContent: "space-between", gap: 1 }}>
+              <Box sx={{ minWidth: 0 }}>
+                <Typography variant="body2" sx={{ minWidth: 0, overflowWrap: "anywhere" }}>{item.name} × {item.quantity || 1}</Typography>
+                {addons.length > 0 && (
+                  <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: .2, lineHeight: 1.5 }}>
+                    {language === "ar" ? "الإضافات: " : "Add-ons: "}{addons.join(language === "ar" ? "، " : ", ")}
+                  </Typography>
+                )}
+              </Box>
+              <Typography variant="body2" fontWeight={850} whiteSpace="nowrap">{money(Number(item.price || 0) * Number(item.quantity || 1))}</Typography>
+            </Stack>
+          );
+        })}
+        <Box sx={{ borderTop: "1px dashed", borderColor: "divider", pt: .9, mt: .35 }}>
           <Stack direction="row"  sx={{ justifyContent: "space-between" }}><Typography fontWeight={900}>{language === "ar" ? "الإجمالي" : "Total"}</Typography><Typography fontWeight={950} color="primary.main">{money(order?.total_price)}</Typography></Stack>
         </Box>
       </Stack>
@@ -123,6 +151,7 @@ function OrderTrackingPage() {
   const { tenant, storeInfo, loading: tenantLoading } = useTenant();
   const { language } = useLanguage();
   const text = copy[language] || copy.ar;
+  const currency = storeInfo?.currency || (language === "ar" ? "ر.س" : "SAR");
   const storageKey = `${TRACKING_STORAGE_PREFIX}${slug}.${orderId}`;
 
   const [trackingToken, setTrackingToken] = useState("");
@@ -133,7 +162,11 @@ function OrderTrackingPage() {
   const [customerOrders, setCustomerOrders] = useState([]);
   const [customerOrdersReady, setCustomerOrdersReady] = useState(false);
   const [historyOrders, setHistoryOrders] = useState([]);
-  const [openInvoice, setOpenInvoice] = useState(orderId);
+  const [openInvoice, setOpenInvoice] = useState(null);
+  const [trackingTokenReady, setTrackingTokenReady] = useState(false);
+  const [trackingTokenKey, setTrackingTokenKey] = useState("");
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [lastUpdatedAt, setLastUpdatedAt] = useState(null);
 
   useEffect(() => {
     let token = location.state?.trackingToken || "";
@@ -144,7 +177,18 @@ function OrderTrackingPage() {
       // إذا منع المتصفح التخزين، يستمر التتبع باستخدام رمز حالة التنقل الحالية.
     }
     setTrackingToken(token);
+    setTrackingTokenKey(storageKey);
+    setTrackingTokenReady(true);
   }, [location.state?.trackingToken, storageKey]);
+
+  useEffect(() => {
+    setOrder(null);
+    setLoading(true);
+    setInvalidLink(false);
+    setLoadError("");
+    setLastUpdatedAt(null);
+    setOpenInvoice(null);
+  }, [slug, orderId]);
 
   useEffect(() => {
     const records = getRecentCustomerOrdersForSlug(slug);
@@ -167,6 +211,10 @@ function OrderTrackingPage() {
   }, [slug, orderId]);
 
   useEffect(() => {
+    if (!trackingTokenReady || trackingTokenKey !== storageKey) {
+      setLoading(true);
+      return undefined;
+    }
     if (!trackingToken) {
       setLoading(false);
       return undefined;
@@ -188,6 +236,7 @@ function OrderTrackingPage() {
       if (!active || inFlight) return;
       inFlight = true;
       if (showSpinner) setLoading(true);
+      setLoadError("");
       try {
         const { data, error } = await supabase.rpc("get_public_order_tracking", {
           p_slug: slug,
@@ -204,6 +253,7 @@ function OrderTrackingPage() {
           setOrder(data);
           setInvalidLink(false);
           setLoadError("");
+          setLastUpdatedAt(new Date());
         }
       } catch {
         if (active) setLoadError(text.unavailable);
@@ -228,11 +278,14 @@ function OrderTrackingPage() {
       if (timer) window.clearInterval(timer);
       document.removeEventListener("visibilitychange", onVisibilityChange);
     };
-  }, [trackingToken, slug, orderId, order?.status, invalidLink, text.unavailable]);
+  }, [trackingToken, trackingTokenReady, trackingTokenKey, storageKey, slug, orderId, order?.status, invalidLink, text.unavailable, refreshKey]);
 
   const steps = text.steps;
   // انتظار السداد والجاهز نقطتان نهائيتان للعميل؛ لا نعرض مرحلة تم التسليم.
   const trackingStatus = order?.status === "awaiting_payment" || order?.status === "served" ? "ready" : order?.status;
+  const currentStatusLabel = order?.status === "awaiting_payment"
+    ? text.awaiting_payment
+    : statusText(order?.status, text);
   const currentStep = Math.max(0, ["pending", "preparing", "ready"].indexOf(trackingStatus));
   const orderReference = orderId ? orderId.slice(-6).toUpperCase() : "—";
   const createdAt = order?.created_at
@@ -240,72 +293,70 @@ function OrderTrackingPage() {
     : "—";
   // نستخدم رقم الطاولة الذي أعادته RPC المقيدة، ونحتفظ بما مرره تدفق الطلب قبل اكتمال أول قراءة.
   const returnTable = order?.table_number || location.state?.tableNumber || "";
-  const menuReturnPath = buildMenuReturnPath(slug, returnTable);
+  const menuReturnPath = buildCustomerMenuPath(slug, returnTable, location.search);
   const storeName = storeInfo?.store_name || storeInfo?.name || tenant?.name || "SERVIO";
-  const orderStatusColor = order?.status === "cancelled" ? "error" : order?.status === "unclaimed" ? "warning" : trackingStatus === "ready" ? "success" : "primary";
+  const orderStatusColor = order?.status === "cancelled" ? "error" : order?.status === "unclaimed" || order?.status === "awaiting_payment" ? "warning" : trackingStatus === "ready" ? "success" : "primary";
   const progressValue = trackingStatus === "ready" ? 100 : Math.max(8, (currentStep / (steps.length - 1)) * 100);
+  const isPolling = Boolean(order && !FINISHED_STATUSES.has(order.status));
+  const lastUpdated = lastUpdatedAt
+    ? new Intl.DateTimeFormat(language === "ar" ? "ar-SA" : "en-SA", { timeStyle: "short" }).format(lastUpdatedAt)
+    : "";
 
   return (
     <Box
       component="main"
+      className="customer-experience-page customer-tracking-page"
       dir={language === "ar" ? "rtl" : "ltr"}
       sx={{
-        minHeight: "100vh",
+        minHeight: "100dvh",
         display: "flex",
         flexDirection: "column",
-        background: "radial-gradient(circle at 92% 0%, rgba(244,121,32,.14), transparent 28%), radial-gradient(circle at 0% 70%, rgba(43,54,91,.08), transparent 25%), #f6f7fa",
-        py: { xs: 2, md: 5 },
+        backgroundColor: "background.default",
+        pt: { xs: 1.5, md: 3 },
         px: 1.2,
+        pb: "calc(96px + env(safe-area-inset-bottom, 0px))",
       }}
     >
-      <Container maxWidth="sm" sx={{ flex: 1, display: "flex", flexDirection: "column" }}>
+      <Container maxWidth="sm" sx={{ flex: 1, display: "flex", flexDirection: "column", px: { xs: 0, sm: 1 } }}>
         <Stack spacing={{ xs: 2, sm: 2.5 }} sx={{ width: "100%", my: "auto" }}>
-          <Stack direction="row"    sx={{ alignItems: "center", justifyContent: "space-between", gap: 1 }}>
-            <Stack direction="row"  spacing={1} sx={{ alignItems: "center" }}>
-              <Box component="img" src="/logo-icon.webp" alt="SERVIO" sx={{ width: 38, height: 38, objectFit: "contain" }} />
-              <Typography fontWeight={950} color="secondary.main" letterSpacing=".04em">SERVIO</Typography>
-            </Stack>
-            <Chip
-              icon={<StorefrontRoundedIcon />}
-              label={text.eyebrow}
-              size="small"
-              sx={{ bgcolor: "rgba(255,255,255,.78)", border: "1px solid rgba(23,26,47,.08)", fontWeight: 800 }}
-            />
-          </Stack>
+          <CustomerPageHeader tableNumber={returnTable} />
 
           <Box>
+            <Typography variant="overline" color="primary.main" sx={{ fontWeight: 900, letterSpacing: ".08em" }}>
+              {text.eyebrow}
+            </Typography>
             <Typography variant="h4" component="h1" fontWeight={950} letterSpacing="-.035em" sx={{ fontSize: { xs: "1.8rem", sm: "2.2rem" } }}>
               {text.title}
             </Typography>
             <Typography color="text.secondary" sx={{ mt: .7, lineHeight: 1.8 }}>{text.subtitle}</Typography>
           </Box>
 
-          {tenantLoading || (!orderId && !customerOrdersReady) ? (
-            <Paper elevation={0} sx={{ p: 5, textAlign: "center", borderRadius: 4, border: "1px solid rgba(23,26,47,.07)" }}>
+          {tenantLoading || !trackingTokenReady || (!orderId && !customerOrdersReady) ? (
+            <Paper elevation={0} sx={{ p: 5, textAlign: "center", borderRadius: 2.5, border: "1px solid", borderColor: "divider" }}>
               <CircularProgress />
               <Typography color="text.secondary" sx={{ mt: 1.2 }}>{text.loading}</Typography>
             </Paper>
           ) : !orderId && customerOrders.length > 0 ? (
-            <Paper elevation={0} sx={{ p: 5, textAlign: "center", borderRadius: 4, border: "1px solid rgba(23,26,47,.07)" }}>
+            <Paper elevation={0} sx={{ p: 5, textAlign: "center", borderRadius: 2.5, border: "1px solid", borderColor: "divider" }}>
               <CircularProgress />
               <Typography color="text.secondary" sx={{ mt: 1.2 }}>{text.loading}</Typography>
             </Paper>
           ) : !orderId && !customerOrders.length ? (
-            <Paper elevation={0} sx={{ p: { xs: 2.5, sm: 3.5 }, textAlign: "center", borderRadius: 3.5, border: "1px solid rgba(23,26,47,.08)", bgcolor: "rgba(255,255,255,.82)" }}>
+            <Paper elevation={0} sx={{ p: { xs: 2.5, sm: 3.5 }, textAlign: "center", borderRadius: 2.5, border: "1px solid", borderColor: "divider", bgcolor: "background.paper" }}>
               <Box sx={{ width: 52, height: 52, display: "grid", placeItems: "center", mx: "auto", mb: 1.5, borderRadius: 2, bgcolor: "rgba(244,121,32,.10)", color: "primary.main" }}><ReceiptLongRoundedIcon /></Box>
               <Typography component="h2" variant="h6" fontWeight={900}>{text.emptyTitle}</Typography>
               <Typography color="text.secondary" sx={{ mt: .7, lineHeight: 1.8 }}>{text.emptyBody}</Typography>
             </Paper>
           ) : invalidLink || !trackingToken ? (
-            <Alert severity="warning" sx={{ borderRadius: 3, alignItems: "flex-start" }}>
+            <Alert severity="warning" sx={{ borderRadius: 1.5, alignItems: "flex-start" }}>
               <Typography fontWeight={900}>{text.invalidTitle}</Typography>
               <Typography variant="body2" sx={{ mt: .5, lineHeight: 1.8 }}>{text.invalidBody}</Typography>
             </Alert>
           ) : (
-            <Card elevation={0} sx={{ borderRadius: { xs: 3.5, sm: 4.5 }, border: "1px solid rgba(23,26,47,.08)", boxShadow: "0 20px 60px rgba(23,26,47,.08)", overflow: "hidden" }}>
+            <Card elevation={0} sx={{ borderRadius: { xs: 2, sm: 2.5 }, border: "1px solid", borderColor: "divider", boxShadow: "0 14px 36px rgba(0,0,0,.1)", overflow: "hidden" }}>
               <CardContent sx={{ p: { xs: 1.5, sm: 2.5 }, "&:last-child": { pb: { xs: 1.5, sm: 2.5 } } }}>
                 <Stack spacing={{ xs: 1.5, sm: 2 }}>
-                  <Box sx={{ p: { xs: 1.8, sm: 2.4 }, borderRadius: 3, color: "#fff", background: "linear-gradient(125deg, #252a46 0%, #363d62 100%)", position: "relative", overflow: "hidden" }}>
+                  <Box sx={{ p: { xs: 1.8, sm: 2.4 }, borderRadius: 1.5, color: "#fff", background: "linear-gradient(125deg, #252a46 0%, #363d62 100%)", position: "relative", overflow: "hidden" }}>
                     <Box aria-hidden="true" sx={{ position: "absolute", width: 150, height: 150, borderRadius: "50%", bgcolor: "rgba(255,255,255,.06)", insetInlineEnd: -48, top: -75 }} />
                     <Stack direction={{ xs: "column", sm: "row" }}    sx={{ position: "relative" , alignItems: { xs: "flex-start", sm: "center" }, justifyContent: "space-between", gap: 1.3}}>
                       <Box sx={{ minWidth: 0 }}>
@@ -313,7 +364,7 @@ function OrderTrackingPage() {
                         <Typography variant="caption" sx={{ opacity: .72 }}>{text.order}</Typography>
                         <Typography variant="h4" fontWeight={950} sx={{ lineHeight: 1.1, mt: .2, letterSpacing: ".03em" }}>#{orderReference}</Typography>
                       </Box>
-                      {order && <Chip color={orderStatusColor} label={statusText(trackingStatus, text)} sx={{ fontWeight: 850, maxWidth: "100%" }} />}
+                      {order && <Chip color={orderStatusColor} label={currentStatusLabel} sx={{ fontWeight: 850, maxWidth: "100%" }} />}
                     </Stack>
                   </Box>
 
@@ -326,13 +377,20 @@ function OrderTrackingPage() {
                           {order.status === "cancelled" ? text.cancelledText : text.unclaimedText}
                         </Alert>
                       ) : (
-                        <Paper elevation={0} sx={{ p: { xs: 1.5, sm: 2 }, borderRadius: 3, bgcolor: "#fbfbfd", border: "1px solid rgba(23,26,47,.07)" }}>
+                        <Paper elevation={0} sx={{ p: { xs: 1.5, sm: 2 }, borderRadius: 1.5, bgcolor: "background.default", border: "1px solid", borderColor: "divider" }}>
                           <Stack direction="row"    sx={{ alignItems: "center", justifyContent: "space-between", gap: 1 }}>
                             <Box>
                               <Typography variant="caption" color="text.secondary">{text.progress}</Typography>
-                              <Typography fontWeight={900} sx={{ mt: .25 }}>{statusText(trackingStatus, text)}</Typography>
+                              <Typography fontWeight={900} sx={{ mt: .25 }}>{currentStatusLabel}</Typography>
                             </Box>
-                            <Chip size="small" color="success" variant="outlined" label="LIVE" sx={{ fontWeight: 900, letterSpacing: ".06em" }} />
+                            <Chip
+                              size="small"
+                              color={isPolling ? "success" : "default"}
+                              variant="outlined"
+                              icon={isPolling ? undefined : <DoneAllRoundedIcon />}
+                              label={isPolling ? text.liveBadge : text.updatedBadge}
+                              sx={{ fontWeight: 900, letterSpacing: ".03em" }}
+                            />
                           </Stack>
                           <LinearProgress
                             variant="determinate"
@@ -351,7 +409,7 @@ function OrderTrackingPage() {
                                       width: { xs: 30, sm: 34 }, height: { xs: 30, sm: 34 }, mx: "auto", mb: .7,
                                       borderRadius: "50%", display: "grid", placeItems: "center", fontSize: 13, fontWeight: 900,
                                       color: complete || active ? "#fff" : "text.secondary",
-                                      bgcolor: complete || active ? "primary.main" : "rgba(23,26,47,.08)",
+                                      bgcolor: complete || active ? "primary.main" : "action.hover",
                                       boxShadow: active ? "0 0 0 4px rgba(244,121,32,.14)" : "none",
                                     }}
                                   >
@@ -368,29 +426,58 @@ function OrderTrackingPage() {
                       )}
 
                       <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: order?.table_number ? "1fr 1fr" : "1fr" }, gap: 1 }}>
-                        <Paper elevation={0} sx={{ p: 1.5, borderRadius: 2.5, bgcolor: "#fff", border: "1px solid rgba(23,26,47,.07)" }}>
+                        <Paper elevation={0} sx={{ p: 1.5, borderRadius: 1.5, bgcolor: "background.paper", border: "1px solid", borderColor: "divider" }}>
                           <Typography variant="caption" color="text.secondary">{text.submitted}</Typography>
                           <Typography variant="body2" fontWeight={800} sx={{ mt: .35 }}>{createdAt}</Typography>
                         </Paper>
                         {order.table_number && (
-                          <Paper elevation={0} sx={{ p: 1.5, borderRadius: 2.5, bgcolor: "#fff", border: "1px solid rgba(23,26,47,.07)" }}>
+                          <Paper elevation={0} sx={{ p: 1.5, borderRadius: 1.5, bgcolor: "background.paper", border: "1px solid", borderColor: "divider" }}>
                             <Typography variant="caption" color="text.secondary">{text.dineIn}</Typography>
                             <Typography variant="body2" fontWeight={800} sx={{ mt: .35 }}>{order.table_number}</Typography>
                           </Paper>
                         )}
                       </Box>
-                      <Typography variant="caption" color="text.secondary" textAlign="center" sx={{ lineHeight: 1.7 }}>{text.live}</Typography>
-                      <Button variant="outlined" startIcon={<ReceiptLongRoundedIcon />} endIcon={<ExpandMoreRoundedIcon sx={{ transform: openInvoice === orderId ? "rotate(180deg)" : "none" }} />} onClick={() => setOpenInvoice(openInvoice === orderId ? null : orderId)} sx={{ borderRadius: 2.2, fontWeight: 850 }}>
+                      <Stack direction={{ xs: "column", sm: "row" }} sx={{ alignItems: { xs: "stretch", sm: "center" }, justifyContent: "space-between", gap: .75 }}>
+                        <Box sx={{ minWidth: 0 }}>
+                          <Typography variant="caption" color="text.secondary" sx={{ display: "block", lineHeight: 1.6 }}>
+                            {isPolling ? text.live : text.terminal}
+                          </Typography>
+                          {lastUpdated && (
+                            <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: .25, fontWeight: 700 }}>
+                              {text.lastUpdated}: {lastUpdated}
+                            </Typography>
+                          )}
+                        </Box>
+                        <Button
+                          size="small"
+                          variant="outlined"
+                          startIcon={loading ? <CircularProgress size={15} color="inherit" /> : <RefreshRoundedIcon />}
+                          disabled={loading}
+                          onClick={() => setRefreshKey((key) => key + 1)}
+                          sx={{ alignSelf: { xs: "flex-start", sm: "center" }, minHeight: 38, flexShrink: 0, borderRadius: 2, fontWeight: 800 }}
+                        >
+                          {loading ? text.refreshing : text.refreshStatus}
+                        </Button>
+                      </Stack>
+                      <Button
+                        variant="outlined"
+                        startIcon={<ReceiptLongRoundedIcon />}
+                        endIcon={<ExpandMoreRoundedIcon sx={{ transform: openInvoice === orderId ? "rotate(180deg)" : "none", transition: "transform .18s ease" }} />}
+                        aria-expanded={openInvoice === orderId}
+                        aria-controls={`order-invoice-${orderId}`}
+                        onClick={() => setOpenInvoice(openInvoice === orderId ? null : orderId)}
+                        sx={{ minHeight: 46, borderRadius: 2.2, fontWeight: 850 }}
+                      >
                         {language === "ar" ? "عرض فاتورة الطلب" : "View order invoice"}
                       </Button>
-                      {openInvoice === orderId && <InvoiceDetails order={order} language={language} />}
+                      {openInvoice === orderId && <InvoiceDetails id={`order-invoice-${orderId}`} order={order} language={language} currency={currency} />}
                     </>
                   ) : null}
 
                   {loadError && (
                     <Alert
                       severity="warning"
-                      action={<Button color="inherit" size="small" startIcon={<RefreshRoundedIcon />} onClick={() => window.location.reload()}>{text.retry}</Button>}
+                      action={<Button color="inherit" size="small" startIcon={<RefreshRoundedIcon />} disabled={loading} onClick={() => setRefreshKey((key) => key + 1)}>{text.retry}</Button>}
                       sx={{ borderRadius: 2.5 }}
                     >
                       {loadError}
@@ -402,18 +489,18 @@ function OrderTrackingPage() {
           )}
 
           {customerOrders.length > 1 && historyOrders.filter((item) => item.order_id !== orderId).length > 0 && (
-            <Paper elevation={0} sx={{ p: 1.5, borderRadius: 3, border: "1px solid rgba(23,26,47,.08)", bgcolor: "rgba(255,255,255,.82)" }}>
+            <Paper elevation={0} sx={{ p: 1.5, borderRadius: 1.5, border: "1px solid", borderColor: "divider", bgcolor: "background.paper" }}>
               <Typography fontWeight={950} sx={{ mb: 1 }}>{language === "ar" ? "طلباتك خلال الساعة الأخيرة" : "Your orders from the last hour"}</Typography>
               <Stack spacing={1}>
                 {historyOrders.filter((item) => item.order_id !== orderId).map((item) => {
                   const record = item.localRecord;
                   const isOpen = openInvoice === item.order_id;
-                  return <Box key={item.order_id} sx={{ p: 1.2, borderRadius: 2.2, border: "1px solid rgba(23,26,47,.08)" }}>
+                  return <Box key={item.order_id} sx={{ p: 1.2, borderRadius: 1.5, border: "1px solid", borderColor: "divider" }}>
                     <Stack direction="row"    sx={{ alignItems: "center", justifyContent: "space-between", gap: 1 }}>
                       <Box><Typography fontWeight={850}>#{String(item.order_id).slice(-6).toUpperCase()}</Typography><Typography variant="caption" color="text.secondary">{statusText(item.status, text)}</Typography></Box>
-                      <Button size="small" variant="text" onClick={() => setOpenInvoice(isOpen ? null : item.order_id)}>{language === "ar" ? "الفاتورة" : "Invoice"}</Button>
+                      <Button size="small" variant="text" aria-expanded={isOpen} aria-controls={`order-invoice-${item.order_id}`} onClick={() => setOpenInvoice(isOpen ? null : item.order_id)}>{language === "ar" ? "الفاتورة" : "Invoice"}</Button>
                     </Stack>
-                    {isOpen && <InvoiceDetails order={item} language={language} />}
+                    {isOpen && <InvoiceDetails id={`order-invoice-${item.order_id}`} order={item} language={language} currency={currency} />}
                     <Button size="small" onClick={() => navigate(getCustomerTrackingPath(slug, record), { state: { trackingToken: record.trackingToken, tableNumber: record.tableNumber } })}>{language === "ar" ? "فتح التتبع" : "Open tracking"}</Button>
                   </Box>;
                 })}
@@ -426,13 +513,18 @@ function OrderTrackingPage() {
             fullWidth
             startIcon={<ArrowBackRoundedIcon />}
             onClick={() => navigate(menuReturnPath)}
-            sx={{ minHeight: 48, borderRadius: 2.5, fontWeight: 850, bgcolor: "rgba(255,255,255,.66)" }}
+            sx={{ minHeight: 48, borderRadius: 2.5, fontWeight: 850 }}
           >
             {text.back}
           </Button>
         </Stack>
         <TrialNotice />
       </Container>
+      <CustomerMenuBottomNav
+        activePage="track"
+        canCallWaiter={Boolean(returnTable) && !/^(cashier|كاشير)$/i.test(String(returnTable).trim())}
+        tableNumber={returnTable}
+      />
     </Box>
   );
 }

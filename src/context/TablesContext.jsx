@@ -6,9 +6,50 @@ import { useBranch } from "./BranchContext";
 import { createRequestGuard } from "../utils/requestGuard";
 const TablesContext = createContext();
 export function TablesProvider({ children }) {
-  const { slug: routeSlug, tenant, tenantId, isPublic, isTracking } = useTenant();
-  const { selectedBranchId: branchId, branchSlug } = useBranch(); const resolvedSlug = isPublic ? routeSlug : tenant?.slug || null; const [tables, setTables] = useState([]); const [error, setError] = useState(""); const [loaded, setLoaded] = useState(false); const guard = useRef(createRequestGuard()).current;
-  useEffect(() => { let active = true; setLoaded(false); if (isTracking) { setTables([]); setError(""); setLoaded(true); return () => { active = false; }; } if (isPublic && !routeSlug) return () => { active = false; }; const load = async () => { const result = isPublic ? await supabase.rpc("get_public_tables", { p_slug: routeSlug, p_branch_slug: branchSlug }) : await supabase.from("table").select("*").eq("tenant_id", tenantId).eq("branch_id", branchId).order("table_number", { ascending: true }); if (!active) return; if (result.error) setError(result.error.message); else { setError(""); setTables(result.data || []); } setLoaded(true); }; load(); return () => { active = false; }; }, [routeSlug, tenantId, branchId, branchSlug, isPublic, isTracking]);
+  const { slug: routeSlug, tenant, tenantId, isPublic, isTracking, loading: tenantLoading } = useTenant();
+  const { selectedBranchId: branchId, branchSlug, loading: branchLoading } = useBranch();
+  const resolvedSlug = isPublic ? routeSlug : tenant?.slug || null;
+  const [tables, setTables] = useState([]);
+  const [error, setError] = useState("");
+  const [loaded, setLoaded] = useState(false);
+  const guard = useRef(createRequestGuard()).current;
+
+  useEffect(() => {
+    let active = true;
+    setLoaded(false);
+
+    if (isTracking) {
+      setTables([]);
+      setError("");
+      setLoaded(true);
+      return () => { active = false; };
+    }
+
+    if (tenantLoading || branchLoading) return () => { active = false; };
+
+    if ((isPublic && !routeSlug) || (!isPublic && (!tenantId || !branchId))) {
+      setTables([]);
+      setError("");
+      setLoaded(true);
+      return () => { active = false; };
+    }
+
+    const load = async () => {
+      const result = isPublic
+        ? await supabase.rpc("get_public_tables", { p_slug: routeSlug, p_branch_slug: branchSlug })
+        : await supabase.from("table").select("*").eq("tenant_id", tenantId).eq("branch_id", branchId).order("table_number", { ascending: true });
+      if (!active) return;
+      if (result.error) setError(result.error.message);
+      else {
+        setError("");
+        setTables(result.data || []);
+      }
+      setLoaded(true);
+    };
+
+    void load();
+    return () => { active = false; };
+  }, [routeSlug, tenantId, branchId, branchSlug, isPublic, isTracking, tenantLoading, branchLoading]);
   const generateTables = (count) => guard("tables:generate", async () => { if (isPublic || !tenantId) return { error: new Error("غير مصرح") }; if (!resolvedSlug) return { error: new Error("تعذر تحديد رابط الكافيه، أعد تحميل الصفحة ثم حاول مرة أخرى") }; const parsed = parseInt(count, 10) || 0; if (parsed <= 0) return { error: new Error("أدخل عدد طاولات صحيح") }; const baseUrl = window.location.origin; const start = tables.length ? Math.max(...tables.map((table) => Number(table.table_number) || 0)) + 1 : 1; const newTables = Array.from({ length: parsed }, (_, index) => { const tableNumber = start + index; return { tenant_id: tenantId, branch_id: branchId, table_number: tableNumber, qr_value: `${baseUrl}/menu/${resolvedSlug}/${tableNumber}?branch=${encodeURIComponent(branchSlug || "main")}` }; }); const { data, error: insertError } = await supabase.from("table").insert(newTables).select("*"); if (!insertError) setTables((prev) => [...prev, ...(data || [])]); else setError(insertError.message); return { data, error: insertError }; });
   const deleteTable = (id) => guard(`tables:delete:${id}`, async () => { if (isPublic || !tenantId) return { error: new Error("غير مصرح") }; const { error: deleteError } = await supabase.from("table").delete().eq("id", id).eq("tenant_id", tenantId).eq("branch_id", branchId); if (!deleteError) setTables((prev) => prev.filter((table) => table.id !== id)); else setError(deleteError.message); return { error: deleteError }; });
   const clearTables = () => guard("tables:clear", async () => { if (isPublic || !tenantId) return { error: new Error("غير مصرح") }; const { error: deleteError } = await supabase.from("table").delete().eq("tenant_id", tenantId).eq("branch_id", branchId); if (!deleteError) setTables([]); else setError(deleteError.message); return { error: deleteError }; });

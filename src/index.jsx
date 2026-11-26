@@ -1,32 +1,17 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import "./index.css";
-import App from "./App";
 import { BrowserRouter } from "react-router-dom";
-import { createAppTheme } from "./theme/Theme";
-import { ThemeProvider, CssBaseline } from "@mui/material";
-import { TenantProvider } from "./context/TenantContext";
-import { MenuProvider } from "./context/MenuContext";
-import { CartProvider } from "./context/CartContext";
-import { OrdersProvider } from "./context/OrdersContext";
-import { HistoryProvider } from "./context/HistoryContext";
-import { StoreInfoProvider } from "./context/StoreInfoContext";
-import { UserProvider } from "./context/UserContext";
-import { ShiftProvider } from "./context/ShiftContext";
-import { AnalyticsProvider } from "./context/AnalyticsContext";
-import { TablesProvider } from "./context/TablesContext";
-import { FeedbacksProvider } from "./context/FeedbackContext";
-import { WaiterCallsProvider } from "./context/WaiterCallsContext";
-import { SuggestionsProvider } from "./context/SuggestionsContext";
-import { BranchProvider } from "./context/BranchContext";
+import { CssBaseline, ThemeProvider } from "@mui/material";
 import { LanguageProvider, useLanguage } from "./context/LanguageContext";
+import { createAppTheme } from "./theme/Theme";
 import ErrorBoundary from "./components/ErrorBoundary";
-
-autoRoot();
+import App from "./App";
+import "./index.css";
 
 function DirectionalTheme({ children }) {
   const { language } = useLanguage();
   const direction = language === "ar" ? "rtl" : "ltr";
+
   return (
     <ThemeProvider theme={createAppTheme(direction)}>
       <CssBaseline />
@@ -35,48 +20,16 @@ function DirectionalTheme({ children }) {
   );
 }
 
-function autoRoot() {
-  const root = ReactDOM.createRoot(document.getElementById("root"));
-  root.render(
-    <React.StrictMode>
-      <ErrorBoundary>
-      <BrowserRouter>
+ReactDOM.createRoot(document.getElementById("root")).render(
+  <React.StrictMode>
+    <BrowserRouter>
       <LanguageProvider>
-        {/* يبدأ السياق من اللغة ثم المستأجر؛ Orders يحتاج tenantId، وHistory/Analytics يعتمدان على Orders. */}
-        <TenantProvider>
-          <BranchProvider>
-          <MenuProvider>
-            <CartProvider>
-              <OrdersProvider>
-                <HistoryProvider>
-                  <StoreInfoProvider>
-                    <UserProvider>
-                      <ShiftProvider>
-                      <AnalyticsProvider>
-                        <TablesProvider>
-                          <FeedbacksProvider>
-                            <WaiterCallsProvider>
-                              <SuggestionsProvider>
-                                <DirectionalTheme>
-                                  <App />
-                                </DirectionalTheme>
-                              </SuggestionsProvider>
-                            </WaiterCallsProvider>
-                          </FeedbacksProvider>
-                        </TablesProvider>
-                      </AnalyticsProvider>
-                      </ShiftProvider>
-                    </UserProvider>
-                  </StoreInfoProvider>
-                </HistoryProvider>
-              </OrdersProvider>
-            </CartProvider>
-          </MenuProvider>
-          </BranchProvider>
-        </TenantProvider>
+        <DirectionalTheme>
+          <ErrorBoundary>
+            <App />
+          </ErrorBoundary>
+        </DirectionalTheme>
       </LanguageProvider>
-      </BrowserRouter>
-      </ErrorBoundary>
-    </React.StrictMode>,
-  );
-}
+    </BrowserRouter>
+  </React.StrictMode>,
+);

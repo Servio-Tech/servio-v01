@@ -17,7 +17,7 @@ export default function CustomerTrackingBanner({ slug, branchSlug = "", tableNum
     <Alert
       icon={<ReceiptLongRoundedIcon />}
       severity="info"
-      sx={{ mb: 1.5, borderRadius: 2.5, alignItems: "center", border: "1px solid rgba(244,121,32,.28)", bgcolor: "#FFF8F2", color: "secondary.main", "& .MuiAlert-icon": { color: "primary.main" } }}
+      sx={{ mb: 1.5, borderRadius: 2.5, alignItems: "center", border: "1px solid rgba(244,121,32,.28)", bgcolor: "background.paper", color: "text.primary", "& .MuiAlert-icon": { color: "primary.main" } }}
       action={<Button size="small" variant="contained" endIcon={<ArrowBackRoundedIcon />} onClick={() => { const target = buildCustomerMenuTrackingTarget(slug, latest); navigate(target.path, target.state ? { state: target.state } : undefined); }} sx={{ borderRadius: 2, whiteSpace: "nowrap" }}>{language === "ar" ? "متابعة الطلب" : "Track order"}</Button>}
     >
       <Stack spacing={.15}>

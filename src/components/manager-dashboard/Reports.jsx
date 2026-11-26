@@ -21,10 +21,10 @@ import {
 } from "@mui/material";
 import { createTheme, ThemeProvider, useTheme } from "@mui/material/styles";
 import Analytics from "./Analytics";
+import ManagerExportMenu from "./ManagerExportMenu";
 import { useAnalytics } from "../../context/AnalyticsContext";
 import { buildReportExportModel, downloadCsv, downloadPdf, downloadXlsx } from "./Analytics/reportExport";
 import { BarChart } from "@mui/x-charts/BarChart";
-import FileDownloadOutlinedIcon from "@mui/icons-material/FileDownloadOutlined";
 import LocalPrintshopOutlinedIcon from "@mui/icons-material/LocalPrintshopOutlined";
 import RefreshRoundedIcon from "@mui/icons-material/RefreshRounded";
 import AssessmentOutlinedIcon from "@mui/icons-material/AssessmentOutlined";
@@ -134,7 +134,7 @@ const printSafe = (value) => String(value ?? "—").replace(/[&<>"']/g, (charact
 
 function MetricCard({ title, value, detail }) {
   return (
-    <Card className="reports-print-card" elevation={0} sx={{ height: "100%", borderRadius: "16px", border: "1px solid", borderColor: "divider", boxShadow: "0px 4px 20px rgba(0,0,0,0.02)" }}>
+    <Card className="reports-print-card" elevation={0} sx={{ height: "100%", borderRadius: "10px", border: "1px solid", borderColor: "divider", boxShadow: "0px 4px 20px rgba(0,0,0,0.02)" }}>
       <CardContent sx={{ p: 2.5, "&:last-child": { pb: 2.5 } }}>
         <Typography variant="body2" color="text.secondary" fontWeight={600} sx={{ lineHeight: 1.5, minHeight: 42 }}>{title}</Typography>
         <Typography variant="h5" fontWeight={800} sx={{ mt: 1, fontSize: { xs: "1.2rem", sm: "1.45rem" }, color: "text.primary", overflowWrap: "anywhere" }}>{value}</Typography>
@@ -249,7 +249,10 @@ function Reports() {
 
   const printReportTable = () => {
     const printWindow = window.open("", "_blank", "width=1000,height=800");
-    if (!printWindow) return;
+    if (!printWindow) {
+      setExportError(language === "ar" ? "اسمح بالنوافذ المنبثقة للطباعة أو حفظ التقرير." : "Allow pop-ups to print or save this report.");
+      return;
+    }
     const metrics = [[text.gross, formatMoney(report.gross)], [text.net, formatMoney(report.net)], [text.vat, formatMoney(report.vat)], [text.orders, new Intl.NumberFormat(locale).format(report.orderCount)], [text.average, formatMoney(report.averageOrder)], [text.itemQuantity, new Intl.NumberFormat(locale, { maximumFractionDigits: 2 }).format(report.itemQuantity)]]
       .map(([label, value]) => `<tr><th>${printSafe(label)}</th><td>${printSafe(value)}</td></tr>`).join("");
     const items = report.topItems.map((item, index) => `<tr><td data-label="${printSafe(text.rank)}">${index + 1}</td><td data-label="${printSafe(text.item)}">${printSafe(item.name || text.unknownItem)}</td><td data-label="${printSafe(text.quantity)}">${printSafe(item.quantity)}</td><td data-label="${printSafe(text.itemSales)}">${printSafe(formatMoney(item.revenue))}</td></tr>`).join("");
@@ -302,20 +305,50 @@ function Reports() {
             onChange={(_, value) => { if (value) setPeriod(value); }}
             aria-label={text.range}
             size="small"
-            sx={{ alignSelf: { xs: "stretch", sm: "flex-start" }, bgcolor: "background.paper", borderRadius: "8px", border: "1px solid #f47920", p: "2px", flexWrap: "wrap", "& .MuiToggleButtonGroup-grouped": { border: 0, borderRadius: "6px !important", m: "1px" }, "& .MuiToggleButton-root": { minWidth: 0, minHeight: 34, px: { xs: 0.65, sm: 1.35 }, py: { xs: 0.55, sm: 0.75 }, fontSize: { xs: ".74rem", sm: ".88rem" }, lineHeight: 1.15, fontWeight: 750, flex: { xs: 1, sm: "initial" }, whiteSpace: "nowrap" }, "& .MuiToggleButton-root.Mui-selected": { bgcolor: "primary.main", color: "primary.contrastText", "&:hover": { bgcolor: "primary.dark" } } }}
+            sx={{
+              alignSelf: { xs: "stretch", sm: "flex-start" },
+              width: { xs: "100%", sm: "auto" },
+              bgcolor: "background.paper",
+              borderRadius: "8px",
+              border: "1px solid #f47920",
+              p: "2px",
+              flexWrap: "nowrap",
+              "& .MuiToggleButtonGroup-grouped": { border: 0, borderRadius: "6px !important", m: "1px" },
+              "& .MuiToggleButton-root": {
+                minWidth: 0,
+                minHeight: 40,
+                px: { xs: 0.45, sm: 1.35 },
+                py: { xs: 0.65, sm: 0.75 },
+                fontSize: { xs: ".72rem", sm: ".88rem" },
+                lineHeight: 1.15,
+                fontWeight: 750,
+                flex: { xs: "1 1 0", sm: "0 0 auto" },
+                whiteSpace: "nowrap",
+              },
+              "& .MuiToggleButton-root.Mui-selected": {
+                bgcolor: "primary.main",
+                color: "primary.contrastText",
+                "&:hover": { bgcolor: "primary.dark" },
+              },
+            }}
           >
             <ToggleButton value="daily">{text.daily}</ToggleButton>
             <ToggleButton value="weekly">{text.weekly}</ToggleButton>
             <ToggleButton value="monthly">{text.monthly}</ToggleButton>
           </ToggleButtonGroup>
           <Stack direction="row" spacing={{ xs: 0.75, sm: 1 }} useFlexGap sx={{ width: { xs: "100%", sm: "auto" }, flexWrap: "wrap" }}>
-            <Button size="small" variant="outlined" startIcon={<RefreshRoundedIcon />} onClick={refreshReport} disabled={loading} sx={{ minWidth: 0, minHeight: 34, flex: { xs: "1 1 calc(50% - 6px)", sm: "0 0 auto" }, fontWeight: 750, borderRadius: "7px", border: "1px solid #f47920", px: { xs: 0.7, sm: 1.35 }, py: { xs: 0.45, sm: 0.7 }, fontSize: { xs: ".73rem", sm: ".85rem" }, lineHeight: 1.2, whiteSpace: "nowrap" }}>
+            <Button size="small" variant="outlined" startIcon={<RefreshRoundedIcon />} onClick={refreshReport} disabled={loading} sx={{ minWidth: 0, minHeight: 40, flex: { xs: "1 1 calc(50% - 6px)", sm: "0 0 auto" }, fontWeight: 750, borderRadius: "7px", border: "1px solid #f47920", px: { xs: 0.7, sm: 1.35 }, py: { xs: 0.45, sm: 0.7 }, fontSize: { xs: ".82rem", sm: ".85rem" }, lineHeight: 1.2, whiteSpace: "nowrap" }}>
               {text.refresh}
             </Button>
-            {["pdf", "xlsx", "csv"].map((kind) => <Button key={kind} size="small" variant={kind === "pdf" ? "contained" : "outlined"} startIcon={exportBusy === kind ? <CircularProgress size={16} color="inherit" /> : <FileDownloadOutlinedIcon />} onClick={() => handleExport(kind)} disabled={loading || analytics.ordersLoading || Boolean(error) || Boolean(exportBusy)} sx={{ minWidth: 0, minHeight: 34, flex: { xs: "1 1 calc(50% - 6px)", sm: "0 0 auto" }, fontWeight: 750, borderRadius: "7px", px: { xs: 0.7, sm: 1.35 }, py: { xs: 0.45, sm: 0.7 }, fontSize: { xs: ".73rem", sm: ".85rem" }, lineHeight: 1.2, whiteSpace: "nowrap" }}>
-              {language === "ar" ? "تصدير" : "Export"} {kind.toUpperCase()}
-            </Button>)}
-            <Button size="small" variant="contained" startIcon={<LocalPrintshopOutlinedIcon />} onClick={printReportTable} disabled={loading || Boolean(error)} sx={{ minWidth: 0, flex: { xs: "1 1 calc(50% - 6px)", sm: "0 0 auto" }, fontWeight: 750, borderRadius: "8px", border: "1px solid #f47920", px: { xs: 0.7, sm: 1.35 }, py: { xs: 0.45, sm: 0.7 }, fontSize: { xs: ".73rem", sm: ".85rem" }, lineHeight: 1.2, whiteSpace: "nowrap" }}>
+            <Box sx={{ flex: { xs: "1 1 calc(50% - 6px)", sm: "0 0 auto" }, minWidth: 0, "& .MuiButton-root": { width: { xs: "100%", sm: "auto" }, minWidth: 0, borderRadius: "7px", px: { xs: 0.7, sm: 1.35 }, fontSize: { xs: ".82rem", sm: ".85rem" } } }}>
+              <ManagerExportMenu
+                language={language}
+                disabled={loading || analytics.ordersLoading || Boolean(error)}
+                busy={exportBusy}
+                onExport={handleExport}
+              />
+            </Box>
+            <Button size="small" variant="contained" startIcon={<LocalPrintshopOutlinedIcon />} onClick={printReportTable} disabled={loading || Boolean(error)} sx={{ minWidth: 0, minHeight: 40, flex: { xs: "1 1 calc(50% - 6px)", sm: "0 0 auto" }, fontWeight: 750, borderRadius: "8px", border: "1px solid #f47920", px: { xs: 0.7, sm: 1.35 }, py: { xs: 0.45, sm: 0.7 }, fontSize: { xs: ".82rem", sm: ".85rem" }, lineHeight: 1.2, whiteSpace: "nowrap" }}>
               {text.print}
             </Button>
           </Stack>
@@ -329,18 +362,18 @@ function Reports() {
         {exportBusy && <Typography className="reports-no-print" role="status" sx={{ color: "text.secondary", fontSize: ".85rem" }}>{language === "ar" ? "جارٍ إعداد ملف التصدير…" : "Preparing export…"}</Typography>}
         {error && <Alert data-pdf-section severity="error" action={<Button color="inherit" size="small" onClick={refreshReport}>{text.refresh}</Button>}>{error}</Alert>}
         {loading ? (
-          <Card data-pdf-section elevation={0} className="reports-print-card" sx={{ borderRadius: "16px", border: "1px solid", borderColor: "divider", boxShadow: "0px 4px 20px rgba(0,0,0,0.02)" }}>
+          <Card data-pdf-section elevation={0} className="reports-print-card" sx={{ borderRadius: "10px", border: "1px solid", borderColor: "divider", boxShadow: "0px 4px 20px rgba(0,0,0,0.02)" }}>
             <CardContent><Stack direction="row"   spacing={1.2} sx={{ py: 4 , alignItems: "center", justifyContent: "center"}}><CircularProgress size={24} /><Typography color="text.secondary">{text.loading}</Typography></Stack></CardContent>
           </Card>
         ) : !error && report.orderCount === 0 ? (
-          <Alert data-pdf-section severity="info" className="reports-print-card" sx={{ borderRadius: "16px", border: "1px solid", borderColor: "divider" }}>{text.noData}</Alert>
+          <Alert data-pdf-section severity="info" className="reports-print-card" sx={{ borderRadius: "10px", border: "1px solid", borderColor: "divider" }}>{text.noData}</Alert>
         ) : !error ? (
           <>
             <Box data-pdf-section sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "repeat(2, minmax(0, 1fr))", md: "repeat(3, minmax(0, 1fr))" }, gap: 2.5 }}>
               {metricCards.map((metric) => <MetricCard key={metric.title} {...metric} />)}
             </Box>
 
-            <Card data-pdf-section elevation={0} className="reports-print-card" sx={{ borderRadius: "16px", border: "1px solid", borderColor: "divider", boxShadow: "0px 4px 20px rgba(0,0,0,0.02)" }}>
+            <Card data-pdf-section elevation={0} className="reports-print-card" sx={{ borderRadius: "10px", border: "1px solid", borderColor: "divider", boxShadow: "0px 4px 20px rgba(0,0,0,0.02)" }}>
               <CardContent sx={{ p: { xs: 1.5, sm: 2.5 } }}>
                 <Stack direction="row"    sx={{ alignItems: "center", justifyContent: "space-between", gap: 1 }}>
                   <Typography variant="h6" fontWeight={800} color="text.primary">{period === "daily" ? text.dailyTrend : text.periodTrend}</Typography>
@@ -377,7 +410,7 @@ function Reports() {
               </CardContent>
             </Card>
 
-            <Card data-pdf-section elevation={0} className="reports-print-card" sx={{ borderRadius: "16px", border: "1px solid", borderColor: "divider", boxShadow: "0px 4px 20px rgba(0,0,0,0.02)" }}>
+            <Card data-pdf-section elevation={0} className="reports-print-card" sx={{ borderRadius: "10px", border: "1px solid", borderColor: "divider", boxShadow: "0px 4px 20px rgba(0,0,0,0.02)" }}>
               <CardContent sx={{ p: { xs: 1.5, sm: 2.5 } }}>
                 <Stack direction={{ xs: "column", sm: "row" }} sx={{ alignItems: { xs: "stretch", sm: "center" }, justifyContent: "space-between", gap: 1, mb: 1.5 }}>
                   <Box><Typography variant="h6" fontWeight={900} color="text.primary">{text.tableTurnover}</Typography><Typography variant="body2" color="text.secondary">{text.tableOrders}</Typography></Box>
@@ -390,7 +423,7 @@ function Reports() {
                 </Box>
               </CardContent>
             </Card>
-            <Card data-pdf-section elevation={0} className="reports-print-card" sx={{ width: "100%", borderRadius: "16px", border: "1px solid", borderColor: "divider", boxShadow: "0px 8px 28px rgba(10,25,47,0.05)", overflow: "hidden" }}>
+            <Card data-pdf-section elevation={0} className="reports-print-card" sx={{ width: "100%", borderRadius: "10px", border: "1px solid", borderColor: "divider", boxShadow: "0px 8px 28px rgba(10,25,47,0.05)", overflow: "hidden" }}>
               <CardContent sx={{ p: 0, "&:last-child": { pb: 0 } }}>
                 <Box sx={{ px: { xs: 1.75, sm: 3 }, py: { xs: 1.5, sm: 2 }, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 2, borderBottom: "1px solid", borderColor: "divider", bgcolor: "rgba(244,121,32,.06)" }}>
                   <Box>
@@ -430,7 +463,7 @@ function Reports() {
                 </TableContainer>
               </CardContent>
             </Card>
-            <Card data-pdf-section elevation={0} className="reports-print-card" sx={{ width: "100%", borderRadius: "18px", border: "1px solid", borderColor: "divider", boxShadow: "0px 8px 28px rgba(10,25,47,0.05)", overflow: "hidden" }}>
+            <Card data-pdf-section elevation={0} className="reports-print-card" sx={{ width: "100%", borderRadius: "10px", border: "1px solid", borderColor: "divider", boxShadow: "0px 8px 28px rgba(10,25,47,0.05)", overflow: "hidden" }}>
               <CardContent sx={{ p: 0, "&:last-child": { pb: 0 } }}>
                 <Box sx={{ px: { xs: 1.75, sm: 3 }, py: { xs: 1.5, sm: 2 }, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 2, borderBottom: "1px solid", borderColor: "divider", bgcolor: "rgba(244,121,32,.06)" }}>
                   <Box><Typography variant="h6" fontWeight={900} color="text.primary">{text.tableRevenue}</Typography><Typography variant="body2" color="text.secondary" sx={{ mt: .35 }}>{text.gross}</Typography></Box>
@@ -440,7 +473,7 @@ function Reports() {
               </CardContent>
             </Card>
 
-            <Card data-pdf-section elevation={0} className="reports-print-card" sx={{ borderRadius: "16px", border: "1px solid", borderColor: "divider", boxShadow: "0px 4px 20px rgba(0,0,0,0.02)" }}>
+            <Card data-pdf-section elevation={0} className="reports-print-card" sx={{ borderRadius: "10px", border: "1px solid", borderColor: "divider", boxShadow: "0px 4px 20px rgba(0,0,0,0.02)" }}>
               <CardContent sx={{ p: { xs: 1.5, sm: 2.5 } }}>
                 <Stack direction="row"    sx={{ mb: 1.2 , alignItems: "center", justifyContent: "space-between", gap: 1}}>
                   <Typography variant="h6" fontWeight={800} color="text.primary">{text.topItems}</Typography>

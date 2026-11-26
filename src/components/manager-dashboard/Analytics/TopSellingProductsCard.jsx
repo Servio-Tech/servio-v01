@@ -4,7 +4,7 @@ import { useLanguage } from "../../../context/LanguageContext";
 function TopSellingProductsCard() {
   const { topProducts } = useAnalytics();
   const { t, language } = useLanguage();
-  return <Card elevation={0} sx={{ height: "100%", bgcolor: "#24211e", color: "#f7efe4", border: "1px solid #3d3731", borderRadius: "14px", p: 2.5 }}>
+  return <Card elevation={0} sx={{ height: "100%", bgcolor: "#24211e", color: "#f7efe4", border: "1px solid #3d3731", borderRadius: "10px", p: 2.5 }}>
     <Typography sx={{ fontWeight: 800, fontSize: "1.05rem", mb: .5 }}>{t("managerTopItems")}</Typography>
     <Typography sx={{ color: "#b4a99d", fontSize: ".8rem", mb: 1 }}>{language === "ar" ? "اليوم التشغيلي" : "Operational day"}</Typography>
     {!topProducts.length ? <Typography sx={{ color: "#b4a99d", py: 3 }}>{language === "ar" ? "لا توجد مبيعات أصناف خلال الفترة." : "No item sales in this period."}</Typography> : topProducts.map((product, index) => <Box key={`${product.name}-${index}`} sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 2, py: 1.5, borderTop: "1px solid #3d3731" }}>

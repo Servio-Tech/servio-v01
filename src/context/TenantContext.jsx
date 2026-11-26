@@ -5,15 +5,22 @@ import { resolveSubscriptionProfile, SUBSCRIPTION_RECHECK_MS, withSubscriptionTi
 
 const TenantContext = createContext(null);
 // هذه المسارات تخص التطبيق نفسه وليست معرف متجر؛ جميع المسارات الأخرى قد تحمل slug لمتجر عام.
-const RESERVED_ROUTES = new Set(["login", "register", "dashboard", "manager", "menu", "cashier", "auth", "track", "owner-console"]);
+const RESERVED_ROUTES = new Set(["login", "register", "dashboard", "manager", "menu", "cashier", "auth", "track", "cart", "service", "review", "owner-console"]);
 
 function getRouteContext(pathname) {
   const parts = pathname.split("/").filter(Boolean);
   if (parts[0] === "owner-console") return { slug: null, tableNumber: null, isTracking: false, isOwner: true };
   if (parts[0] === "track") return { slug: parts[1] || null, tableNumber: null, isTracking: true };
   if (parts[0] === "menu") return { slug: parts[1] || null, tableNumber: parts[2] || null, isTracking: false };
+  if (parts[0] === "cart" || parts[0] === "service" || parts[0] === "review")
+    return { slug: parts[1] || null, tableNumber: parts[2] || null, isTracking: false };
   if (parts[0] && !RESERVED_ROUTES.has(parts[0])) return { slug: parts[0], tableNumber: parts[1] || null, isTracking: false };
-  return { slug: null, tableNumber: null, isTracking: false };
+  return {
+    slug: null,
+    tableNumber: null,
+    isTracking: false,
+    isStaff: parts[0] === "manager" || parts[0] === "dashboard",
+  };
 }
 
 const emptyResolution = (key, status = "checking", loading = true) => ({ key, tenant: null, storeInfo: null, profile: null, status, loading });
@@ -24,7 +31,11 @@ export function TenantProvider({ children }) {
   const [authVersion, setAuthVersion] = useState(0);
   const [checkVersion, setCheckVersion] = useState(0);
   const [resolution, setResolution] = useState(() => emptyResolution(null));
-  const scope = `${route.isOwner ? "owner" : route.slug ? `public:${route.slug}` : "staff"}:${authVersion}`;
+  const scope = route.isOwner
+    ? "owner"
+    : route.slug
+      ? `public:${route.slug}`
+      : `${route.isStaff ? "staff" : "public"}:${authVersion}`;
   const refreshSubscription = useCallback(() => setCheckVersion((v) => v + 1), []);
   const invalidateSession = useCallback(() => {
     // Authentication changes must immediately remove the previous identity.
@@ -33,12 +44,12 @@ export function TenantProvider({ children }) {
   }, []);
 
   useEffect(() => {
+    if (!route.isStaff) return undefined;
     const { data: listener } = supabase.auth.onAuthStateChange((event) => {
-      if (route.slug || route.isOwner) return;
       if (event === "SIGNED_IN" || event === "SIGNED_OUT" || event === "USER_UPDATED") invalidateSession();
     });
     return () => listener.subscription.unsubscribe();
-  }, [route.slug, route.isOwner, invalidateSession]);
+  }, [route.isStaff, invalidateSession]);
 
   // Only staff dashboards poll. A suspended screen also retries, so renewal can
   // restore the UI. This is not a promise of complete Realtime revocation.
@@ -55,6 +66,10 @@ export function TenantProvider({ children }) {
     const resolveTenant = async () => {
       if (route.isOwner) {
         if (!cancelled) setResolution(emptyResolution(scope, "owner", false));
+        return;
+      }
+      if (!route.slug && !route.isStaff) {
+        if (!cancelled) setResolution(emptyResolution(scope, "public", false));
         return;
       }
       // Preserve a resolved dashboard while a bounded background recheck runs;
@@ -93,7 +108,7 @@ export function TenantProvider({ children }) {
     };
     void resolveTenant();
     return () => { cancelled = true; };
-  }, [route.slug, route.isOwner, scope, checkVersion]);
+  }, [route.slug, route.isOwner, route.isStaff, scope, checkVersion]);
 
   // A route or authentication version change invalidates previous data even
   // before the asynchronous effect gets a chance to run.
@@ -102,6 +117,7 @@ export function TenantProvider({ children }) {
     slug: route.slug,
     tableNumber: route.tableNumber,
     isTracking: route.isTracking,
+    isStaff: Boolean(route.isStaff),
     tenant: route.isOwner ? null : current.tenant,
     tenantId: route.isOwner ? null : (current.tenant?.id || current.profile?.tenant_id || null),
     storeInfo: route.isOwner ? null : current.storeInfo,

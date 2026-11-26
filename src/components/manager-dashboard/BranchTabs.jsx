@@ -46,7 +46,7 @@ export default function BranchTabs() {
 
   const limitReached = branchCount == null || branchCount >= branchLimit;
   return <>
-    <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2, p: .75, borderRadius: 3, bgcolor: "rgba(255,255,255,.72)", border: "1px solid", borderColor: "divider", overflowX: "auto" }}>
+    <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2.5, p: .75, borderRadius: 3, bgcolor: "background.paper", border: "1px solid", borderColor: "divider", overflowX: "auto" }}>
       <Tabs value={selectedBranchId || false} onChange={(_, value) => selectBranch(value)} variant="scrollable" scrollButtons="auto" sx={{ minHeight: 44, flex: 1, "& .MuiTab-root": { minHeight: 44, fontWeight: 850, whiteSpace: "nowrap" } }} aria-label={ar ? "فروع النشاط" : "Business branches"}>
         {branches.map((branch) => <Tab key={branch.id} value={branch.id} label={branch.name} />)}
       </Tabs>

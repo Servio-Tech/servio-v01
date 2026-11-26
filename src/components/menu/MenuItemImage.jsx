@@ -2,8 +2,11 @@ import { useEffect, useRef, useState } from "react";
 import Box from "@mui/material/Box";
 import CircularProgress from "@mui/material/CircularProgress";
 import Typography from "@mui/material/Typography";
+import { useLanguage } from "../../context/LanguageContext";
 
 function MenuItemImage({ src, alt, imageLoading = false, imageError = false, loadImage, priority = false, width = "100%", height = 140, borderRadius = 0 }) {
+  const { language } = useLanguage();
+  const isEnglish = language === "en";
   const containerRef = useRef(null);
   const [loaded, setLoaded] = useState(false);
   const [failed, setFailed] = useState(false);
@@ -65,13 +68,13 @@ function MenuItemImage({ src, alt, imageLoading = false, imageError = false, loa
         />
       )}
       {showLoading && (
-        <Box role="status" aria-label="جارٍ تحميل الصورة" sx={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", bgcolor: "rgba(255,255,255,.72)" }}>
+        <Box role="status" aria-label={isEnglish ? "Loading image" : "جارٍ تحميل الصورة"} sx={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", bgcolor: "background.paper" }}>
           <CircularProgress size={24} />
         </Box>
       )}
       {showError && (
         <Typography role="status" variant="caption" sx={{ px: 1, textAlign: "center", color: "text.secondary", fontWeight: 700 }}>
-          تعذّر تحميل الصورة
+          {isEnglish ? "Image unavailable" : "تعذّر تحميل الصورة"}
         </Typography>
       )}
     </Box>

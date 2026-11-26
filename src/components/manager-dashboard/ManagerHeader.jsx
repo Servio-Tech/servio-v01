@@ -18,19 +18,28 @@ function stringAvatar(name) {
   return { children: (parts.length > 1 ? `${parts[0][0]}${parts[1][0]}` : parts[0]?.[0] || "M").toUpperCase() };
 }
 
-function ManagerHeader({ onDrawerToggle }) {
+function ManagerHeader({ onDrawerToggle, activeTab }) {
   const { storeInfo } = useStore();
   const { user } = useUser();
   const navigate = useNavigate();
   const { language, t } = useLanguage();
   const userName = user?.name || (language === "ar" ? "المدير" : "Manager");
+  const sectionName = {
+    reports: language === "ar" ? "نظرة عامة" : "Overview",
+    history: t("orderHistory"),
+    shifts: language === "ar" ? "الورديات" : "Shifts",
+    menu: t("menuControl"),
+    inventory: language === "ar" ? "إدارة التوفر" : "Availability",
+    settings: t("settings"),
+    qrGen: t("qrCodes"),
+  }[activeTab] || t("managerHeader");
 
   return (
     <Stack direction="row" sx={{ minHeight: { xs: 72, md: 80 }, justifyContent: "space-between", alignItems: "center", direction: language === "ar" ? "rtl" : "ltr", px: { xs: 2, sm: 3, lg: 4 }, py: 1.1, gap: 1.5 }}>
       <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, minWidth: 0 }}>
         <IconButton aria-label={t("openMenu")} onClick={onDrawerToggle} sx={{ display: { md: "none" }, color: "text.primary", border: "1px solid", borderColor: "divider", borderRadius: 2 }}><MenuRoundedIcon /></IconButton>
         <Box sx={{ minWidth: 0 }}>
-          <Typography sx={{ color: "#c2b7a9", fontSize: ".7rem", fontWeight: 800, letterSpacing: language === "ar" ? 0 : ".1em", lineHeight: 1.4 }}>{t("managerHeader")}</Typography>
+          <Typography noWrap sx={{ color: "#c2b7a9", fontSize: ".75rem", fontWeight: 800, letterSpacing: language === "ar" ? 0 : ".1em", lineHeight: 1.4, maxWidth: { xs: 170, sm: 300 } }}>{t("managerHeader")} · {sectionName}</Typography>
           <Typography component="div" sx={{ color: "text.primary", fontWeight: 800, fontSize: { xs: ".95rem", sm: "1.08rem" }, lineHeight: 1.35, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: { xs: 125, sm: 280, md: 420 } }}>{storeInfo?.store_name || t("storeFallback")}</Typography>
         </Box>
       </Box>

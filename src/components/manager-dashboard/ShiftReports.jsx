@@ -9,19 +9,23 @@ import { useShift } from "../../context/ShiftContext";
 import supabase from "../../supabase";
 import { useTenant } from "../../context/TenantContext";
 import { useStore } from "../../context/StoreInfoContext";
+import { useBranch } from "../../context/BranchContext";
 import { useLanguage } from "../../context/LanguageContext";
 import { buildShiftReportHtml } from "../../utils/shiftReportHtml";
+import ManagerExportMenu from "./ManagerExportMenu";
+import { downloadCsv, downloadXlsx } from "./Analytics/reportExport";
 
 const printSafe = (value) => String(value ?? "—").replace(/[&<>"']/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[character]));
 
 function Metric({ label, value, detail }) {
-  return <Card elevation={0} sx={{ height: "100%", minWidth: 0, border: "1px solid", borderColor: "divider", borderRadius: 3 }}><CardContent sx={{ p: { xs: 1.45, sm: 2.25 }, "&:last-child": { pb: { xs: 1.45, sm: 2.25 } } }}><Typography variant="body2" fontWeight={700} color="text.secondary" sx={{ fontSize: { xs: ".75rem", sm: ".875rem" } }}>{label}</Typography><Typography variant="h5" fontWeight={950} sx={{ mt: .7, fontSize: { xs: "1.05rem", sm: "1.5rem" }, overflowWrap: "anywhere", fontVariantNumeric: "tabular-nums" }}>{value}</Typography>{detail && <Typography variant="caption" color="text.secondary" sx={{ display: "block", overflowWrap: "anywhere" }}>{detail}</Typography>}</CardContent></Card>;
+  return <Card elevation={0} sx={{ height: "100%", minWidth: 0, border: "1px solid", borderColor: "divider", borderRadius: 3 }}><CardContent sx={{ p: { xs: 1.45, sm: 2.25 }, "&:last-child": { pb: { xs: 1.45, sm: 2.25 } } }}><Typography variant="body2" fontWeight={700} color="text.secondary" sx={{ fontSize: { xs: ".82rem", sm: ".9rem" } }}>{label}</Typography><Typography variant="h5" fontWeight={950} sx={{ mt: .7, fontSize: { xs: "1.05rem", sm: "1.5rem" }, overflowWrap: "anywhere", fontVariantNumeric: "tabular-nums" }}>{value}</Typography>{detail && <Typography variant="caption" color="text.secondary" sx={{ display: "block", overflowWrap: "anywhere" }}>{detail}</Typography>}</CardContent></Card>;
 }
 
 export default function ShiftReports({ managerOnlyFeatures = false }) {
   const { sessions, currentShift, loadSessions } = useShift();
   const { tenantId } = useTenant();
   const { storeInfo = {} } = useStore();
+  const { branches = [] } = useBranch();
   const { language } = useLanguage();
   const ar = language !== "en";
   const locale = ar ? "ar-SA" : "en-SA";
@@ -30,12 +34,18 @@ export default function ShiftReports({ managerOnlyFeatures = false }) {
   const [error, setError] = useState("");
   const [refreshKey, setRefreshKey] = useState(0);
   const [printingSessionId, setPrintingSessionId] = useState(null);
+  const [exportBusy, setExportBusy] = useState("");
   const text = ar ? {
     title: "تقارير الورديات", subtitle: "سجل إغلاق ورديات الكاشير واطبع تقريرًا تفصيليًا لكل جلسة.", week: "7 أيام", month: "30 يومًا", all: "الكل", refresh: "تحديث", printAll: "طباعة البيانات الظاهرة", open: "مفتوحة", closed: "مغلقة", cashier: "الكاشير", start: "البداية", end: "النهاية", total: "إجمالي المبيعات", cash: "نقدًا", card: "شبكة", opening: "بداية الكاش", closing: "نهاية الكاش", print: "طباعة التقرير", empty: "لا توجد ورديات ضمن الفترة المحددة.", loading: "جارٍ تحميل الورديات…", error: "تعذر تحميل سجل الورديات. تحقق من الاتصال والصلاحيات ثم أعد المحاولة.", count: "عدد الورديات", totalSales: "إجمالي المبيعات المسجلة", note: "تُعرض أحدث 200 جلسة محفوظة. الطباعة تشمل البيانات الظاهرة ضمن الفترة المحددة.", currency: "ر.س",
   } : {
     title: "Shift reports", subtitle: "Review cashier shift closures and print a detailed report for each session.", week: "7 days", month: "30 days", all: "All", refresh: "Refresh", printAll: "Print visible data", open: "Open", closed: "Closed", cashier: "Cashier", start: "Opened", end: "Closed", total: "Total sales", cash: "Cash", card: "Card", opening: "Opening cash", closing: "Closing cash", print: "Print report", empty: "No shifts in the selected period.", loading: "Loading shifts…", error: "Could not load shift history. Check connection and permissions, then retry.", count: "Shifts", totalSales: "Recorded sales total", note: "Showing the latest 200 saved sessions. Printing includes the data visible in the selected period.", currency: "SAR",
   };
   const money = (value) => `${new Intl.NumberFormat(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(value) || 0)} ${storeInfo.currency || text.currency}`;
+  const branchName = (branchId) => branches.find((branch) => String(branch.id) === String(branchId))?.name || (ar ? "غير محدد" : "Unspecified");
+  const dateTime = (value) => {
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? "—" : date.toLocaleString(locale, { dateStyle: "medium", timeStyle: "short" });
+  };
 
   useEffect(() => {
     let active = true;
@@ -126,12 +136,60 @@ export default function ShiftReports({ managerOnlyFeatures = false }) {
     printWindow.document.close();
   };
 
+  const exportFilteredShifts = async (format) => {
+    setError("");
+    if (format === "pdf") {
+      printFilteredShifts();
+      return;
+    }
+    setExportBusy(format);
+    const exportModel = {
+      rtl: ar,
+      title: text.title,
+      filename: `servio-shifts-${new Date().toISOString().slice(0, 10)}`,
+      sections: [{
+        name: ar ? "الورديات" : "Shifts",
+        title: text.note,
+        columns: ar
+          ? ["الكاشير", "الحالة", "الفرع", "البداية", "النهاية", "إجمالي المبيعات", "نقدًا", "شبكة", "رصيد البداية", "رصيد الإغلاق", "العملة"]
+          : ["Cashier", "Status", "Branch", "Opened", "Closed", "Total sales", "Cash", "Card", "Opening cash", "Closing cash", "Currency"],
+        rows: filtered.map((session) => [
+          session.cashier_name || session.cashier_username || text.cashier,
+          session.status === "open" ? text.open : text.closed,
+          branchName(session.branch_id),
+          dateTime(session.opened_at),
+          session.closed_at ? dateTime(session.closed_at) : text.open,
+          Number(session.total_sales) || 0,
+          Number(session.cash_sales) || 0,
+          Number(session.card_sales) || 0,
+          Number(session.opening_cash) || 0,
+          Number(session.closing_cash) || 0,
+          storeInfo.currency || text.currency,
+        ]),
+      }],
+    };
+    try {
+      if (format === "csv") downloadCsv(exportModel);
+      else await downloadXlsx(exportModel);
+    } catch (exportError) {
+      console.error("Shift report export failed:", exportError);
+      setError(ar ? "تعذر إعداد ملف التصدير. أعد المحاولة أو اختر صيغة أخرى." : "Could not prepare the export. Retry or choose another format.");
+    } finally {
+      setExportBusy("");
+    }
+  };
+
   return <Box component="main" dir={ar ? "rtl" : "ltr"} sx={{ width: "100%", minWidth: 0 }}>
     <style>{`@media print { @page { size: A4 portrait; margin: 12mm; } .shift-report-no-print { display: none !important; } .shift-report-page { background: #fff !important; padding: 0 !important; } .shift-report-row { break-inside: avoid; box-shadow: none !important; } }`}</style>
     <Stack spacing={{ xs: 2, md: 2.5 }} className="shift-report-page">
       <Stack direction={{ xs: "column", md: "row" }}    sx={{ alignItems: { xs: "stretch", md: "center" }, justifyContent: "space-between", gap: 1.5 }}>
         <Stack direction="row" spacing={1.25}  sx={{ alignItems: "center" }}><Box sx={{ width: 46, height: 46, display: "grid", placeItems: "center", borderRadius: 3, bgcolor: "rgba(244,121,32,.10)", color: "primary.main" }}><AccessTimeRoundedIcon /></Box><Box><Typography variant="h4" component="h1" fontWeight={950} sx={{ fontSize: { xs: "1.5rem", sm: "2rem" } }}>{text.title}</Typography><Typography variant="body2" color="text.secondary" sx={{ mt: .3 }}>{text.subtitle}</Typography></Box></Stack>
-        <Stack className="shift-report-no-print" direction="row" spacing={1} sx={{ width: { xs: "100%", md: "auto" } }}><Button fullWidth variant="outlined" startIcon={<RefreshRoundedIcon />} disabled={loading} onClick={() => setRefreshKey((value) => value + 1)} sx={{ flex: 1 }}>{text.refresh}</Button><Button fullWidth variant="contained" startIcon={<LocalPrintshopOutlinedIcon />} disabled={loading || Boolean(error) || !filtered.length} onClick={printFilteredShifts} sx={{ flex: 1 }}>{text.printAll}</Button></Stack>
+        <Stack className="shift-report-no-print" direction="row" spacing={1} sx={{ width: { xs: "100%", md: "auto" } }}>
+          <Button fullWidth variant="outlined" startIcon={<RefreshRoundedIcon />} disabled={loading} onClick={() => setRefreshKey((value) => value + 1)} sx={{ flex: 1 }}>{text.refresh}</Button>
+          {managerOnlyFeatures
+            ? <ManagerExportMenu language={language} disabled={loading || Boolean(error) || !filtered.length} busy={exportBusy} onExport={exportFilteredShifts} />
+            : <Button fullWidth variant="contained" startIcon={<LocalPrintshopOutlinedIcon />} disabled={loading || Boolean(error) || !filtered.length} onClick={printFilteredShifts} sx={{ flex: 1 }}>{text.printAll}</Button>}
+        </Stack>
       </Stack>
 
       <Stack className="shift-report-no-print" direction={{ xs: "column", sm: "row" }}   sx={{ justifyContent: "space-between", gap: 1.25 }}>

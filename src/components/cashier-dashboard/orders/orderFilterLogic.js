@@ -33,6 +33,24 @@ export function filterCashierOrders(orders = [], orderTypeFilter = "all", status
   ));
 }
 
+export function sortCashierOrdersByPriority(orders = []) {
+  const priority = (order) => {
+    if (order.status === "pending") return 0;
+    if (order.status === "preparing") return 1;
+    if (order.status === "awaiting_payment" || (order.status === "ready" && order.payment_status !== "paid")) return 2;
+    return 3;
+  };
+  return [...orders].sort((a, b) => {
+    const priorityDifference = priority(a) - priority(b);
+    if (priorityDifference) return priorityDifference;
+    const aCreatedAt = Date.parse(a.created_at || "");
+    const bCreatedAt = Date.parse(b.created_at || "");
+    const aTime = Number.isFinite(aCreatedAt) ? aCreatedAt : Number.MAX_SAFE_INTEGER;
+    const bTime = Number.isFinite(bCreatedAt) ? bCreatedAt : Number.MAX_SAFE_INTEGER;
+    return aTime - bTime;
+  });
+}
+
 export function getCashierOrderStatusCounts(orders = []) {
   const active = getActiveCashierOrders(orders);
   return {

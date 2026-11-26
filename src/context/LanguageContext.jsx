@@ -3,7 +3,18 @@ import { useLocation } from "react-router-dom";
 
 const LanguageContext = createContext(null);
 const GLOBAL_KEY = "servio_language";
+const CUSTOMER_LANGUAGE_KEY = "servio_language_customer";
 const SCOPE_KEYS = { cashier: "servio_language_cashier", manager: "servio_language_manager" };
+const PAGE_METADATA = {
+  ar: {
+    title: "SERVIO | إدارة العمليات الخدمية",
+    description: "SERVIO — منصة تشغيل وإدارة الخدمات والطلبات للمطاعم والمقاهي والمطابخ السحابية وسائر المنشآت الخدمية.",
+  },
+  en: {
+    title: "SERVIO | Hospitality Operations",
+    description: "SERVIO connects digital menus, orders, cashier workflows, service calls, and analytics for restaurants and cafes.",
+  },
+};
 
 const TRANSLATIONS = {
   ar: {
@@ -35,12 +46,19 @@ function getScope(pathname) {
 }
 
 function readLanguage(key, fallback = "ar") {
-  try { return localStorage.getItem(key) === "en" ? "en" : fallback; } catch { return fallback; }
+  try {
+    const storedLanguage = localStorage.getItem(key);
+    return storedLanguage == null ? fallback : storedLanguage === "ar" ? "ar" : "en";
+  } catch {
+    return fallback;
+  }
 }
 
 // رسائل موحدة لإدارة إعدادات الحسابات دون تكرارها داخل المكونات.
 const ACCOUNT_SETTINGS_TRANSLATIONS = {
   ar: {
+    showPassword: "إظهار كلمة المرور",
+    hidePassword: "إخفاء كلمة المرور",
     managerSensitiveChangeHint: "تغيير البريد أو كلمة المرور يتطلب كلمة المرور الحالية. تحديث الاسم والهاتف لا يتطلبها.",
     managerPasswordTooShort: "يجب أن تتكون كلمة المرور الجديدة من 6 أحرف على الأقل.",
     managerEmailConfirmation: "تم إرسال رسالة تأكيد إلى البريد الجديد. يكتمل التغيير بعد تأكيده.",
@@ -53,6 +71,8 @@ const ACCOUNT_SETTINGS_TRANSLATIONS = {
     managerCashierDeleteFailed: "تم إيقاف الحساب لكن لم يكتمل حذف جلسة الدخول. يمكنك إعادة المحاولة.",
   },
   en: {
+    showPassword: "Show password",
+    hidePassword: "Hide password",
     managerSensitiveChangeHint: "Changing email or password requires your current password. Name and phone updates do not.",
     managerPasswordTooShort: "The new password must be at least 6 characters.",
     managerEmailConfirmation: "A confirmation email was sent to the new address. The change completes after confirmation.",
@@ -69,12 +89,16 @@ const ACCOUNT_SETTINGS_TRANSLATIONS = {
 export function LanguageProvider({ children }) {
   const { pathname } = useLocation();
   const scope = getScope(pathname);
-  const [language, setLanguageState] = useState(() => readLanguage(GLOBAL_KEY));
+  const [language, setLanguageState] = useState(() => scope === "menu"
+    ? readLanguage(CUSTOMER_LANGUAGE_KEY, "ar")
+    : readLanguage(SCOPE_KEYS[scope] || GLOBAL_KEY, readLanguage(GLOBAL_KEY)));
 
   // عند الانتقال بين الهوم والكاشير والمدير نحمّل إعداد النطاق المناسب.
   useEffect(() => {
     const scopedKey = SCOPE_KEYS[scope];
-    const nextLanguage = scope === "menu" ? "ar" : readLanguage(scopedKey || GLOBAL_KEY, readLanguage(GLOBAL_KEY));
+    const nextLanguage = scope === "menu"
+      ? readLanguage(CUSTOMER_LANGUAGE_KEY, "ar")
+      : readLanguage(scopedKey || GLOBAL_KEY, readLanguage(GLOBAL_KEY));
     setLanguageState(nextLanguage);
     document.documentElement.lang = nextLanguage;
   }, [scope]);
@@ -82,13 +106,22 @@ export function LanguageProvider({ children }) {
   useEffect(() => {
     document.documentElement.lang = language;
     document.documentElement.dir = language === "ar" ? "rtl" : "ltr";
+    const metadata = PAGE_METADATA[language] || PAGE_METADATA.ar;
+    document.title = metadata.title;
+    const description = document.querySelector('meta[name="description"]');
+    if (description) description.setAttribute("content", metadata.description);
+    const openGraphTitle = document.querySelector('meta[property="og:title"]');
+    if (openGraphTitle) openGraphTitle.setAttribute("content", metadata.title);
+    const openGraphDescription = document.querySelector('meta[property="og:description"]');
+    if (openGraphDescription) openGraphDescription.setAttribute("content", metadata.description);
   }, [language]);
 
   const setLanguage = useCallback((nextLanguage) => {
-    const next = nextLanguage === "en" ? "en" : "ar";
+    const next = nextLanguage === "ar" ? "ar" : "en";
     try {
-      if (scope === "menu") return;
-      if (scope === "public") {
+      if (scope === "menu") {
+        localStorage.setItem(CUSTOMER_LANGUAGE_KEY, next);
+      } else if (scope === "public") {
         localStorage.setItem(GLOBAL_KEY, next);
         // تغيير الهوم هو الإعداد العام؛ يلغي أي override سابق حتى تتبعه كل الصفحات.
         localStorage.removeItem(SCOPE_KEYS.cashier);
@@ -96,7 +129,9 @@ export function LanguageProvider({ children }) {
       } else {
         localStorage.setItem(SCOPE_KEYS[scope], next);
       }
-    } catch {}
+    } catch (error) {
+      console.error("تعذر حفظ اللغة:", error);
+    }
     setLanguageState(next);
   }, [scope]);
 

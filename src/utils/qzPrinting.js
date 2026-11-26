@@ -54,9 +54,12 @@ function configureSecurity(qz) {
         body: JSON.stringify({ request: toSign }),
         cache: "no-store",
       });
-      const signature = await response.text();
+      const signature = (await response.text()).trim();
       if (!response.ok) throw new Error(signature || "تعذر توقيع أمر الطباعة؛ راجع إعداد مفتاح QZ في Vercel");
-      resolve(signature.trim());
+      if (!/^[A-Za-z0-9+/]+={0,2}$/.test(signature)) {
+        throw new Error("تعذر توقيع أمر الطباعة: لم يُرجع /api/qz/signature توقيعًا صالحًا. شغّل واجهة API في بيئة النشر.");
+      }
+      resolve(signature);
     })().catch(reject);
   });
   securityConfigured = true;

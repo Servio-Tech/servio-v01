@@ -68,7 +68,7 @@ function Feedbacks() {
             <Card
               elevation={0}
               sx={{
-                borderRadius: "20px",
+                borderRadius: "10px",
                 border: "1px solid",
                 borderColor: "rgba(255,255,255,.75)",
                 background: "rgba(255,255,255,.86)",

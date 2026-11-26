@@ -125,6 +125,11 @@ function isStandaloneApp() {
   );
 }
 
+function failureDetail(error) {
+  const detail = typeof error?.message === "string" ? error.message.trim() : "";
+  return detail && detail !== "No user" ? detail.slice(0, 240) : "";
+}
+
 export default function NotificationSettingsCard() {
   const { language } = useLanguage();
   const { selectedBranch } = useBranch();
@@ -137,12 +142,14 @@ export default function NotificationSettingsCard() {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState(null);
   const [loadFailed, setLoadFailed] = useState(false);
+  const [loadFailureDetail, setLoadFailureDetail] = useState("");
   const branchId = selectedBranch?.id || "";
   const standalone = useMemo(isStandaloneApp, []);
 
   const refresh = useCallback(async () => {
     setLoading(true);
     setLoadFailed(false);
+    setLoadFailureDetail("");
     const canPush = supportsWebPush();
     setSupported(canPush);
     if (typeof Notification !== "undefined") setPermission(Notification.permission);
@@ -160,9 +167,10 @@ export default function NotificationSettingsCard() {
         const subscription = await registration?.pushManager?.getSubscription();
         setCurrentEndpoint(subscription?.endpoint || "");
       }
-    } catch {
+    } catch (error) {
       setDevices([]);
       setLoadFailed(true);
+      setLoadFailureDetail(failureDetail(error));
     } finally {
       setLoading(false);
     }
@@ -208,8 +216,8 @@ export default function NotificationSettingsCard() {
       setCurrentEndpoint(subscription.endpoint);
       setMessage({ type: "success", text: t.enabled });
       await refresh();
-    } catch {
-      setMessage({ type: "error", text: t.failed });
+    } catch (error) {
+      setMessage({ type: "error", text: t.failed, detail: failureDetail(error) });
     } finally {
       setBusy(false);
     }
@@ -232,8 +240,8 @@ export default function NotificationSettingsCard() {
       if (device.endpoint === currentEndpoint) setCurrentEndpoint("");
       setMessage({ type: "success", text: t.disabled });
       await refresh();
-    } catch {
-      setMessage({ type: "error", text: t.failed });
+    } catch (error) {
+      setMessage({ type: "error", text: t.failed, detail: failureDetail(error) });
     } finally {
       setBusy(false);
     }
@@ -257,8 +265,8 @@ export default function NotificationSettingsCard() {
             {currentDevice && <Chip label={t.thisDevice} variant="outlined" />}
           </Stack>
 
-          {message && <Alert severity={message.type} onClose={() => setMessage(null)}>{message.text}</Alert>}
-          {loadFailed && <Alert severity="warning">{t.noData}</Alert>}
+          {message && <Alert severity={message.type} onClose={() => setMessage(null)}>{message.text}{message.detail && <Typography component="span" variant="body2" sx={{ display: "block", mt: 0.5, overflowWrap: "anywhere" }}>{message.detail}</Typography>}</Alert>}
+          {loadFailed && <Alert severity="warning">{t.noData}{loadFailureDetail && <Typography component="span" variant="body2" sx={{ display: "block", mt: 0.5, overflowWrap: "anywhere" }}>{loadFailureDetail}</Typography>}</Alert>}
           {!supported && <Alert severity="info">{t.unsupported}</Alert>}
           {supported && permission === "denied" && <Alert severity="warning">{t.permissionDenied}</Alert>}
 

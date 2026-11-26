@@ -7,6 +7,7 @@ import InvoiceModal from "./OrderPill";
 // CONTEXTS
 import { useOrders } from "../../../context/OrdersContext";
 import { useStore } from "../../../context/StoreInfoContext";
+import { useBranch } from "../../../context/BranchContext";
 import { useLanguage } from "../../../context/LanguageContext";
 
 // MUI COMPONENTS
@@ -24,6 +25,7 @@ import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import Paper from "@mui/material/Paper";
 import Chip from "@mui/material/Chip";
+import Alert from "@mui/material/Alert";
 import IconButton from "@mui/material/IconButton";
 import Collapse from "@mui/material/Collapse";
 import Typography from "@mui/material/Typography";
@@ -35,6 +37,9 @@ import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
 import ReceiptLongIcon from "@mui/icons-material/ReceiptLong";
 import LocalPrintshopIcon from "@mui/icons-material/LocalPrintshop";
+import ManagerExportMenu from "../ManagerExportMenu";
+import { downloadCsv, downloadXlsx } from "../Analytics/reportExport";
+import { openManagerPrintableReport } from "../../../utils/managerPrintableReport";
 
 // DATE PICKER
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
@@ -202,7 +207,25 @@ function OrdersHistory() {
   const { t, language } = useLanguage();
   const { orders = [] } = useOrders();
   const { storeInfo } = useStore();
+  const { selectedBranch, selectedBranchId } = useBranch();
   const currency = storeInfo?.currency || t("currencySar");
+  const filterCopy = language === "ar"
+    ? {
+      subtitle: "ابحث عن الطلبات المكتملة وراجع تفاصيلها أو اطبع السجل.",
+      payment: "طريقة الدفع", all: "الكل", paid: "مدفوع", unpaid: "غير مدفوع",
+      cash: "نقد", card: "شبكة", split: "نقدًا + شبكة", location: "نوع الطلب",
+      table: "طاولة", takeaway: "سفري", cashier: "كاشير", range: "نطاق السجل",
+      day: "اليوم", week: "الأسبوع", month: "الشهر", print: "طباعة السجل",
+      count: "طلب", total: "الإجمالي",
+    }
+    : {
+      subtitle: "Find completed orders, review their details, or print the filtered log.",
+      payment: "Payment method", all: "All", paid: "Paid", unpaid: "Unpaid",
+      cash: "Cash", card: "Card", split: "Cash + card", location: "Order type",
+      table: "Dine-in", takeaway: "Takeaway", cashier: "Cashier", range: "Log range",
+      day: "Day", week: "Week", month: "Month", print: "Print log",
+      count: "orders", total: "Total",
+    };
 
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedDate, setSelectedDate] = useState(dayjs());
@@ -210,6 +233,8 @@ function OrdersHistory() {
   const [paymentFilter, setPaymentFilter] = useState("all");
   const [locationFilter, setLocationFilter] = useState("all");
   const [rangeMode, setRangeMode] = useState("day");
+  const [exportBusy, setExportBusy] = useState("");
+  const [exportError, setExportError] = useState("");
 
   const filteredOrders = useMemo(() => {
     return orders
@@ -237,9 +262,83 @@ function OrdersHistory() {
       });
   }, [orders, searchQuery, statusFilter, selectedDate, paymentFilter, locationFilter, rangeMode]);
 
+  const paymentMethodLabel = (method) => ({
+    cash: filterCopy.cash,
+    card: filterCopy.card,
+    split: filterCopy.split,
+  })[String(method || "").toLowerCase()] || method || "—";
+  const orderStatusLabel = (status) => ({
+    served: t("managerServed"),
+    unclaimed: t("managerUnclaimed"),
+    cancelled: t("managerCancelled"),
+  })[status] || status || "—";
+  const exportModel = {
+    rtl: language === "ar",
+    title: language === "ar" ? "سجل الطلبات" : "Order history",
+    filename: `servio-orders-${selectedBranchId || "branch"}-${selectedDate?.format("YYYY-MM-DD") || dayjs().format("YYYY-MM-DD")}`,
+    sections: [{
+      name: language === "ar" ? "سجل الطلبات" : "Order history",
+      title: filterCopy.subtitle,
+      columns: language === "ar"
+        ? ["الفرع", "رقم الطلب", "الطاولة / النوع", "التاريخ والوقت", "الحالة", "حالة الدفع", "طريقة الدفع", "الأصناف", "ملاحظات", "الإجمالي", "العملة"]
+        : ["Branch", "Order number", "Table / type", "Date and time", "Status", "Payment status", "Payment method", "Items", "Notes", "Total", "Currency"],
+      rows: filteredOrders.map((order) => [
+        selectedBranch?.name || "",
+        order.order_number || order.displayOrderNumber || "—",
+        order.table_number || "—",
+        dayjs(order.created_at).isValid() ? dayjs(order.created_at).format("YYYY-MM-DD HH:mm") : "—",
+        orderStatusLabel(order.status),
+        order.payment_status === "paid" ? filterCopy.paid : filterCopy.unpaid,
+        paymentMethodLabel(order.payment_method),
+        (order.items || []).map((item) => `${item.name || (language === "ar" ? "صنف" : "Item")} × ${item.quantity ?? 1}`).join("، "),
+        order.notes || "",
+        Number(order.total_price) || 0,
+        currency,
+      ]),
+    }],
+  };
+
+  const handleExport = async (format) => {
+    if (format === "pdf") {
+      const total = filteredOrders.reduce((sum, order) => sum + (Number(order.total_price) || 0), 0);
+      try {
+        openManagerPrintableReport({
+          title: exportModel.title,
+          subtitle: `${filterCopy.subtitle} · ${filteredOrders.length} ${filterCopy.count}`,
+          columns: exportModel.sections[0].columns,
+          rows: exportModel.sections[0].rows,
+          summary: [
+            [language === "ar" ? "الفرع" : "Branch", selectedBranch?.name || "—"],
+            [filterCopy.count, filteredOrders.length],
+            [filterCopy.total, `${new Intl.NumberFormat(language === "ar" ? "ar-SA" : "en-SA", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(total)} ${currency}`],
+          ],
+          language,
+        });
+      } catch (error) {
+        console.error("Order history PDF print failed:", error);
+        setExportError(language === "ar" ? "تعذر فتح نافذة التقرير. اسمح بالنوافذ المنبثقة ثم أعد المحاولة." : "Could not open the report window. Allow pop-ups and retry.");
+      }
+      return;
+    }
+    setExportBusy(format);
+    setExportError("");
+    try {
+      if (format === "csv") downloadCsv(exportModel);
+      else await downloadXlsx(exportModel);
+    } catch (error) {
+      console.error("Order history export failed:", error);
+      setExportError(language === "ar" ? "تعذر إعداد الملف. أعد المحاولة أو اختر صيغة أخرى." : "Could not prepare the file. Retry or choose another format.");
+    } finally {
+      setExportBusy("");
+    }
+  };
+
   const printFilteredOrders = () => {
     const printWindow = window.open("", "_blank", "width=1100,height=800");
-    if (!printWindow) return;
+    if (!printWindow) {
+      setExportError(language === "ar" ? "اسمح بالنوافذ المنبثقة للطباعة أو حفظ التقرير PDF." : "Allow pop-ups to print or save this report as PDF.");
+      return;
+    }
     const rows = filteredOrders.map((order) => `<tr><td>${printSafe(order.order_number || order.displayOrderNumber || "—")}</td><td>${printSafe(order.table_number)}</td><td>${printSafe(dayjs(order.created_at).format("DD/MM/YYYY HH:mm"))}</td><td>${printSafe(order.status)}</td><td>${printSafe(order.payment_status === "paid" ? (language === "ar" ? "مدفوع" : "Paid") : (language === "ar" ? "غير مدفوع" : "Unpaid"))}</td><td>${printSafe(order.total_price)} ${printSafe(currency)}</td></tr>`).join("");
     const tableLabel = language === "ar" ? "الطاولة" : "Table";
     const orderLabel = language === "ar" ? "رقم الطلب" : "Order";
@@ -256,60 +355,54 @@ function OrdersHistory() {
   return (
     <Box sx={{ p: { xs: 1, md: 2 } }}>
       <style>{`@media print { @page { size: A4 landscape; margin: 10mm; } .orders-history-no-print { display: none !important; } .orders-history-print-summary { display: block !important; } .orders-history-print-table { box-shadow: none !important; border: 1px solid #d7dbe2 !important; overflow: visible !important; } .orders-history-print-table table { min-width: 0 !important; width: 100% !important; } .orders-history-print-table th, .orders-history-print-table td { padding: 6px 8px !important; font-size: 10pt !important; } } .orders-history-print-summary { display: none; }`}</style>
-      <Box
-        className="orders-history-no-print"
-        sx={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          flexWrap: "wrap",
-          gap: 2,
-          mb: 3,
-        }}
-      >
-        <TextField
-          placeholder={t("managerHistorySearch")}
-          size="small"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          sx={{ width: { xs: "100%", sm: 280 } }}
-        />
+      <Box className="orders-history-no-print" sx={{ mb: 2.5 }}>
+        <Stack direction={{ xs: "column", sm: "row" }} sx={{ justifyContent: "space-between", alignItems: { xs: "stretch", sm: "center" }, gap: 1.5, mb: 1.75 }}>
+          <Box>
+            <Typography variant="h4" component="h1" sx={{ fontWeight: 900, fontSize: { xs: "1.55rem", sm: "2rem" } }}>
+              {language === "ar" ? "سجل الطلبات" : "Order history"}
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.4 }}>{filterCopy.subtitle}</Typography>
+          </Box>
+          <Chip color="primary" variant="outlined" label={`${filteredOrders.length.toLocaleString(language === "ar" ? "ar-SA" : "en-SA")} ${filterCopy.count}`} sx={{ alignSelf: { xs: "flex-start", sm: "center" }, fontWeight: 800, fontVariantNumeric: "tabular-nums" }} />
+        </Stack>
 
-        <Box
-          sx={{
-            display: "flex",
-            gap: 1.5,
-            flexWrap: "wrap",
-            width: { xs: "100%", sm: "auto" },
-          }}
-        >
-          <FormControl size="small" sx={{ minWidth: 150, width: { xs: "100%", sm: "auto" } }}>
-            <InputLabel id="status-filter-label">{t("managerStatus")}</InputLabel>
-            <Select
-              labelId="status-filter-label"
-              value={statusFilter}
-              label={t("managerStatus")}
-              onChange={(e) => setStatusFilter(e.target.value)}
-            >
-              <MenuItem value="all">{t("managerAllStatuses")}</MenuItem>
-              <MenuItem value="served">{t("managerServed")}</MenuItem>
-              <MenuItem value="unclaimed">{t("managerUnclaimed")}</MenuItem>
-              <MenuItem value="cancelled">{t("managerCancelled")}</MenuItem>
-            </Select>
-          </FormControl>
+        <Paper variant="outlined" sx={{ p: { xs: 1.25, sm: 1.75 }, borderRadius: 3, borderColor: "divider", bgcolor: "background.paper" }}>
+          <Box sx={{ display: "grid", gridTemplateColumns: { xs: "repeat(2, minmax(0, 1fr))", md: "repeat(4, minmax(0, 1fr))" }, gap: 1.25 }}>
+            <TextField
+              placeholder={t("managerHistorySearch")}
+              aria-label={t("managerHistorySearch")}
+              size="small"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              sx={{ gridColumn: "1 / -1" }}
+            />
+            <FormControl size="small" sx={{ minWidth: 0 }}>
+              <InputLabel id="status-filter-label">{t("managerStatus")}</InputLabel>
+              <Select
+                labelId="status-filter-label"
+                value={statusFilter}
+                label={t("managerStatus")}
+                onChange={(e) => setStatusFilter(e.target.value)}
+              >
+                <MenuItem value="all">{t("managerAllStatuses")}</MenuItem>
+                <MenuItem value="served">{t("managerServed")}</MenuItem>
+                <MenuItem value="unclaimed">{t("managerUnclaimed")}</MenuItem>
+                <MenuItem value="cancelled">{t("managerCancelled")}</MenuItem>
+              </Select>
+            </FormControl>
 
-          <FormControl size="small" sx={{ minWidth: 150, width: { xs: "100%", sm: "auto" } }}>
-            <InputLabel id="payment-filter-label">طريقة الدفع</InputLabel>
-            <Select labelId="payment-filter-label" value={paymentFilter} label="طريقة الدفع" onChange={(e) => setPaymentFilter(e.target.value)}>
-              <MenuItem value="all">الكل</MenuItem><MenuItem value="paid">مدفوع</MenuItem><MenuItem value="unpaid">غير مدفوع</MenuItem><MenuItem value="cash">نقد</MenuItem><MenuItem value="card">شبكة</MenuItem><MenuItem value="split">نقدًا + شبكة</MenuItem>
-            </Select>
-          </FormControl>
-          <FormControl size="small" sx={{ minWidth: 150, width: { xs: "100%", sm: "auto" } }}>
-            <InputLabel id="location-filter-label">نوع الطلب</InputLabel>
-            <Select labelId="location-filter-label" value={locationFilter} label="نوع الطلب" onChange={(e) => setLocationFilter(e.target.value)}>
-              <MenuItem value="all">الكل</MenuItem><MenuItem value="table">طاولة</MenuItem><MenuItem value="takeaway">سفري</MenuItem><MenuItem value="cashier">كاشير</MenuItem>
-            </Select>
-          </FormControl>
+            <FormControl size="small" sx={{ minWidth: 0 }}>
+              <InputLabel id="payment-filter-label">{filterCopy.payment}</InputLabel>
+              <Select labelId="payment-filter-label" value={paymentFilter} label={filterCopy.payment} onChange={(e) => setPaymentFilter(e.target.value)}>
+                <MenuItem value="all">{filterCopy.all}</MenuItem><MenuItem value="paid">{filterCopy.paid}</MenuItem><MenuItem value="unpaid">{filterCopy.unpaid}</MenuItem><MenuItem value="cash">{filterCopy.cash}</MenuItem><MenuItem value="card">{filterCopy.card}</MenuItem><MenuItem value="split">{filterCopy.split}</MenuItem>
+              </Select>
+            </FormControl>
+            <FormControl size="small" sx={{ minWidth: 0 }}>
+              <InputLabel id="location-filter-label">{filterCopy.location}</InputLabel>
+              <Select labelId="location-filter-label" value={locationFilter} label={filterCopy.location} onChange={(e) => setLocationFilter(e.target.value)}>
+                <MenuItem value="all">{filterCopy.all}</MenuItem><MenuItem value="table">{filterCopy.table}</MenuItem><MenuItem value="takeaway">{filterCopy.takeaway}</MenuItem><MenuItem value="cashier">{filterCopy.cashier}</MenuItem>
+              </Select>
+            </FormControl>
 
           <LocalizationProvider dateAdapter={AdapterDayjs}>
             <DatePicker
@@ -322,25 +415,33 @@ function OrdersHistory() {
                 textField: {
                   size: "small",
                   slotProps: { inputLabel: { shrink: true } },
-                  sx: {
-                    width: { xs: "100%", sm: 220 },
-                  },
+                  sx: { width: "100%" },
                 },
               }}
             />
           </LocalizationProvider>
-          <FormControl size="small" sx={{ minWidth: 150, width: { xs: "100%", sm: "auto" } }}>
-            <InputLabel id="history-range-label">{language === "ar" ? "نطاق السجل" : "Log range"}</InputLabel>
-            <Select labelId="history-range-label" value={rangeMode} label={language === "ar" ? "نطاق السجل" : "Log range"} onChange={(e) => setRangeMode(e.target.value)}>
-              <MenuItem value="day">{language === "ar" ? "اليوم" : "Day"}</MenuItem>
-              <MenuItem value="week">{language === "ar" ? "الأسبوع" : "Week"}</MenuItem>
-              <MenuItem value="month">{language === "ar" ? "الشهر" : "Month"}</MenuItem>
+          <FormControl size="small" sx={{ minWidth: 0 }}>
+            <InputLabel id="history-range-label">{filterCopy.range}</InputLabel>
+            <Select labelId="history-range-label" value={rangeMode} label={filterCopy.range} onChange={(e) => setRangeMode(e.target.value)}>
+              <MenuItem value="day">{filterCopy.day}</MenuItem>
+              <MenuItem value="week">{filterCopy.week}</MenuItem>
+              <MenuItem value="month">{filterCopy.month}</MenuItem>
             </Select>
           </FormControl>
-          <Button variant="contained" startIcon={<LocalPrintshopIcon />} onClick={printFilteredOrders} sx={{ fontWeight: 800, whiteSpace: "nowrap" }}>
-            {language === "ar" ? "طباعة السجل" : "Print log"}
-          </Button>
+          <Box sx={{ gridColumn: { xs: "1 / -1", md: "auto" }, display: "flex", gap: 1, flexWrap: "wrap" }}>
+            <ManagerExportMenu
+              language={language}
+              disabled={!filteredOrders.length}
+              busy={exportBusy}
+              onExport={handleExport}
+            />
+            <Button variant="contained" startIcon={<LocalPrintshopIcon />} onClick={printFilteredOrders} disabled={!filteredOrders.length} sx={{ flex: 1, minHeight: 42, fontWeight: 800, whiteSpace: "nowrap" }}>
+              {filterCopy.print}
+            </Button>
+          </Box>
         </Box>
+        </Paper>
+        {exportError && <Alert severity="error" onClose={() => setExportError("")} sx={{ mt: 1.25 }}>{exportError}</Alert>}
       </Box>
 
       <Box className="orders-history-print-summary" sx={{ mb: 2, textAlign: "start" }}>
@@ -353,7 +454,7 @@ function OrdersHistory() {
       <Typography className="orders-history-no-print" variant="caption" color="text.secondary" sx={{ display: { xs: "block", md: "none" }, mb: .7, textAlign: "start" }}>
         {language === "ar" ? "اسحب الجدول أفقيًا لعرض بقية التفاصيل." : "Swipe the table horizontally to view all details."}
       </Typography>
-      <TableContainer component={Paper} className="orders-history-print-table" sx={{ maxWidth: "100%", borderRadius: { xs: 2.5, md: 3.5 }, boxShadow: "0 14px 40px rgba(23,26,47,.055)", border: "1px solid rgba(255,255,255,.75)", overflowX: "auto", overflowY: "hidden", WebkitOverflowScrolling: "touch" }}>
+      <TableContainer component={Paper} className="orders-history-print-table" sx={{ maxWidth: "100%", borderRadius: { xs: 2.5, md: 3.5 }, boxShadow: "none", border: "1px solid", borderColor: "divider", bgcolor: "background.paper", overflowX: "auto", overflowY: "hidden", WebkitOverflowScrolling: "touch" }}>
         <Table sx={{ minWidth: { xs: 680, sm: 760 } }}>
           <TableHead sx={{ bgcolor: "action.hover" }}>
             <TableRow>

@@ -33,17 +33,17 @@ function SuggestionBanner() {
         onClick={() => setExpanded(true)}
         sx={{
           position: "fixed",
-          zIndex: 1200,
+          zIndex: 1050,
           insetInlineEnd: 12,
           bottom: "calc(90px + env(safe-area-inset-bottom, 0px))",
           width: 44,
           height: 44,
-          borderRadius: "12px",
-          bgcolor: "#fffaf1",
-          color: "#a54700",
+          borderRadius: "8px",
+          bgcolor: "background.paper",
+          color: "primary.dark",
           border: "1px solid rgba(244, 121, 32, .28)",
           boxShadow: "0 6px 18px rgba(23, 26, 47, .16)",
-          "&:hover": { bgcolor: "#fff2e8" },
+          "&:hover": { bgcolor: "action.hover" },
         }}
       >
         <Badge
@@ -62,16 +62,20 @@ function SuggestionBanner() {
   return (
     <Paper
       elevation={3}
+      role="region"
+      aria-label={isArabic ? "اقتراحات للطلب" : "Order suggestions"}
       sx={{
-        position: "relative",
-        zIndex: 1,
-        width: "100%",
+        position: "fixed",
+        zIndex: 1050,
+        left: "50%",
+        bottom: "calc(84px + env(safe-area-inset-bottom, 0px))",
+        transform: "translateX(-50%)",
+        width: "calc(100% - 24px)",
         maxWidth: "720px",
-        mx: "auto",
-        mb: 2,
-        minHeight: "72px",
+        boxSizing: "border-box",
+        minHeight: "76px",
         bgcolor: "background.paper",
-        borderRadius: "16px",
+        borderRadius: "8px",
         px: 1.2,
         py: 1,
         display: "flex",
@@ -88,12 +92,12 @@ function SuggestionBanner() {
           component="img"
           src={currentSuggestion.image || "/logo-icon.webp"}
           alt={currentSuggestion.name}
-          sx={{ width: 42, height: 42, borderRadius: "12px", objectFit: "cover", flexShrink: 0 }}
+          sx={{ width: 42, height: 42, borderRadius: "8px", objectFit: "cover", flexShrink: 0 }}
         />
         <Box sx={{ overflow: "hidden", minWidth: 0, display: "flex", flexDirection: "column", justifyContent: "center" }}>
           <Box sx={{ display: "flex", alignItems: "center", gap: 0.55, mb: 0.2, minWidth: 0 }}>
-            <AutoAwesomeIcon sx={{ fontSize: ".78rem", color: "#a54700", flexShrink: 0 }} />
-            <Typography variant="caption" sx={{ color: "#a54700", fontWeight: 800, fontSize: ".67rem", lineHeight: 1, whiteSpace: "nowrap" }}>
+            <AutoAwesomeIcon sx={{ fontSize: ".78rem", color: "primary.dark", flexShrink: 0 }} />
+            <Typography variant="caption" sx={{ color: "primary.dark", fontWeight: 800, fontSize: ".67rem", lineHeight: 1, whiteSpace: "nowrap" }}>
               {isArabic ? "قد يناسب طلبك" : "You may like this"}
             </Typography>
             <Chip
@@ -116,7 +120,7 @@ function SuggestionBanner() {
           variant="contained"
           disableElevation
           onClick={() => addToCart(currentSuggestion)}
-          sx={{ borderRadius: "12px", fontWeight: 800, px: 1.25, py: 0.45, minWidth: "auto", fontSize: ".72rem", whiteSpace: "nowrap", bgcolor: "#f47920", color: "#171a2f", "&:hover": { bgcolor: "#d96816" } }}
+          sx={{ borderRadius: "8px", fontWeight: 800, px: 1.25, py: 0.45, minWidth: "auto", fontSize: ".72rem", whiteSpace: "nowrap", bgcolor: "#f47920", color: "#171a2f", "&:hover": { bgcolor: "#d96816" } }}
         >
           {isArabic ? "اطلب" : "Order"}
         </Button>

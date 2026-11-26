@@ -21,15 +21,31 @@ function ManagerDashboard() {
 
   return (
     <DashboardThemeProvider direction={language === "ar" ? "rtl" : "ltr"}>
-      <Box data-language={language} sx={{ display: "flex", minHeight: "100vh", width: "100%", minWidth: 0, bgcolor: "background.default" }}>
+      <Box
+        data-language={language}
+        sx={{
+          display: "flex",
+          minHeight: "100vh",
+          minHeight: "100dvh",
+          width: "100%",
+          minWidth: 0,
+          background: "radial-gradient(circle at 8% 0%, rgba(244,121,32,.08), transparent 25%), #111110",
+        }}
+      >
         <ManagerSidebar mobileOpen={mobileOpen} handleDrawerToggle={handleDrawerToggle} activeTab={activeTab} onSelectTab={setActiveTab} />
-        <Box component="main" sx={{ flex: "1 1 0", minWidth: 0, minHeight: "100vh", display: "flex", flexDirection: "column" }}>
+        <Box component="main" sx={{ flex: "1 1 0", minWidth: 0, minHeight: "100dvh", display: "flex", flexDirection: "column" }}>
           <Box sx={{ position: "sticky", top: 0, zIndex: (theme) => theme.zIndex.appBar, borderBottom: "1px solid", borderColor: "divider", bgcolor: "rgba(17,17,16,.94)", backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)" }}>
-            <ManagerHeader onDrawerToggle={handleDrawerToggle} />
+            <ManagerHeader activeTab={activeTab} onDrawerToggle={handleDrawerToggle} />
           </Box>
-          <Box sx={{ flexGrow: 1, width: "100%", minWidth: 0, px: { xs: 2, sm: 3, lg: 4 }, py: { xs: 2.5, md: 3.5 } }}>
-            <Box className="dashboard-manager-branches"><BranchTabs /></Box>
-            <Box className={`dashboard-manager-content dashboard-manager-content--${activeTab}`} sx={{ minWidth: 0 }}>
+          <Box sx={{ flexGrow: 1, width: "100%", minWidth: 0, px: { xs: 1.5, sm: 2.5, lg: 3.5, xl: 4 }, py: { xs: 2, md: 3 } }}>
+            <Box sx={{ width: "100%", maxWidth: 1720, mx: "auto" }}>
+              <Box className="dashboard-manager-branches"><BranchTabs /></Box>
+              <Box
+                component="section"
+                aria-label={language === "ar" ? "محتوى لوحة المدير" : "Manager dashboard content"}
+                className={`dashboard-manager-content dashboard-manager-content--${activeTab}`}
+                sx={{ minWidth: 0, width: "100%" }}
+              >
               {activeTab === "reports" && <Reports />}
               {activeTab === "history" && <OrdersHistory />}
               {activeTab === "shifts" && <ShiftReports managerOnlyFeatures />}
@@ -37,6 +53,7 @@ function ManagerDashboard() {
               {activeTab === "inventory" && <IngredientInventory canManage />}
               {activeTab === "settings" && <SettingsLayout />}
               {activeTab === "qrGen" && <QRCodeGenerate />}
+              </Box>
             </Box>
           </Box>
         </Box>

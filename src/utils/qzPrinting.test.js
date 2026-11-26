@@ -50,7 +50,7 @@ describe("QZ Tray printer integration", () => {
     originalFetch = global.fetch;
     global.fetch = jest.fn((url) => Promise.resolve({
       ok: true,
-      text: () => Promise.resolve(url === "/servio-qz-certificate.txt" ? "TEST CERTIFICATE" : "TEST SIGNATURE"),
+      text: () => Promise.resolve(url === "/servio-qz-certificate.txt" ? "TEST CERTIFICATE" : "VEVTVA=="),
     }));
     renderReceiptHtmlToImages.mockClear();
     renderReceiptHtmlToImages.mockResolvedValue([{ data: "UE5H", width: 300, height: 600 }]);
@@ -76,12 +76,18 @@ describe("QZ Tray printer integration", () => {
 
     const signatureFactory = qz.security.setSignaturePromise.mock.calls[0][0];
     const signature = await new Promise((resolve, reject) => signatureFactory("print-request")(resolve, reject));
-    expect(signature).toBe("TEST SIGNATURE");
+    expect(signature).toBe("VEVTVA==");
     expect(global.fetch).toHaveBeenCalledWith("/api/qz/signature", expect.objectContaining({
       method: "POST",
       headers: expect.objectContaining({ Authorization: "Bearer unit-test-session" }),
       body: JSON.stringify({ request: "print-request" }),
     }));
+    global.fetch.mockResolvedValueOnce({
+      ok: true,
+      text: () => Promise.resolve("<!doctype html><html>Vite fallback</html>"),
+    });
+    await expect(new Promise((resolve, reject) => signatureFactory("print-request")(resolve, reject)))
+      .rejects.toThrow("لم يُرجع /api/qz/signature توقيعًا صالحًا");
 
     const receiptResult = await printReceipt({
       id: "virtual-order-1",

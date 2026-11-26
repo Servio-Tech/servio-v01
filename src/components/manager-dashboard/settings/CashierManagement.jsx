@@ -1,6 +1,6 @@
 // إدارة حسابات الكاشير المنفصلة التابعة لنشاط واحد.
 import { useCallback, useEffect, useState } from "react";
-import { Alert, Avatar, Box, Button, Chip, IconButton, InputAdornment, MenuItem, Paper, Stack, TextField, Tooltip, Typography } from "@mui/material";
+import { Alert, Avatar, Box, Button, Chip, CircularProgress, IconButton, InputAdornment, MenuItem, Paper, Stack, TextField, Tooltip, Typography } from "@mui/material";
 import PersonAddAltIcon from "@mui/icons-material/PersonAddAlt";
 import AutorenewIcon from "@mui/icons-material/Autorenew";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
@@ -17,7 +17,8 @@ import { useLanguage } from "../../../context/LanguageContext";
 const emptyForm = { full_name: "", username: "", pin: "", branch_id: "" };
 
 function CashierManagement() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+  const ar = language === "ar";
   const { storeInfo } = useStore();
   const { tenantId } = useTenant();
   const { branches, selectedBranchId: activeBranchId } = useBranch();
@@ -27,6 +28,7 @@ function CashierManagement() {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [listLoading, setListLoading] = useState(true);
   const [deletingId, setDeletingId] = useState(null);
   const [editingId, setEditingId] = useState(null);
   const [copied, setCopied] = useState(false);
@@ -35,12 +37,26 @@ function CashierManagement() {
   const activeCashiers = cashiers.filter((cashier) => cashier.is_active);
 
   const loadCashiers = useCallback(async () => {
-    if (!tenantId) return;
-    let query = supabase.from("cashiers").select("id, full_name, username, branch_id, created_at, is_active").eq("tenant_id", tenantId).eq("is_active", true);
-    const { data, error: loadError } = await query.order("created_at", { ascending: false });
-    if (loadError) setError(loadError.message);
-    else setCashiers(data || []);
-  }, [tenantId]);
+    if (!tenantId) {
+      setCashiers([]);
+      setListLoading(false);
+      return;
+    }
+    setListLoading(true);
+    try {
+      const { data, error: loadError } = await supabase.from("cashiers")
+        .select("id, full_name, username, branch_id, created_at, is_active")
+        .eq("tenant_id", tenantId)
+        .eq("is_active", true)
+        .order("created_at", { ascending: false });
+      if (loadError) setError(loadError.message);
+      else setCashiers(data || []);
+    } catch (loadFailure) {
+      setError(loadFailure?.message || t("genericLoginError"));
+    } finally {
+      setListLoading(false);
+    }
+  }, [tenantId, t]);
 
   useEffect(() => { void loadCashiers(); }, [loadCashiers]);
   useEffect(() => {
@@ -54,7 +70,9 @@ function CashierManagement() {
       await navigator.clipboard.writeText(loginLink);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
-    } catch { /* قد لا يتاح الحافظة في بعض المتصفحات */ }
+    } catch {
+      setError(ar ? "تعذر نسخ الرابط. انسخه يدويًا من الحقل." : "Could not copy the link. Copy it manually from the field.");
+    }
   };
 
   const handleSubmit = async (event) => {
@@ -78,7 +96,9 @@ function CashierManagement() {
       } else {
         const created = !editingId && (Array.isArray(savedCashier) ? savedCashier[0] : savedCashier);
         if (created?.id) setCashiers((previous) => [{ ...created, is_active: true }, ...previous.filter((cashier) => cashier.id !== created.id)]);
-        setMessage(editingId ? "تم حفظ تعديل الكاشير ونقله إلى الفرع المحدد" : `${t("managerCashierCreated")}: ${username} — PIN: ${form.pin}`);
+        setMessage(editingId
+          ? (ar ? "تم حفظ تعديل الكاشير ونقله إلى الفرع المحدد." : "Cashier updated and assigned to the selected branch.")
+          : `${t("managerCashierCreated")}: ${username} — PIN: ${form.pin}`);
         setForm({ ...emptyForm, branch_id: activeBranchId || "" });
         setEditingId(null);
         await loadCashiers();
@@ -129,17 +149,19 @@ function CashierManagement() {
   };
 
   const cashierRow = (cashier) => (
-    <Paper key={cashier.id} variant="outlined" sx={{ p: 1.5, borderRadius: 2, display: "flex", alignItems: "center", gap: 1.5 }}>
+    <Paper key={cashier.id} variant="outlined" sx={{ p: 1.5, borderRadius: 2.5, display: "grid", gridTemplateColumns: "auto minmax(0, 1fr) auto", alignItems: "center", gap: 1.25 }}>
       <Avatar sx={{ bgcolor: "primary.main" }}>{(cashier.full_name || "?").trim().charAt(0)}</Avatar>
       <Box sx={{ flexGrow: 1, minWidth: 0 }}>
         <Typography sx={{ fontWeight: 700 }} noWrap>{cashier.full_name}</Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ direction: "ltr", textAlign: "right" }} noWrap>@{cashier.username}</Typography>
+        <Stack direction="row" useFlexGap sx={{ alignItems: "center", flexWrap: "wrap", columnGap: 1, rowGap: 0.4, mt: 0.25 }}>
+          <Typography variant="body2" color="text.secondary" sx={{ direction: "ltr" }} noWrap>@{cashier.username}</Typography>
+          <Chip size="small" label={branches.find((branch) => branch.id === cashier.branch_id)?.name || "—"} sx={{ maxWidth: "100%", height: 23, "& .MuiChip-label": { overflow: "hidden", textOverflow: "ellipsis" } }} />
+        </Stack>
       </Box>
-      <Chip size="small" label={branches.find((branch) => branch.id === cashier.branch_id)?.name || "—"} />
-      <Tooltip title="تعديل بيانات الكاشير والفرع">
-        <span><IconButton color="primary" aria-label="تعديل الكاشير" disabled={deletingId === cashier.id} onClick={() => startEdit(cashier)}><EditIcon fontSize="small" /></IconButton></span>
-      </Tooltip>
-      {(
+      <Stack direction="row" spacing={0.25}>
+        <Tooltip title={ar ? "تعديل بيانات الكاشير والفرع" : "Edit cashier and branch"}>
+          <span><IconButton color="primary" aria-label={ar ? "تعديل الكاشير" : "Edit cashier"} disabled={deletingId === cashier.id} onClick={() => startEdit(cashier)}><EditIcon fontSize="small" /></IconButton></span>
+        </Tooltip>
         <Tooltip title={t("managerCashierDelete")}>
           <span>
             <IconButton color="error" aria-label={t("managerCashierDelete")} disabled={deletingId === cashier.id} onClick={() => handleDelete(cashier)}>
@@ -147,14 +169,20 @@ function CashierManagement() {
             </IconButton>
           </span>
         </Tooltip>
-      )}
+      </Stack>
     </Paper>
   );
 
   return (
-    <Box sx={{ maxWidth: 760, mx: "auto" }}>
-      <Typography variant="h6" sx={{ fontWeight: 800, mb: 0.5 }}>{t("managerCashierTitle")}</Typography>
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>{t("managerCashierHint")} · {branches.find((branch) => branch.id === activeBranchId)?.name || ""}</Typography>
+    <Box sx={{ maxWidth: 920, mx: "auto" }}>
+      <Stack direction={{ xs: "column", sm: "row" }} sx={{ justifyContent: "space-between", alignItems: { xs: "stretch", sm: "center" }, gap: 1.5, mb: 2.25 }}>
+        <Box>
+          <Typography variant="overline" sx={{ color: "primary.main", fontWeight: 850, letterSpacing: ar ? 0 : ".08em" }}>{ar ? "صلاحيات الفريق" : "TEAM ACCESS"}</Typography>
+          <Typography variant="h6" component="h2" sx={{ fontWeight: 900, mt: -0.5 }}>{t("managerCashierTitle")}</Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.35 }}>{t("managerCashierHint")}</Typography>
+        </Box>
+        <Chip variant="outlined" color="primary" label={`${activeCashiers.length} ${ar ? "كاشير نشط" : "active cashiers"}`} sx={{ alignSelf: { xs: "flex-start", sm: "center" }, fontWeight: 800 }} />
+      </Stack>
       {message && <Alert severity="success" sx={{ mb: 2 }}>{message}</Alert>}
       {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
 
@@ -166,24 +194,31 @@ function CashierManagement() {
         <Button size="small" variant="outlined" startIcon={<ContentCopyIcon />} onClick={copyLink}>{copied ? t("managerCopied") : t("managerCopy")}</Button>
       </Paper>}
 
-      <Paper component="form" onSubmit={handleSubmit} variant="outlined" sx={{ p: { xs: 2, sm: 3 }, borderRadius: 2, mb: 3 }}>
-        <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 2 }}>{editingId ? "تعديل بيانات الكاشير" : t("managerAddCashier")}</Typography>
+      <Paper component="form" onSubmit={handleSubmit} variant="outlined" sx={{ p: { xs: 1.5, sm: 2.5 }, borderRadius: 3, mb: 3 }}>
+        <Typography variant="subtitle1" component="h3" sx={{ fontWeight: 850, mb: 2 }}>{editingId ? (ar ? "تعديل بيانات الكاشير" : "Edit cashier details") : t("managerAddCashier")}</Typography>
         <Box sx={{ display: "grid", gap: 2, gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" } }}>
-          <TextField size="small" fullWidth required select label="الفرع التابع له الكاشير" value={form.branch_id} onChange={(event) => setForm({ ...form, branch_id: event.target.value })} helperText="يُحفظ الكاشير على هذا الفرع وتظهر طلباته ووردياته داخله فقط">
+          <TextField size="small" fullWidth required select label={ar ? "فرع الكاشير" : "Cashier branch"} value={form.branch_id} onChange={(event) => setForm({ ...form, branch_id: event.target.value })} helperText={ar ? "ستظهر طلبات هذا الكاشير ووردياته ضمن الفرع المحدد." : "This cashier's orders and shifts are scoped to this branch."}>
             {branches.map((branch) => <MenuItem key={branch.id} value={branch.id}>{branch.name}</MenuItem>)}
           </TextField>
           <TextField name="full_name" size="small" fullWidth required label={t("managerFullName")} value={form.full_name} onChange={(event) => setForm({ ...form, full_name: event.target.value })} />
           <TextField name="username" size="small" fullWidth required label={t("managerUsername")} helperText={t("managerUsernameHint")}  value={form.username} onChange={(event) => setForm({ ...form, username: event.target.value.toLowerCase().replace(/\s/g, "") })}  slotProps={{ htmlInput: { dir: "ltr", minLength: 3, maxLength: 40 } }}/>
-          <TextField name="pin" size="small" fullWidth required={!editingId} label={editingId ? "PIN جديد (اختياري)" : t("managerPin")} type={showPin ? "text" : "password"}  value={form.pin} onChange={(event) => setForm({ ...form, pin: event.target.value.replace(/\D/g, "") })}   slotProps={{ htmlInput: { inputMode: "numeric", maxLength: 6, dir: "ltr" }, input: { endAdornment: <InputAdornment position="end"><Tooltip title={t("managerGeneratePin")}><IconButton size="small" onClick={generatePin} color="primary"><AutorenewIcon fontSize="small" /></IconButton></Tooltip><IconButton size="small" onClick={() => setShowPin((value) => !value)}>{showPin ? <VisibilityOff fontSize="small" /> : <Visibility fontSize="small" />}</IconButton></InputAdornment> } }}/>
-          <Stack direction="row" spacing={1}><Button type="submit" variant="contained" disabled={loading} startIcon={editingId ? <EditIcon /> : <PersonAddAltIcon />} sx={{ fontWeight: 700, py: 1 }}>{loading ? t("managerSaving") : editingId ? "حفظ التعديل" : t("managerAddCashier")}</Button>{editingId && <Button type="button" variant="outlined" onClick={cancelEdit}>إلغاء</Button>}</Stack>
+          <TextField name="pin" size="small" fullWidth required={!editingId} label={editingId ? (ar ? "PIN جديد (اختياري)" : "New PIN (optional)") : t("managerPin")} type={showPin ? "text" : "password"}  value={form.pin} onChange={(event) => setForm({ ...form, pin: event.target.value.replace(/\D/g, "") })}   slotProps={{ htmlInput: { inputMode: "numeric", maxLength: 6, dir: "ltr" }, input: { endAdornment: <InputAdornment position="end"><Tooltip title={t("managerGeneratePin")}><IconButton size="small" onClick={generatePin} color="primary"><AutorenewIcon fontSize="small" /></IconButton></Tooltip><IconButton size="small" onClick={() => setShowPin((value) => !value)} aria-label={showPin ? (ar ? "إخفاء PIN" : "Hide PIN") : (ar ? "إظهار PIN" : "Show PIN")}>{showPin ? <VisibilityOff fontSize="small" /> : <Visibility fontSize="small" />}</IconButton></InputAdornment> } }}/>
+          <Stack direction="row" spacing={1}><Button type="submit" variant="contained" disabled={loading} startIcon={editingId ? <EditIcon /> : <PersonAddAltIcon />} sx={{ fontWeight: 700, py: 1 }}>{loading ? t("managerSaving") : editingId ? (ar ? "حفظ التعديل" : "Save changes") : t("managerAddCashier")}</Button>{editingId && <Button type="button" variant="outlined" onClick={cancelEdit}>{ar ? "إلغاء" : "Cancel"}</Button>}</Stack>
         </Box>
       </Paper>
 
-      <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1 }}>{t("managerRegisteredCashiers")} ({activeCashiers.length})</Typography>
-      <Stack spacing={1}>
-        {activeCashiers.map((cashier) => cashierRow(cashier))}
-        {activeCashiers.length === 0 && <Typography variant="body2" color="text.secondary" sx={{ py: 2 }}>{t("managerNoCashiers")}</Typography>}
+      <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", gap: 1, mb: 1.25 }}>
+        <Typography variant="subtitle1" component="h3" sx={{ fontWeight: 850 }}>{t("managerRegisteredCashiers")}</Typography>
+        <Typography variant="caption" color="text.secondary">{activeCashiers.length}</Typography>
       </Stack>
+      {listLoading
+        ? <Stack direction="row" spacing={1} sx={{ alignItems: "center", justifyContent: "center", py: 4 }}><CircularProgress size={20} /><Typography color="text.secondary">{ar ? "جارٍ تحميل الكاشير..." : "Loading cashiers..."}</Typography></Stack>
+        : <Stack spacing={1}>
+          {activeCashiers.map((cashier) => cashierRow(cashier))}
+          {activeCashiers.length === 0 && <Paper variant="outlined" sx={{ p: 3, textAlign: "center", borderRadius: 3 }}>
+            <Typography variant="body2" color="text.secondary">{t("managerNoCashiers")}</Typography>
+          </Paper>}
+        </Stack>}
 
     </Box>
   );

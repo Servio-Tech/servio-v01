@@ -3,10 +3,10 @@ import ShieldRoundedIcon from "@mui/icons-material/ShieldRounded";
 import "./ownerStyles.css";
 
 /** Presentation only: authentication and language remain owned by each page. */
-export default function OwnerAuthLayout({ arabic, owner = false, toggle, children, footer }) {
+export default function OwnerAuthLayout({ arabic, owner = false, authLabel, toggle, children, footer }) {
   return <Box className="owner-surface owner-auth" dir={arabic ? "rtl" : "ltr"}>
     <Box component="aside" className="owner-auth-intro">
-      <Stack direction="row" alignItems="center" gap={1.5} className="owner-brand">
+      <Stack direction="row" className="owner-brand" sx={{ alignItems: "center", gap: 1.5 }}>
         <Box component="img" src="/logo-icon.webp" alt="" sx={{ width: 44, height: 44, objectFit: "contain" }} />
         <Box><Typography className="owner-brand-name">SERVIO<span>.</span></Typography><Typography className="owner-brand-caption">{owner ? "OWNER CONSOLE" : "OPERATIONS PLATFORM"}</Typography></Box>
       </Stack>
@@ -19,9 +19,9 @@ export default function OwnerAuthLayout({ arabic, owner = false, toggle, childre
       <Typography className="owner-auth-footnote">SERVIO · {arabic ? "كل شيء في مكانه" : "Everything in its place"}</Typography>
     </Box>
     <Box className="owner-auth-main">
-      <Box className="owner-auth-topbar"><Stack direction="row" alignItems="center" gap={1} className="owner-auth-mobile-brand"><Box component="img" src="/logo-icon.webp" alt="" sx={{ width: 36, height: 36 }} /><Typography className="owner-brand-name">SERVIO<span>.</span></Typography></Stack><Box className="owner-auth-language">{toggle}</Box></Box>
+      <Box className="owner-auth-topbar"><Stack direction="row" className="owner-auth-mobile-brand" sx={{ alignItems: "center", gap: 1 }}><Box component="img" src="/logo-icon.webp" alt="" sx={{ width: 36, height: 36 }} /><Typography className="owner-brand-name">SERVIO<span>.</span></Typography></Stack><Box className="owner-auth-language">{toggle}</Box></Box>
       <Box className="owner-auth-content">{children}{footer}</Box>
-      <Typography className="owner-auth-bottom">SERVIO / {owner ? "OWNER CONSOLE" : "SIGN IN"}</Typography>
+      <Typography className="owner-auth-bottom">SERVIO / {owner ? "OWNER CONSOLE" : (authLabel || "SIGN IN")}</Typography>
     </Box>
   </Box>;
 }

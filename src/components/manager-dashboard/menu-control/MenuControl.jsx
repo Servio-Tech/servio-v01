@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useMenu } from "../../../context/MenuContext";
 import { useLanguage } from "../../../context/LanguageContext";
 import { useStore } from "../../../context/StoreInfoContext";
+import { useBranch } from "../../../context/BranchContext";
 import AddItemDrawer from "./AddItemDrawer";
 import CategoryPrintRoutingDrawer from "./CategoryPrintRoutingDrawer";
 import AddonComplementDrawer from "./AddonComplementDrawer";
@@ -45,10 +46,14 @@ import DragIndicatorRoundedIcon from "@mui/icons-material/DragIndicatorRounded";
 import KeyboardArrowUpRoundedIcon from "@mui/icons-material/KeyboardArrowUpRounded";
 import KeyboardArrowDownRoundedIcon from "@mui/icons-material/KeyboardArrowDownRounded";
 import { v4 as uuidV4 } from "uuid";
+import ManagerExportMenu from "../ManagerExportMenu";
+import { downloadCsv, downloadXlsx } from "../Analytics/reportExport";
+import { openManagerPrintableReport } from "../../../utils/managerPrintableReport";
 
 function MenuControl() {
   const { t, language } = useLanguage();
   const { storeInfo } = useStore();
+  const { selectedBranch, selectedBranchId } = useBranch();
   const isArabic = language === "ar";
   const [isOpen, setIsOpen] = useState(false);
   const [itemToEdit, setItemToEdit] = useState(null);
@@ -67,6 +72,8 @@ function MenuControl() {
   const [draggedId, setDraggedId] = useState(null);
   const [sortSaving, setSortSaving] = useState(false);
   const [sortError, setSortError] = useState("");
+  const [exportBusy, setExportBusy] = useState("");
+  const [exportError, setExportError] = useState("");
 
   const {
     filteredMenu = [], items = [], reorderMenuItems, categoriesList = [], addonComplements = [],
@@ -82,6 +89,77 @@ function MenuControl() {
     : filteredMenu.filter((item) => String(item.category_id) === categoryFilter);
   const orderedItems = getOrderedItems(items);
   const categoryNames = new Map(categoriesList.map((category) => [String(category.id), category.name]));
+  const availabilityLabel = (item) => {
+    const state = getAvailabilityState(item);
+    return state === "available"
+      ? t("menuAvailable")
+      : state === "paused"
+        ? (isArabic ? "متوقف بسبب المكونات" : "Paused by ingredients")
+        : t("menuUnavailable");
+  };
+  const menuExportColumns = isArabic
+    ? ["الفرع", "الصنف", "التصنيف", "السعر", "العملة", "التوفر", "المكونات", "المكونات النافدة", "عدد المكملات", "الحد الأقصى للمكملات"]
+    : ["Branch", "Item", "Category", "Price", "Currency", "Availability", "Ingredients", "Unavailable ingredients", "Complement count", "Complement limit"];
+  const menuExportRows = visibleItems.map((product) => {
+    const { count, limit } = getComplementSummary(product);
+    return [
+      selectedBranch?.name || "",
+      product.name || "—",
+      categoryNames.get(String(product.category_id)) || "—",
+      product.price != null && String(product.price).trim() !== "" && Number.isFinite(Number(product.price)) ? Number(product.price) : "",
+      storeInfo?.currency || "",
+      availabilityLabel(product),
+      (product.ingredients || []).map((ingredient) => ingredient.name).filter(Boolean).join(isArabic ? "، " : ", "),
+      (product.unavailableIngredients || []).map((ingredient) => ingredient.name).filter(Boolean).join(isArabic ? "، " : ", "),
+      count,
+      limit,
+    ];
+  });
+  const menuExportModel = {
+    rtl: isArabic,
+    title: isArabic ? "قائمة أصناف المنيو" : "Menu item catalog",
+    filename: `servio-menu-${selectedBranchId || "branch"}-${new Date().toISOString().slice(0, 10)}`,
+    sections: [{
+      name: isArabic ? "قائمة الأصناف" : "Menu items",
+      title: isArabic ? "الأصناف الظاهرة حسب البحث والتصنيف الحالي" : "Items visible under the current search and category filters",
+      columns: menuExportColumns,
+      rows: menuExportRows,
+    }],
+  };
+
+  const handleExport = async (format) => {
+    setExportError("");
+    if (format === "pdf") {
+      try {
+        openManagerPrintableReport({
+          title: menuExportModel.title,
+          subtitle: menuExportModel.sections[0].title,
+          columns: menuExportColumns,
+          rows: menuExportRows,
+          summary: [
+            [isArabic ? "الفرع" : "Branch", selectedBranch?.name || "—"],
+            [isArabic ? "عدد الأصناف" : "Items", visibleItems.length],
+          ],
+          language,
+        });
+      } catch (error) {
+        console.error("Menu catalog print failed:", error);
+        setExportError(isArabic ? "تعذر فتح نافذة الطباعة. اسمح بالنوافذ المنبثقة ثم أعد المحاولة." : "Could not open the print window. Allow pop-ups and retry.");
+      }
+      return;
+    }
+
+    setExportBusy(format);
+    try {
+      if (format === "csv") downloadCsv(menuExportModel);
+      else await downloadXlsx(menuExportModel);
+    } catch (error) {
+      console.error("Menu export failed:", error);
+      setExportError(isArabic ? "تعذر إعداد ملف التصدير. أعد المحاولة أو اختر صيغة أخرى." : "Could not prepare the export. Retry or choose another format.");
+    } finally {
+      setExportBusy("");
+    }
+  };
 
   const handleOpenAdd = () => {
     setImageEditError("");
@@ -240,6 +318,12 @@ function MenuControl() {
             <Button onClick={() => setComplementDrawerOpen(true)} size="small" variant="outlined" color="inherit" startIcon={<SpaRoundedIcon />}>
               {isArabic ? `المكملات (${addonComplements.length})` : `Complements (${addonComplements.length})`}
             </Button>
+            <ManagerExportMenu
+              language={language}
+              disabled={!menuExportRows.length || menuLoading || Boolean(menuError)}
+              busy={exportBusy}
+              onExport={handleExport}
+            />
           </Box>
         </Box>
 
@@ -266,6 +350,7 @@ function MenuControl() {
           {menuError && <Alert severity="error" sx={{ mb: 1 }} action={<Button color="inherit" size="small" onClick={refreshMenu}>{isArabic ? "إعادة المحاولة" : "Retry"}</Button>}>
             {isArabic ? "تعذر تحميل المنيو أو مزامنته. تحقق من الاتصال ثم أعد المحاولة." : "The menu could not be loaded or synced. Check the connection and retry."}
           </Alert>}
+          {exportError && <Alert severity="error" sx={{ mb: 1 }} onClose={() => setExportError("")}>{exportError}</Alert>}
           {itemError && <Alert severity="error" sx={{ mb: 1 }}>{itemError}</Alert>}
           {imageEditError && <Alert severity="error" sx={{ mb: 1 }}>{imageEditError}</Alert>}
         </Box>
@@ -309,7 +394,7 @@ function MenuControl() {
                     <TableCell sx={{ whiteSpace: "nowrap" }}><Typography variant="body2" sx={{ fontWeight: 850 }} dir="auto">{formatMenuPrice(product.price)} {storeInfo?.currency || ""}</Typography></TableCell>
                     <TableCell sx={{ whiteSpace: "nowrap" }}>
                       <Typography variant="body2">{isArabic ? `${count} · الحد ${limit}` : `${count} · max ${limit}`}</Typography>
-                      <Button size="small" onClick={() => handleOpenEdit(product)} sx={{ p: 0, minWidth: 0, minHeight: 26, fontSize: ".75rem" }}>{isArabic ? "إدارة المكملات" : "Manage complements"}</Button>
+                      <Button size="small" onClick={() => handleOpenEdit(product)} sx={{ p: 0, minWidth: 0, minHeight: 30, fontSize: ".8rem" }}>{isArabic ? "إدارة المكملات" : "Manage complements"}</Button>
                     </TableCell>
                     <TableCell sx={{ minWidth: 190 }}>
                       <Box sx={{ display: "flex", alignItems: "center", gap: .25 }}>

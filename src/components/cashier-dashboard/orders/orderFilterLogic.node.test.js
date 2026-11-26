@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { filterCashierOrders, getCashierOrderStatusCounts } from "./orderFilterLogic.js";
+import { filterCashierOrders, getCashierOrderStatusCounts, sortCashierOrdersByPriority } from "./orderFilterLogic.js";
 
 const makeOrder = (id, status, type = "table", paymentStatus = "unpaid") => ({
   id,
@@ -45,4 +45,18 @@ test("status counts preserve the single-list totals and include payment fallback
     ready: 1,
     awaiting_payment: 2,
   });
+});
+
+test("sorts work by status priority and oldest order first without mutating the queue", () => {
+  const queue = [
+    { ...makeOrder("ready", "ready", "table", "paid"), created_at: "2026-01-01T10:00:00Z" },
+    { ...makeOrder("newest-pending", "pending"), created_at: "2026-01-01T10:05:00Z" },
+    { ...makeOrder("old-pending", "pending"), created_at: "2026-01-01T10:00:00Z" },
+    { ...makeOrder("payment", "awaiting_payment"), created_at: "2026-01-01T09:00:00Z" },
+  ];
+
+  assert.deepEqual(sortCashierOrdersByPriority(queue).map(({ id }) => id), [
+    "old-pending", "newest-pending", "payment", "ready",
+  ]);
+  assert.equal(queue[0].id, "ready");
 });

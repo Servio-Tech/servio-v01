@@ -1,10 +1,39 @@
 /* All dashboard-only rules are scoped; public pages never receive this class. */
 .dashboard-theme-scope {
+  width: 100%;
   min-width: 0;
   min-height: 100vh;
+  min-height: 100dvh;
   color: #f4f0e8;
-  background: #111110;
+  background-color: #111110;
   text-align: start;
+}
+
+.dashboard-manager-content {
+  color: #f4f0e8;
+}
+
+.dashboard-manager-content h1,
+.dashboard-manager-content h2,
+.dashboard-manager-content h3 {
+  text-wrap: pretty;
+}
+
+.dashboard-manager-content .MuiCard-root,
+.dashboard-manager-content .MuiPaper-root:not(.MuiPopover-paper):not(.MuiMenu-paper) {
+  border-radius: 10px;
+}
+
+.dashboard-manager-content .MuiTableCell-root {
+  padding-block: 8px;
+}
+
+.dashboard-manager-content .MuiTypography-caption {
+  font-size: .8rem;
+}
+
+.dashboard-manager-content .MuiTabs-flexContainer {
+  flex-wrap: nowrap;
 }
 
 @media screen {
@@ -33,6 +62,10 @@
 
   .dashboard-manager-branches > .MuiBox-root:first-child {
     background-color: #1b1a18;
+  }
+
+  .dashboard-manager-content .MuiCard-root {
+    background-color: #24211e;
   }
 
   /* The QR studio owns its card colors, including the white QR quiet zone. */

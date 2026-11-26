@@ -12,7 +12,17 @@ const baseUser = { id: "manager-1", role: "admin", full_name: "مدير المت
 
 beforeEach(() => {
   jest.clearAllMocks();
-  useLanguage.mockReturnValue({ t: (key) => key });
+  useLanguage.mockReturnValue({ t: (key) => key, language: "en" });
+});
+
+test("renders profile and security sections when the profile tab opens", () => {
+  useUser.mockReturnValue({ user: baseUser, updateUser: jest.fn() });
+  render(<UserProfileSettings />);
+
+  expect(screen.getByRole("heading", { name: "Profile and security" })).toBeTruthy();
+  expect(screen.getByRole("heading", { name: "Personal information" })).toBeTruthy();
+  expect(screen.getByRole("heading", { name: "Security and password" })).toBeTruthy();
+  expect(document.querySelector('input[name="full_name"]')).toBeTruthy();
 });
 
 test("يحفظ الاسم والبريد والهاتف وينتظر تأكيد الدالة قبل عرض النجاح", async () => {

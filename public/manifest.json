@@ -1,6 +1,7 @@
 {
   "short_name": "SERVIO",
   "name": "SERVIO | منصة تشغيل الخدمات",
+  "id": "/",
   "icons": [
     {
       "src": "favicon.ico",
@@ -18,7 +19,8 @@
       "sizes": "512x512"
     }
   ],
-  "start_url": ".",
+  "start_url": "/login",
+  "scope": "/",
   "display": "standalone",
   "theme_color": "#171A2F",
   "background_color": "#171A2F"

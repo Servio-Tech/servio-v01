@@ -3,9 +3,11 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import OrderItemCard from "./OrderItemCard";
 import { useOrders } from "../../../context/OrdersContext";
 import { useLanguage } from "../../../context/LanguageContext";
+import { useStore } from "../../../context/StoreInfoContext";
 
 jest.mock("../../../context/OrdersContext", () => ({ useOrders: jest.fn() }));
 jest.mock("../../../context/LanguageContext", () => ({ useLanguage: jest.fn() }));
+jest.mock("../../../context/StoreInfoContext", () => ({ useStore: jest.fn() }));
 jest.mock("../../manager-dashboard/orders/OrderPill", () => ({ __esModule: true, default: () => null }));
 
 const updateOrderStatus = jest.fn();
@@ -28,6 +30,7 @@ beforeEach(() => {
   jest.clearAllMocks();
   useOrders.mockReturnValue({ updateOrderStatus, updateOrderPaymentStatus });
   useLanguage.mockReturnValue({ language: "ar", t: (key) => key });
+  useStore.mockReturnValue({ storeInfo: { currency: "SAR" } });
   updateOrderPaymentStatus.mockResolvedValue({ data: { id: "order-1", payment_status: "paid" }, error: null });
   updateOrderStatus.mockResolvedValue({ data: { id: "order-1" }, error: null });
 });
@@ -64,4 +67,21 @@ test("يسمح بتغيير الدفع إلى غير مدفوع", async () => {
 
   fireEvent.click(screen.getByRole("button", { name: "غير مدفوع" }));
   await waitFor(() => expect(updateOrderPaymentStatus).toHaveBeenCalledWith("order-1", "unpaid"));
+});
+
+test("يعيد تفعيل إجراءات الطلب ويعرض خطأ عند فشل تحديث الحالة", async () => {
+  updateOrderStatus.mockRejectedValueOnce(new Error("network unavailable"));
+  render(<OrderItemCard order={makeOrder({ status: "pending" })} />);
+
+  const startButton = screen.getByRole("button", { name: "بدء التحضير" });
+  fireEvent.click(startButton);
+
+  expect(await screen.findByText("تعذر تحديث حالة الطلب. تحقق من الاتصال ثم أعد المحاولة.")).toBeTruthy();
+  expect(startButton.disabled).toBe(false);
+});
+
+test("يعرض إجراء السداد للطلب الجاهز غير المدفوع", () => {
+  render(<OrderItemCard order={makeOrder({ status: "ready", payment_status: "unpaid" })} />);
+
+  expect(screen.getByRole("button", { name: "تأكيد السداد" })).toBeTruthy();
 });

@@ -14,6 +14,9 @@ import Inventory2OutlinedIcon from "@mui/icons-material/Inventory2Outlined";
 import SearchRoundedIcon from "@mui/icons-material/SearchRounded";
 import StorefrontOutlinedIcon from "@mui/icons-material/StorefrontOutlined";
 import SyncRoundedIcon from "@mui/icons-material/SyncRounded";
+import ManagerExportMenu from "./ManagerExportMenu";
+import { downloadCsv, downloadXlsx } from "./Analytics/reportExport";
+import { openManagerPrintableReport } from "../../utils/managerPrintableReport";
 import {
   canChangeAvailability, filterAndSortAvailability, linkedItemsByIngredient, runScopedAction,
   scopeToBranch, summarizeAvailability,
@@ -54,9 +57,9 @@ function StateChip({ available, children }) {
 function Stat({ label, value, detail, highlight }) {
   return (
     <Box sx={{ p: { xs: 1.75, sm: 2.1 }, border: `1px solid ${palette.line}`, borderRadius: 2.5, backgroundColor: palette.panel, minWidth: 0 }}>
-      <Typography sx={{ color: palette.muted, fontSize: ".77rem", fontWeight: 700 }}>{label}</Typography>
+      <Typography sx={{ color: palette.muted, fontSize: ".8rem", fontWeight: 700 }}>{label}</Typography>
       <Typography sx={{ color: highlight ? palette.paleOrange : palette.cream, fontSize: { xs: "1.7rem", sm: "2rem" }, lineHeight: 1.15, fontWeight: 900, mt: 1 }}>{value}</Typography>
-      <Typography sx={{ color: palette.muted, fontSize: ".72rem", mt: 0.75 }}>{detail}</Typography>
+      <Typography sx={{ color: palette.muted, fontSize: ".8rem", mt: 0.75 }}>{detail}</Typography>
     </Box>
   );
 }
@@ -85,6 +88,8 @@ function IngredientInventory({ canManage = false }) {
   const [busyId, setBusyId] = useState(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [exportBusy, setExportBusy] = useState("");
+  const [exportError, setExportError] = useState("");
 
   // MenuContext clears on branch changes in an effect, so filter immediately during render too.
   const branchIngredients = useMemo(() => scopeToBranch(ingredients, selectedBranchId), [ingredients, selectedBranchId]);
@@ -106,6 +111,76 @@ function IngredientInventory({ canManage = false }) {
   const hasRows = branchIngredients.length > 0 || branchItems.length > 0;
   const numbersReady = selectedBranchId && !branchLoading && !menuLoading && (!menuError || hasRows);
   const count = (value) => numbersReady ? value.toLocaleString(locale) : "—";
+  const availabilityExport = () => {
+    const isIngredientView = view === "ingredients";
+    const columns = isArabic
+      ? ["الفرع", "النوع", "الاسم", "الحالة الفعلية", "التفعيل اليدوي", "العناصر المرتبطة", "أسباب عدم التوفر"]
+      : ["Branch", "Type", "Name", "Effective status", "Manual setting", "Linked records", "Availability reasons"];
+    const rows = displayedRows.map((record) => {
+      const available = isIngredientView ? record.available === true : record.isAvailableForSale === true;
+      const linked = isIngredientView ? (linkedItems.get(String(record.id)) || []) : (record.ingredients || []);
+      const reasons = isIngredientView
+        ? (record.available === true ? "" : tr("المكون غير متاح", "Ingredient unavailable"))
+        : [
+          record.available !== true ? tr("موقوف يدويًا", "Manually disabled") : "",
+          ...(record.unavailableIngredients || []).map((ingredient) => ingredient.name),
+          record.hasUnknownIngredient ? tr("تعذر التحقق من مكون", "Ingredient status unknown") : "",
+        ].filter(Boolean).join(isArabic ? "، " : ", ");
+      return [
+        selectedBranch?.name || "",
+        isIngredientView ? tr("مكون", "Ingredient") : tr("صنف", "Item"),
+        record.name || "—",
+        available ? tr("متاح", "Available") : tr("غير متاح", "Unavailable"),
+        record.available === true ? tr("مفعّل", "Enabled") : tr("موقوف", "Disabled"),
+        linked.map((entry) => entry.name).filter(Boolean).join(isArabic ? "، " : ", "),
+        reasons,
+      ];
+    });
+    return {
+      columns,
+      rows,
+      title: isIngredientView ? tr("تقرير توفر المكونات", "Ingredient availability report") : tr("تقرير توفر الأصناف", "Item availability report"),
+      filename: `servio-availability-${selectedBranchId}-${new Date().toISOString().slice(0, 10)}`,
+      sectionName: isIngredientView ? tr("المكونات", "Ingredients") : tr("الأصناف", "Items"),
+    };
+  };
+  const handleExport = async (format) => {
+    const report = availabilityExport();
+    const model = {
+      rtl: isArabic,
+      title: report.title,
+      filename: report.filename,
+      sections: [{ name: report.sectionName, title: selectedBranch?.name || "", columns: report.columns, rows: report.rows }],
+    };
+    setExportError("");
+    if (format === "pdf") {
+      try {
+        openManagerPrintableReport({
+          title: report.title,
+          subtitle: `${selectedBranch?.name || ""} · ${tr("البيانات المعروضة حسب الفلاتر الحالية", "Rows shown with the current filters")}`,
+          columns: report.columns,
+          rows: report.rows,
+          summary: [[tr("النتائج", "Results"), report.rows.length]],
+          language,
+        });
+      } catch (exportFailure) {
+        console.error("Availability report print failed:", exportFailure);
+        setExportError(tr("تعذر فتح نافذة الطباعة. اسمح بالنوافذ المنبثقة ثم أعد المحاولة.", "Could not open the print window. Allow pop-ups and retry."));
+      }
+      return;
+    }
+
+    setExportBusy(format);
+    try {
+      if (format === "csv") downloadCsv(model);
+      else await downloadXlsx(model);
+    } catch (exportFailure) {
+      console.error("Availability export failed:", exportFailure);
+      setExportError(tr("تعذر إعداد ملف التصدير. أعد المحاولة أو اختر صيغة أخرى.", "Could not prepare the export. Retry or choose another format."));
+    } finally {
+      setExportBusy("");
+    }
+  };
 
   const openAdd = () => {
     if (writesDisabled || !canManage) return;
@@ -193,7 +268,10 @@ function IngredientInventory({ canManage = false }) {
                 {tr("تابع توفر الأصناف ومكوناتها في الفرع المحدد. نفاد أي مكون مرتبط يوقف الصنف عن الطلب، حتى لو كان مفعّلًا يدويًا.", "Monitor items and their ingredients in the selected branch. An unavailable linked ingredient stops an item from being ordered, even when it is manually enabled.")}
               </Typography>
             </Box>
-            {canManage && <Button onClick={openAdd} disabled={writesDisabled} startIcon={<AddRoundedIcon />} variant="contained" sx={{ minHeight: 44, px: 2, borderRadius: 2, whiteSpace: "nowrap", fontWeight: 900, color: "#21140e", bgcolor: palette.orange, boxShadow: "none", "&:hover": { bgcolor: "#e68c5b", boxShadow: "none" }, "&.Mui-disabled": { color: "#77736a", bgcolor: "#393a33" } }}>{tr("إضافة مكون", "Add ingredient")}</Button>}
+            <Stack direction={{ xs: "column", sm: "row" }} spacing={1} sx={{ width: { xs: "100%", md: "auto" } }}>
+              {canManage && <Button onClick={openAdd} disabled={writesDisabled} startIcon={<AddRoundedIcon />} variant="contained" sx={{ minHeight: 44, px: 2, borderRadius: 2, whiteSpace: "nowrap", fontWeight: 900, color: "#21140e", bgcolor: palette.orange, boxShadow: "none", "&:hover": { bgcolor: "#e68c5b", boxShadow: "none" }, "&.Mui-disabled": { color: "#77736a", bgcolor: "#393a33" } }}>{tr("إضافة مكون", "Add ingredient")}</Button>}
+              <ManagerExportMenu language={language} disabled={!selectedBranchId || branchLoading || menuLoading || Boolean(menuError) || !displayedRows.length} busy={exportBusy} onExport={handleExport} />
+            </Stack>
           </Stack>
         </Box>
 
@@ -202,6 +280,7 @@ function IngredientInventory({ canManage = false }) {
             ? tr("تعذّر تحديث البيانات. المعروض هو آخر بيانات محمّلة وقد لا يعكس الحالة الحالية؛ التعديل متوقف حتى نجاح التحديث.", "Refresh failed. Showing the last loaded data, which may be outdated; changes are disabled until refresh succeeds.")
             : tr("تعذّر تحميل الأصناف والمكونات. تحقق من الاتصال ثم أعد المحاولة.", "Could not load items and ingredients. Check the connection and retry.")}
         </Alert>}
+        {exportError && <Alert severity="error" onClose={() => setExportError("")} sx={{ borderRadius: 2 }}>{exportError}</Alert>}
         {error && !dialogOpen && <Alert severity="error" onClose={() => setError("")} action={<Button color="inherit" size="small" onClick={() => void refreshMenu()}>{tr("تحديث البيانات", "Reload data")}</Button>} sx={{ borderRadius: 2 }}>{error}</Alert>}
         {!selectedBranchId && !branchLoading && <Alert severity="warning" sx={{ borderRadius: 2 }}>{tr("اختر فرعًا لعرض حالات التوفر وتعديلها.", "Select a branch to view and change availability.")}</Alert>}
 

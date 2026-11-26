@@ -26,8 +26,10 @@ function MenuFilterTabs() {
         overflowX: "auto",
         py: 1,
         mb: 2,
-        "&::-webkit-scrollbar": { display: "none" },
+        overscrollBehaviorX: "contain",
+        WebkitOverflowScrolling: "touch",
         scrollbarWidth: "none",
+        "&::-webkit-scrollbar": { display: "none" },
       }}
     >
       <Stack
@@ -35,7 +37,7 @@ function MenuFilterTabs() {
         spacing={0.8}
         role="group"
         aria-label={isEnglish ? "Menu categories" : "تصنيفات المنيو"}
-        sx={{ width: "max-content", minWidth: "100%", pb: 0.5 }}
+        sx={{ width: "max-content", minWidth: "100%", flexWrap: "nowrap", pb: 0.5 }}
       >
         {filters.map((filter) => {
           const selected = selectedCategory === filter.id;

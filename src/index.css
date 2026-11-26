@@ -3,7 +3,6 @@ body,
 #root {
   width: 100%;
   min-height: 100%;
-  direction: rtl;
 }
 
 :root {
@@ -25,9 +24,8 @@ html {
 body {
   margin: 0;
   min-width: 320px;
-  direction: rtl;
-  text-align: right;
-  font-family: 'Tajawal', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+  text-align: start;
+  font-family: 'Tajawal', 'Inter', system-ui, 'Segoe UI', Tahoma, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow-x: clip;
@@ -65,18 +63,13 @@ svg {
   text-align: right;
 }
 
-.MuiContainer-root,
 .MuiPaper-root,
 .MuiCard-root {
   min-width: 0;
-  border-color: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  box-shadow: 0 14px 42px rgba(23, 26, 47, 0.065);
 }
 
 /* هوية SERVIO الزجاجية: أسطح أوف وايت دافئة، أفعال برتقالية، وهيكل نيفي. */
-.MuiPaper-root:not(.MuiPopover-paper):not(.MuiMenu-paper),
+.MuiPaper-root:not(.MuiPopover-paper):not(.MuiMenu-paper):not(.MuiAlert-root),
 .MuiCard-root {
   background-color: rgba(255, 248, 241, 0.72);
 }
@@ -97,10 +90,14 @@ svg {
 
 /* توزيع موحّد يمنع تلاصق الأزرار والنصوص عند التفاف الأشرطة أو تبدّل اللغة. */
 .MuiButtonGroup-root,
-.MuiToggleButtonGroup-root,
-.MuiTabs-flexContainer {
+.MuiToggleButtonGroup-root {
   gap: var(--servio-space-2);
   flex-wrap: wrap;
+}
+
+.MuiTabs-flexContainer {
+  gap: var(--servio-space-2);
+  flex-wrap: nowrap;
 }
 
 .MuiCardActions-root,
@@ -116,13 +113,13 @@ svg {
 }
 
 .MuiDialogTitle-root {
-  padding-block: var(--servio-space-5);
-  padding-inline: var(--servio-space-6);
+  padding-block: var(--servio-space-4);
+  padding-inline: var(--servio-space-4);
 }
 
 .MuiDialogContent-root {
-  padding-block: var(--servio-space-2) var(--servio-space-5);
-  padding-inline: var(--servio-space-6);
+  padding-block: var(--servio-space-2) var(--servio-space-4);
+  padding-inline: var(--servio-space-4);
 }
 
 .MuiInputBase-root,

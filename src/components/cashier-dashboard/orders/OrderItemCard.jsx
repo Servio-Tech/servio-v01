@@ -28,12 +28,15 @@ import { formatTimeAgo } from "../../../utils/helpers";
 // CONTEXTS
 import { useOrders } from "../../../context/OrdersContext";
 import { useLanguage } from "../../../context/LanguageContext";
+import { useStore } from "../../../context/StoreInfoContext";
 import InvoiceModal from "../../manager-dashboard/orders/OrderPill";
 import PaymentStatusControl from "./PaymentStatusControl";
+import { getOrderType } from "./orderBellLogic.js";
 
 function OrderItemCard({ order }) {
   const { updateOrderStatus, updateOrderPaymentStatus } = useOrders();
   const { t, language } = useLanguage();
+  const { storeInfo = {} } = useStore();
   const [isInvoiceOpen, setIsInvoiceOpen] = useState(false);
   const [sending, setSending] = useState(false);
   const [paymentSaving, setPaymentSaving] = useState(false);
@@ -42,8 +45,17 @@ function OrderItemCard({ order }) {
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState(order.payment_method || null);
   const [, setTimeTick] = useState(0);
   const isPaid = order.payment_status === "paid";
-  const isAwaitingPayment = order.status === "awaiting_payment";
+  const isAwaitingPayment = order.status === "awaiting_payment" || (order.status === "ready" && !isPaid);
   const isReady = order.status === "ready";
+  const currency = storeInfo.currency || (language === "ar" ? "ر.س" : "SAR");
+  const formatMoney = (value) => `${new Intl.NumberFormat(language === "ar" ? "ar-SA" : "en-SA", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(value) || 0)} ${currency}`;
+  const orderType = getOrderType(order);
+  const tableNumber = String(order.table_number || "").replace(/^(?:table|طاولة)\s*/i, "");
+  const orderTypeLabel = orderType === "table"
+    ? `${language === "ar" ? "طاولة" : "Table"} ${tableNumber || "—"}`
+    : orderType === "takeaway"
+      ? (language === "ar" ? "سفري" : "Takeaway")
+      : (language === "ar" ? "طلب كاشير" : "Cashier sale");
   const statusVisual = order.status === "pending"
     ? { accent: "#e99462", soft: "rgba(233,148,98,.10)", label: language === "ar" ? "جديد" : "New" }
     : order.status === "preparing"
@@ -55,17 +67,23 @@ function OrderItemCard({ order }) {
     setSelectedPaymentMethod(order.payment_method || null);
   }, [order.id, order.payment_method]);
   useEffect(() => {
-    const timer = window.setInterval(() => setTimeTick((tick) => tick + 1), 1000);
+    const timer = window.setInterval(() => setTimeTick((tick) => tick + 1), 30_000);
     return () => window.clearInterval(timer);
   }, []);
   const performStatusChange = async (status) => {
     if (sending) return;
     setSending(true);
+    setPaymentError("");
     // لا نغيّر الصف لمجرد تعديل حالة الدفع؛ الانتقال يتم فقط عند ضغط جاهز للتسليم.
     const nextStatus = !isPaid && status === "ready" ? "awaiting_payment" : status;
-    const result = await updateOrderStatus(order.id, nextStatus);
-    if (result?.error) setPaymentError(language === "ar" ? "تعذر نقل الطلب إلى انتظار السداد. أعد المحاولة." : "Could not move the order to payment queue. Retry.");
-    setSending(false);
+    try {
+      const result = await updateOrderStatus(order.id, nextStatus);
+      if (result?.error) setPaymentError(language === "ar" ? "تعذر تحديث حالة الطلب. أعد المحاولة." : "Could not update the order status. Retry.");
+    } catch {
+      setPaymentError(language === "ar" ? "تعذر تحديث حالة الطلب. تحقق من الاتصال ثم أعد المحاولة." : "Could not update the order status. Check the connection and retry.");
+    } finally {
+      setSending(false);
+    }
   };
   const changeStatus = (status) => {
     if (status === "served") {
@@ -91,11 +109,16 @@ function OrderItemCard({ order }) {
     }
     setSending(true);
     setPaymentError("");
-    const paymentResult = await updateOrderPaymentStatus(order.id, "paid", { method });
-    if (paymentResult?.error) {
-      setPaymentError(language === "ar" ? "تعذر تسجيل السداد. تحقق من طريقة الدفع ثم أعد المحاولة." : "Could not record payment. Check the payment method and retry.");
+    try {
+      const paymentResult = await updateOrderPaymentStatus(order.id, "paid", { method });
+      if (paymentResult?.error) {
+        setPaymentError(language === "ar" ? "تعذر تسجيل السداد. تحقق من طريقة الدفع ثم أعد المحاولة." : "Could not record payment. Check the payment method and retry.");
+      }
+    } catch {
+      setPaymentError(language === "ar" ? "تعذر تسجيل السداد. تحقق من الاتصال ثم أعد المحاولة." : "Could not record payment. Check the connection and retry.");
+    } finally {
+      setSending(false);
     }
-    setSending(false);
   };
   const confirmReceiptAction = async () => {
     const action = confirmingStatus;
@@ -116,9 +139,14 @@ function OrderItemCard({ order }) {
     }
     setPaymentSaving(true);
     setPaymentError("");
-    const result = await updateOrderPaymentStatus(order.id, status);
-    if (result?.error) setPaymentError(language === "ar" ? "تعذر حفظ حالة الدفع. أعد المحاولة." : "Could not save payment status. Retry.");
-    setPaymentSaving(false);
+    try {
+      const result = await updateOrderPaymentStatus(order.id, status);
+      if (result?.error) setPaymentError(language === "ar" ? "تعذر حفظ حالة الدفع. أعد المحاولة." : "Could not save payment status. Retry.");
+    } catch {
+      setPaymentError(language === "ar" ? "تعذر حفظ حالة الدفع. تحقق من الاتصال ثم أعد المحاولة." : "Could not save payment status. Check the connection and retry.");
+    } finally {
+      setPaymentSaving(false);
+    }
   };
   const changePaymentMethod = async (method) => {
     if (paymentSaving) return;
@@ -126,12 +154,18 @@ function OrderItemCard({ order }) {
     setSelectedPaymentMethod(method);
     if (!isPaid) return;
     setPaymentSaving(true);
-    const result = await updateOrderPaymentStatus(order.id, "paid", { method });
-    if (result?.error) {
-      setPaymentError(language === "ar" ? "تعذر حفظ طريقة الدفع. أعد المحاولة." : "Could not save payment method. Retry.");
+    try {
+      const result = await updateOrderPaymentStatus(order.id, "paid", { method });
+      if (result?.error) {
+        setPaymentError(language === "ar" ? "تعذر حفظ طريقة الدفع. أعد المحاولة." : "Could not save payment method. Retry.");
+        setSelectedPaymentMethod(order.payment_method || null);
+      }
+    } catch {
+      setPaymentError(language === "ar" ? "تعذر حفظ طريقة الدفع. تحقق من الاتصال ثم أعد المحاولة." : "Could not save payment method. Check the connection and retry.");
       setSelectedPaymentMethod(order.payment_method || null);
+    } finally {
+      setPaymentSaving(false);
     }
-    setPaymentSaving(false);
   };
   const orderItems = Array.isArray(order?.items) ? order.items : [];
 
@@ -142,18 +176,23 @@ function OrderItemCard({ order }) {
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.2 } }}
       transition={{ type: "spring", stiffness: 350, damping: 25 }}
-      style={{ marginBottom: "12px" }}
+      style={{ height: "100%" }}
     >
       <Card
+        component="article"
+        aria-labelledby={`cashier-order-${order.id}`}
         elevation={0}
         sx={{
           width: "100%",
+          height: "100%",
           minWidth: 0,
           boxSizing: "border-box",
+          display: "flex",
+          flexDirection: "column",
           border: "1px solid",
           borderColor: statusVisual.accent,
           borderTopWidth: 3,
-          borderRadius: "16px",
+          borderRadius: "10px",
           background: "#211f1c",
           boxShadow: "none",
           transition: "transform .2s ease, box-shadow .2s ease, border-color .2s ease",
@@ -167,7 +206,7 @@ function OrderItemCard({ order }) {
         {/* هيدر الكارت */}
         <Box
           sx={{
-            p: { xs: 1.25, sm: 1.5 },
+            p: { xs: 1.4, sm: 1.65 },
             pb: 1,
             display: "flex",
             justifyContent: "space-between",
@@ -177,17 +216,17 @@ function OrderItemCard({ order }) {
           }}
         >
           <Box sx={{ minWidth: 0, display: "flex", alignItems: "center", gap: .75, flexWrap: "wrap" }}>
-            <Typography variant="subtitle1" sx={{ fontWeight: 950, color: "text.primary", fontSize: { xs: "1rem", sm: "1.08rem" }, minWidth: 0, overflowWrap: "anywhere" }}>
-              #{order.displayOrderNumber || order.order_number || "—"} · {t("table")} {order.table_number}
+            <Typography id={`cashier-order-${order.id}`} component="h3" variant="subtitle1" sx={{ fontWeight: 950, color: "text.primary", fontSize: { xs: "1.08rem", sm: "1.15rem" }, minWidth: 0, overflowWrap: "anywhere" }}>
+              #{order.displayOrderNumber || order.order_number || "—"} · {orderTypeLabel}
             </Typography>
-            <Chip label={statusVisual.label} size="small" sx={{ height: 25, bgcolor: statusVisual.soft, color: statusVisual.accent, border: `1px solid ${statusVisual.accent}55`, fontWeight: 950, fontSize: ".7rem" }} />
+            <Chip label={statusVisual.label} size="small" sx={{ height: 28, bgcolor: statusVisual.soft, color: statusVisual.accent, border: `1px solid ${statusVisual.accent}55`, fontWeight: 950, fontSize: ".78rem" }} />
           </Box>
 
           <Typography
             variant="caption"
             sx={{
               fontWeight: 600,
-              fontSize: "0.74rem",
+              fontSize: "0.8rem",
               bgcolor: "rgba(244,121,32,.09)",
               color: "warning.main",
               border: "1px solid",
@@ -203,18 +242,18 @@ function OrderItemCard({ order }) {
           </Typography>
         </Box>
 
-        <Box sx={{ mx: { xs: 1.25, sm: 1.5 }, mb: 1.15, p: 1.1, borderRadius: "12px", border: `1px solid ${statusVisual.accent}30`, bgcolor: statusVisual.soft, display: "flex", flexDirection: "column", gap: 0.55, minWidth: 0 }}>
+        <Box sx={{ mx: { xs: 1.4, sm: 1.65 }, mb: 1.2, p: 1.25, borderRadius: "12px", border: `1px solid ${statusVisual.accent}30`, bgcolor: statusVisual.soft, display: "flex", flexDirection: "column", gap: 0.7, minWidth: 0, "& .MuiToggleButton-root": { minHeight: 40, px: 1.25, fontSize: ".85rem" }, "& .MuiInputBase-root": { minHeight: 44 }, "& .MuiInputLabel-root, & .MuiTypography-caption": { fontSize: ".82rem" } }}>
           <PaymentStatusControl value={order.payment_status} method={selectedPaymentMethod} onChange={changePaymentStatus} onMethodChange={changePaymentMethod} disabled={sending || paymentSaving || (isReady && isPaid)} language={language} />
           {isReady && isPaid && <Typography variant="caption" color="success.main" sx={{ fontWeight: 800 }}>
             {language === "ar" ? "جاهز للاستلام — حالة الدفع مثبتة حتى يتم التسليم." : "Ready for pickup — payment status is locked until delivery."}
           </Typography>}
-          {paymentError && <Typography variant="caption" color="error" sx={{ px: 0.25, overflowWrap: "anywhere" }}>{paymentError}</Typography>}
+          {paymentError && <Typography role="alert" variant="caption" color="error" sx={{ px: 0.25, overflowWrap: "anywhere" }}>{paymentError}</Typography>}
         </Box>
 
         <Divider sx={{ borderStyle: "dashed" }} />
 
         {/* عناصر الطلب */}
-        <CardContent sx={{ p: { xs: 1.25, sm: 1.5 }, pt: 1.1, pb: 1.25, "&:last-child": { pb: 1.25 } }}>
+        <CardContent sx={{ flexGrow: 1, p: { xs: 1.4, sm: 1.65 }, pt: 1.25, pb: 1.4, "&:last-child": { pb: 1.4 } }}>
           <Box sx={{ display: "flex", flexDirection: "column", gap: 0.75, minWidth: 0 }}>
             {orderItems.map((item) => (
               <Box
@@ -222,15 +261,15 @@ function OrderItemCard({ order }) {
                 sx={{
                   display: "grid",
                   gridTemplateColumns: "minmax(0,1fr) auto",
-                  gap: 0.65,
+                  gap: 0.85,
                   alignItems: "start",
                   minWidth: 0,
-                  py: 0.2,
+                  py: 0.3,
                 }}
               >
                 <Typography
                   variant="body2"
-                    sx={{ fontWeight: 700, color: "text.primary", minWidth: 0, lineHeight: 1.4, overflowWrap: "anywhere" }}
+                    sx={{ fontWeight: 700, color: "text.primary", fontSize: ".92rem", minWidth: 0, lineHeight: 1.5, overflowWrap: "anywhere" }}
                 >
                   <Box
                     component="span"
@@ -240,7 +279,7 @@ function OrderItemCard({ order }) {
                   </Box>{" "}
                   {item.name}
                   {Array.isArray(item.selected_addons) && item.selected_addons.length > 0 && (
-                    <Box component="span" sx={{ display: "block", color: "text.secondary", fontSize: "0.72rem", fontWeight: 600, lineHeight: 1.45, mt: 0.25, overflowWrap: "anywhere" }}>
+                    <Box component="span"                     sx={{ display: "block", color: "text.secondary", fontSize: "0.8rem", fontWeight: 600, lineHeight: 1.5, mt: 0.3, overflowWrap: "anywhere" }}>
                       {language === "ar" ? "إضافات: " : "Add-ons: "}
                       {item.selected_addons.map((addon) => typeof addon === "string" ? addon : addon?.name).filter(Boolean).join(language === "ar" ? "، " : ", ")}
                     </Box>
@@ -249,12 +288,20 @@ function OrderItemCard({ order }) {
 
                 <Typography
                   variant="body2"
-                  sx={{ color: "text.secondary", fontWeight: 800, fontSize: "0.8rem", whiteSpace: "nowrap", pt: 0.15 }}
+                  sx={{ color: "text.secondary", fontWeight: 800, fontSize: "0.86rem", whiteSpace: "nowrap", pt: 0.15 }}
                 >
-                  {item.price} {language === "ar" ? "ر.س" : "SAR"}
+                  {formatMoney(Number(item.price || 0) * Number(item.quantity || 0))}
                 </Typography>
               </Box>
             ))}
+          </Box>
+          <Box sx={{ mt: 1.25, pt: 1.2, borderTop: "1px solid", borderColor: "divider", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 1 }}>
+            <Typography variant="body2" color="text.secondary" fontWeight={800} sx={{ fontSize: ".9rem" }}>
+              {language === "ar" ? "إجمالي الطلب" : "Order total"}
+            </Typography>
+            <Typography variant="subtitle1" fontWeight={950} color="primary.light" dir="ltr">
+              {formatMoney(order.total_price)}
+            </Typography>
           </Box>
 
           {/* الملاحظات */}
@@ -278,7 +325,7 @@ function OrderItemCard({ order }) {
               />
               <Typography
                 variant="caption"
-                sx={{ fontWeight: 700, color: "warning.main", lineHeight: 1.45, minWidth: 0, overflowWrap: "anywhere" }}
+                sx={{ fontWeight: 700, color: "warning.main", fontSize: ".82rem", lineHeight: 1.5, minWidth: 0, overflowWrap: "anywhere" }}
               >
                 {t("note")}: {order.notes}
               </Typography>
@@ -287,7 +334,7 @@ function OrderItemCard({ order }) {
         </CardContent>
 
         {/* أزرار الإجراءات */}
-        <CardActions sx={{ p: { xs: 1.25, sm: 1.5 }, pt: 0.25, minWidth: 0, "& .MuiButton-root": { minHeight: 46, borderRadius: "11px", fontWeight: 800, lineHeight: 1.2, px: 1 } }}>
+        <CardActions sx={{ mt: "auto", p: { xs: 1.4, sm: 1.65 }, pt: 0.3, minWidth: 0, "& .MuiButton-root": { minHeight: 50, borderRadius: "11px", fontWeight: 800, fontSize: ".88rem", lineHeight: 1.25, px: 1.1 } }}>
           {order.status === "pending" && (
             <Box sx={{ display: "grid", gridTemplateColumns: { xs: "repeat(2,minmax(0,1fr))", sm: "minmax(0,1fr) auto auto" }, gap: 0.8, width: "100%", minWidth: 0, "& .MuiButton-root": { minWidth: 0, whiteSpace: "normal" } }}>
               <Button
@@ -299,7 +346,7 @@ function OrderItemCard({ order }) {
                 onClick={() => changeStatus("preparing")} disabled={sending}
                 sx={{ gridColumn: { xs: "1 / -1", sm: "auto" }, minWidth: 0, minHeight: 48, py: 0.9 }}
               >
-                {sending ? "جاري الإرسال..." : t("startPreparing")}
+                {sending ? (language === "ar" ? "جارٍ التحديث…" : "Updating…") : (language === "ar" ? "بدء التحضير" : "Start preparing")}
               </Button>
               <Button
                 size="medium"
@@ -336,7 +383,7 @@ function OrderItemCard({ order }) {
                 color: "white",
               }}
             >
-              {sending ? "جاري الإرسال..." : t("ready")}
+              {sending ? (language === "ar" ? "جارٍ التحديث…" : "Updating…") : (language === "ar" ? "جاهز للاستلام" : "Ready for pickup")}
             </Button>
           )}
 
@@ -382,7 +429,7 @@ function OrderItemCard({ order }) {
                 {t("paymentRequired")}
               </Typography>
               <Button color="success" variant="contained" onClick={!isPaid ? settleAndDeliver : () => changeStatus("served")} disabled={sending || paymentSaving}>
-                {!isPaid ? (language === "ar" ? "تأكيد السداد" : "Confirm payment") : t("markDelivered")}
+                {!isPaid ? (language === "ar" ? "تأكيد السداد" : "Confirm payment") : (language === "ar" ? "تأكيد التسليم" : "Confirm delivery")}
               </Button>
               {isPaid && <Button variant="outlined" startIcon={<PrintRoundedIcon />} onClick={() => setIsInvoiceOpen(true)} disabled={sending}>
                 {t("printInvoice")}

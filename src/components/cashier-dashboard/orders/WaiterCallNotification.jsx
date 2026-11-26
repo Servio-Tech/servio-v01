@@ -66,7 +66,7 @@ function WaiterCallNotification({ open, close }) {
           sx={{
             p: 4,
             textAlign: "center",
-            borderRadius: "16px",
+            borderRadius: "10px",
             border: "1px dashed rgba(233,222,207,.20)",
             backgroundColor: "#211f1c",
             mt: 2,
@@ -84,7 +84,7 @@ function WaiterCallNotification({ open, close }) {
               <Card
                 elevation={0}
                 sx={{
-                  borderRadius: "14px",
+                  borderRadius: "8px",
                   border: "1px solid rgba(233,222,207,.12)",
                   backgroundColor: "#211f1c",
                 }}

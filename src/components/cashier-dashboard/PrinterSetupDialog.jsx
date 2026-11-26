@@ -138,7 +138,7 @@ export default function PrinterSetupDialog({ open, onClose, language = "ar", aut
       .catch((cause) => {
         if (cancelled) return;
         setConnected(false);
-        if (!getDiscoveredPrinters().length) setError(cause?.message || text.noPrinters);
+        setError(cause?.message || text.noPrinters);
       });
     return () => { cancelled = true; };
   }, [open, language, text.noPrinters]);

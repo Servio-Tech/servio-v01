@@ -1,6 +1,6 @@
 // مكوّن واجهة `PrinterBridgeStatus` ضمن مجموعة `cashier-dashboard`.
 import { useCallback, useEffect, useState } from "react";
-import { Button, Chip, CircularProgress, Stack } from "@mui/material";
+import { Button, Chip, CircularProgress, Stack, Typography } from "@mui/material";
 import RefreshRoundedIcon from "@mui/icons-material/RefreshRounded";
 import { reconnectSavedPrinters } from "../../utils/qzPrinting";
 
@@ -11,6 +11,7 @@ const INITIAL_STATE = {
   readyCount: 0,
   missingCount: 0,
   missingPrinterNames: [],
+  errorMessage: "",
 };
 
 export default function PrinterBridgeStatus({ language = "ar", categoryPrinterNames = [] }) {
@@ -21,7 +22,7 @@ export default function PrinterBridgeStatus({ language = "ar", categoryPrinterNa
     .map((name) => name.trim()))]);
 
   const reconnect = useCallback(async () => {
-    setState((current) => ({ ...current, status: "connecting" }));
+    setState((current) => ({ ...current, status: "connecting", errorMessage: "" }));
     try {
       const result = await reconnectSavedPrinters(JSON.parse(categoryPrinterNamesKey));
       setState({
@@ -32,10 +33,14 @@ export default function PrinterBridgeStatus({ language = "ar", categoryPrinterNa
         missingCount: result.missingPrinters.length,
         missingPrinterNames: result.missingPrinters,
       });
-    } catch {
-      setState({ ...INITIAL_STATE, status: "error" });
+    } catch (cause) {
+      setState({
+        ...INITIAL_STATE,
+        status: "error",
+        errorMessage: cause?.message || (isArabic ? "تعذر الاتصال بـQZ Tray. تحقق من تشغيله على هذا الجهاز." : "Could not connect to QZ Tray. Make sure it is running on this device."),
+      });
     }
-  }, [categoryPrinterNamesKey]);
+  }, [categoryPrinterNamesKey, isArabic]);
 
   useEffect(() => {
     void reconnect();
@@ -74,37 +79,43 @@ export default function PrinterBridgeStatus({ language = "ar", categoryPrinterNa
         : "default";
 
   return (
-    <Stack
-      role="status"
-      aria-live="polite"
-      direction={{ xs: "column", sm: "row" }}
-
-      spacing={0.75}
-      sx={{ minWidth: 0, width: { xs: "100%", sm: "auto" } , alignItems: { xs: "stretch", sm: "center" }}}
-    >
-      <Chip
-        size="small"
-        color={color}
-        icon={state.status === "connecting" ? <CircularProgress size={13} color="inherit" /> : undefined}
-        label={statusLabel}
-        sx={{
-          maxWidth: "100%",
-          height: "auto",
-          minHeight: 30,
-          justifyContent: "flex-start",
-          "& .MuiChip-label": { display: "block", whiteSpace: "normal", py: 0.45 },
-        }}
-      />
-      <Button
-        size="small"
-        variant="text"
-        startIcon={state.status === "connecting" ? <CircularProgress size={15} /> : <RefreshRoundedIcon />}
-        onClick={reconnect}
-        disabled={state.status === "connecting"}
-        sx={{ minHeight: 40, whiteSpace: "nowrap", alignSelf: { xs: "flex-start", sm: "center" }, fontWeight: 800 }}
+    <Stack spacing={0.5} sx={{ minWidth: 0, width: { xs: "100%", sm: "auto" } }}>
+      <Stack
+        role="status"
+        aria-live="polite"
+        direction={{ xs: "column", sm: "row" }}
+        spacing={0.75}
+        sx={{ minWidth: 0, alignItems: { xs: "stretch", sm: "center" } }}
       >
-        {isArabic ? "إعادة الاتصال" : "Reconnect"}
-      </Button>
+        <Chip
+          size="small"
+          color={color}
+          icon={state.status === "connecting" ? <CircularProgress size={13} color="inherit" /> : undefined}
+          label={statusLabel}
+          sx={{
+            maxWidth: "100%",
+            height: "auto",
+            minHeight: 30,
+            justifyContent: "flex-start",
+            "& .MuiChip-label": { display: "block", whiteSpace: "normal", py: 0.45 },
+          }}
+        />
+        <Button
+          size="small"
+          variant="text"
+          startIcon={state.status === "connecting" ? <CircularProgress size={15} /> : <RefreshRoundedIcon />}
+          onClick={reconnect}
+          disabled={state.status === "connecting"}
+          sx={{ minHeight: 40, whiteSpace: "nowrap", alignSelf: { xs: "flex-start", sm: "center" }, fontWeight: 800 }}
+        >
+          {isArabic ? "إعادة الاتصال" : "Reconnect"}
+        </Button>
+      </Stack>
+      {state.errorMessage && (
+        <Typography variant="caption" color="error.main" sx={{ overflowWrap: "anywhere", maxWidth: 480 }}>
+          {state.errorMessage}
+        </Typography>
+      )}
     </Stack>
   );
 }

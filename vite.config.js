@@ -13,18 +13,18 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks(id) {
-          if (id.includes('node_modules')) {
-            if (id.includes('@mui/x-charts') || id.includes('@mui/x-date-pickers')) {
-              return 'charts';
-            }
-            if (id.includes('@mui') || id.includes('@emotion')) {
-              return 'mui';
-            }
-            if (id.includes('@supabase')) {
-              return 'supabase';
-            }
-            return 'vendor';
-          }
+          const moduleId = id.replace(/\\/g, '/');
+          if (!moduleId.includes('/node_modules/')) return undefined;
+          if (moduleId.includes('/@mui/x-charts/') || moduleId.includes('/@mui/x-date-pickers/')) return 'charts';
+          if (moduleId.includes('/@mui/icons-material/')) return 'mui-icons';
+          if (moduleId.includes('/@mui/') || moduleId.includes('/@emotion/')) return 'mui';
+          if (moduleId.includes('/@supabase/')) return 'supabase';
+          if (
+            moduleId.includes('/react/') ||
+            moduleId.includes('/react-dom/') ||
+            moduleId.includes('/react-router-dom/')
+          ) return 'react-vendor';
+          return undefined;
         },
       },
     },

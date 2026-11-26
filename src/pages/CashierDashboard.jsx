@@ -28,13 +28,17 @@ import { useMenu } from "../context/MenuContext";
 import AccessTimeRoundedIcon from "@mui/icons-material/AccessTimeRounded";
 import Inventory2OutlinedIcon from "@mui/icons-material/Inventory2Outlined";
 import NotificationsActiveRoundedIcon from "@mui/icons-material/NotificationsActiveRounded";
+import PointOfSaleRoundedIcon from "@mui/icons-material/PointOfSaleRounded";
+import Badge from "@mui/material/Badge";
 import IngredientInventory from "../components/manager-dashboard/IngredientInventory";
 import { getPrinterSettings, printKitchenTicketGroups } from "../utils/qzPrinting";
+import { unlockRealtimeNotifications } from "../utils/realtimeNotifications";
 import { buildOrderReceiptGroups } from "../utils/categoryReceiptUtils";
 import NotificationSettingsCard from "../components/cashier-dashboard/NotificationSettingsCard";
 import { DashboardThemeProvider } from "../theme/DashboardTheme";
 import { useTenant } from "../context/TenantContext";
 import useNewOrderBell from "../components/cashier-dashboard/orders/useNewOrderBell";
+import { getCashierOrderStatusCounts } from "../components/cashier-dashboard/orders/orderFilterLogic";
 
 const AUTO_PRINT_KEY = "servio.cashier.autoPrintAfterSave";
 
@@ -88,7 +92,9 @@ function Dashboard() {
     (sum, order) => sum + Number(order.total_price || 0),
     0,
   );
-  const currency = storeInfo.currency || "ر.س";
+  const currency = storeInfo.currency || (language === "ar" ? "ر.س" : "SAR");
+  const orderStatusCounts = useMemo(() => getCashierOrderStatusCounts(orders), [orders]);
+  const orderSummaryLoading = ordersLoading || Boolean(ordersLoadError);
 
   const [autoPrintAfterSave, setAutoPrintAfterSave] = useState(() => {
     try {
@@ -98,6 +104,20 @@ function Dashboard() {
     }
   });
   const autoPrintedPublicOrders = useRef(new Set());
+
+  useEffect(() => {
+    const unlockAudio = () => {
+      window.removeEventListener("pointerdown", unlockAudio);
+      window.removeEventListener("keydown", unlockAudio);
+      void unlockRealtimeNotifications();
+    };
+    window.addEventListener("pointerdown", unlockAudio);
+    window.addEventListener("keydown", unlockAudio);
+    return () => {
+      window.removeEventListener("pointerdown", unlockAudio);
+      window.removeEventListener("keydown", unlockAudio);
+    };
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -177,21 +197,21 @@ function Dashboard() {
     <Box
       sx={{
         width: "100%",
-        minHeight: "100vh",
-        background: "radial-gradient(circle at 85% 0%, rgba(195,96,43,.10), transparent 25%), #111110",
-        py: { xs: 2, sm: 3, md: 3.5 },
-        px: { xs: 1.5, sm: 3, md: 4 },
+        minHeight: "100dvh",
+        background: "radial-gradient(circle at 88% 0%, rgba(244,121,32,.10), transparent 24%), radial-gradient(circle at 0% 60%, rgba(145,182,206,.035), transparent 28%), #111110",
+        py: { xs: 1.5, sm: 2.5, md: 3 },
+        px: { xs: 1.25, sm: 2.5, md: 3.5 },
       }}
     >
       <Container maxWidth="xl" disableGutters>
-        <Stack spacing={{ xs: 1.5, md: 2.25 }}>
+        <Stack spacing={{ xs: 1.25, md: 1.8 }}>
           <Paper
             elevation={0}
             sx={{
-              p: { xs: 1.5, sm: 2, md: 2.5 },
+              p: { xs: 1.5, sm: 2.25, md: 2.75 },
               borderRadius: { xs: 3, md: 4 },
               border: "1px solid rgba(233,222,207,.12)",
-              background: "#1b1a18",
+              background: "linear-gradient(135deg, rgba(32,30,27,.98), rgba(25,25,23,.98))",
               boxShadow: "none",
             }}
           >
@@ -204,88 +224,90 @@ function Dashboard() {
             />
           </Paper>
 
-          <Box
-            sx={{
-              display: "flex",
-              justifyContent: { xs: "flex-start", sm: "flex-end" },
-              minWidth: 0,
-            }}
-          >
-            <PrinterBridgeStatus
-              language={language}
-              categoryPrinterNames={categoryPrinterNames}
-            />
-          </Box>
+          <Stack direction={{ xs: "column", md: "row" }} sx={{ alignItems: { xs: "stretch", md: "center" }, gap: 1.1 }}>
+            {activeTab !== "shifts" && (
+              <Box sx={{ flex: "1 1 320px", minWidth: 0 }}>
+                <CashierShiftGate compact requireStart={false} />
+              </Box>
+            )}
+            <Paper elevation={0} sx={{ flex: activeTab === "shifts" ? "1 1 auto" : "0 1 auto", minWidth: 0, px: 1.2, py: .35, borderRadius: 2.5, border: "1px solid", borderColor: "divider", bgcolor: "rgba(255,255,255,.025)" }}>
+              <PrinterBridgeStatus language={language} categoryPrinterNames={categoryPrinterNames} />
+            </Paper>
+          </Stack>
 
-          <Paper
-            elevation={0}
-            sx={{
-              p: { xs: 1.25, sm: 2, md: 2.5 },
-              borderRadius: { xs: 3, md: 4 },
-              border: "1px solid rgba(233,222,207,.12)",
-              background: "#1b1a18",
-              boxShadow: "none",
-              minHeight: { xs: 0, md: "calc(100vh - 168px)" },
-              minWidth: 0,
-            }}
-          >
-            <Tabs
-              value={activeTab}
-              onChange={(_, value) => setActiveTab(value)}
-              variant="scrollable"
-              scrollButtons="auto"
-              aria-label={
-                language === "ar" ? "تبويبات الكاشير" : "Cashier tabs"
-              }
+          <Box component="main" sx={{ minWidth: 0 }}>
+            <Paper
+              elevation={0}
               sx={{
-                mb: 2,
-                borderBottom: 1,
-                borderColor: "divider",
-                "& .MuiTab-root": { fontWeight: 850, minHeight: 48 },
+                p: { xs: 1.35, sm: 1.9, md: 2.4 },
+                borderRadius: { xs: 3, md: 4 },
+                border: "1px solid rgba(233,222,207,.12)",
+                background: "#1b1a18",
+                boxShadow: "none",
+                minHeight: { xs: 360, md: 480 },
+                minWidth: 0,
               }}
             >
-              <Tab
-                value="orders"
-                label={
-                  language === "ar" ? "الطلبات الواردة" : "Incoming orders"
-                }
-              />
-              <Tab
-                value="inventory"
-                icon={<Inventory2OutlinedIcon />}
-                iconPosition="start"
-                label={language === "ar" ? "المخزون والتوفر" : "Inventory & availability"}
-              />
-              <Tab
-                value="printing"
-                icon={<PrintRoundedIcon />}
-                iconPosition="start"
-                label={
-                  language === "ar" ? "إعدادات الطباعة" : "Printer settings"
-                }
-              />
-              <Tab
-                value="notifications"
-                icon={<NotificationsActiveRoundedIcon />}
-                iconPosition="start"
-                label={language === "ar" ? "الإشعارات والدليل" : "Notifications & guide"}
-              />
-              <Tab
-                value="shifts"
-                icon={<AccessTimeRoundedIcon />}
-                iconPosition="start"
-                label={language === "ar" ? "الورديات" : "Shifts"}
-              />
-            </Tabs>
+              <Tabs
+                value={activeTab}
+                onChange={(_, value) => setActiveTab(value)}
+                variant="scrollable"
+                scrollButtons="auto"
+                allowScrollButtonsMobile
+                aria-label={language === "ar" ? "تبويبات الكاشير" : "Cashier navigation"}
+                sx={{
+                  px: { xs: .25, sm: .5 },
+                  mb: 0,
+                  borderBottom: 1,
+                  borderColor: "divider",
+                  "& .MuiTab-root": { fontWeight: 850, minHeight: 54, minWidth: { xs: 112, sm: 132 }, px: { xs: 1, sm: 1.5 } },
+                  "& .MuiTab-iconWrapper": { fontSize: 19 },
+                }}
+              >
+                <Tab
+                  value="orders"
+                  icon={<Badge badgeContent={orderSummaryLoading ? 0 : orderStatusCounts.all} color="warning" max={99} sx={{ "& .MuiBadge-badge": { fontWeight: 900 } }}><PointOfSaleRoundedIcon /></Badge>}
+                  iconPosition="start"
+                  aria-label={language === "ar" ? `الطلبات الواردة: ${orderStatusCounts.all}` : `Incoming orders: ${orderStatusCounts.all}`}
+                  label={language === "ar" ? "الطلبات" : "Orders"}
+                />
+                <Tab
+                  value="inventory"
+                  icon={<Inventory2OutlinedIcon />}
+                  iconPosition="start"
+                  label={language === "ar" ? "المخزون والتوفر" : "Inventory"}
+                />
+                <Tab
+                  value="printing"
+                  icon={<PrintRoundedIcon />}
+                  iconPosition="start"
+                  label={language === "ar" ? "الطباعة" : "Printing"}
+                />
+                <Tab
+                  value="notifications"
+                  icon={<NotificationsActiveRoundedIcon />}
+                  iconPosition="start"
+                  label={language === "ar" ? "الإشعارات والدليل" : "Notifications"}
+                />
+                <Tab
+                  value="shifts"
+                  icon={<AccessTimeRoundedIcon />}
+                  iconPosition="start"
+                  label={language === "ar" ? "الورديات" : "Shifts"}
+                />
+              </Tabs>
+              <Box sx={{ minWidth: 0, pt: { xs: 1.5, sm: 2 } }}>
             {activeTab === "orders" ? (
-              <LiveOrders
-                orderTypeFilter={orderType}
-                onOrderTypeChange={setOrderType}
-                statusFilter={statusFilter}
-                onStatusChange={setStatusFilter}
-                bell={bell}
-                announcement={announcement}
-              />
+              <Stack spacing={{ xs: 1.5, md: 2 }}>
+                <LiveOrders
+                  orderTypeFilter={orderType}
+                  onOrderTypeChange={setOrderType}
+                  statusFilter={statusFilter}
+                  onStatusChange={setStatusFilter}
+                  bell={bell}
+                  announcement={announcement}
+                />
+              </Stack>
             ) : activeTab === "shifts" ? (
               <Stack spacing={2.25}>
                 <CashierShiftGate requireStart={false} />
@@ -317,7 +339,9 @@ function Dashboard() {
                 />
               </Stack>
             )}
-          </Paper>
+              </Box>
+            </Paper>
+          </Box>
 
           <CashierSalesDrawer
             open={isSalesHistoryOpen}

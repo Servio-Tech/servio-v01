@@ -25,12 +25,13 @@ export const createAppTheme = (direction = 'rtl') => createTheme({
     button: { fontWeight: 850, letterSpacing: '-0.01em', textTransform: 'none' },
     caption: { fontWeight: 650, lineHeight: 1.45 },
   },
-  shape: { borderRadius: 12 },
+  shape: { borderRadius: 4 },
   components: {
     MuiButton: {
       styleOverrides: {
         root: {
           minHeight: 42,
+          borderRadius: 8,
           paddingInline: 14,
           gap: 6,
           whiteSpace: 'normal',

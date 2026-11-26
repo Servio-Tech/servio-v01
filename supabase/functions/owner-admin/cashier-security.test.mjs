@@ -57,3 +57,35 @@ test('cashier login refuses ledger blocks and direct Auth bans before password r
     assert.equal(calls.includes('updateUserById'), mode === 'allowed', mode);
   }
 });
+
+test('cashier login CORS allows the configured local app origins only', async () => {
+  const handler = await load('cashier-login', () => {
+    throw new Error('Supabase client should not be created for preflight requests');
+  }, 'cors-origins');
+  const allowedOrigins = [
+    'http://localhost:3000',
+    'http://127.0.0.1:3000',
+    'http://localhost:3001',
+    'http://127.0.0.1:3001',
+    'http://localhost:3010',
+    'http://127.0.0.1:3010',
+    'http://localhost:5173',
+    'http://127.0.0.1:5173',
+  ];
+
+  for (const origin of allowedOrigins) {
+    const response = await handler(new Request('https://test.invalid', {
+      method: 'OPTIONS',
+      headers: { origin },
+    }));
+    assert.equal(response.status, 200);
+    assert.equal(response.headers.get('Access-Control-Allow-Origin'), origin);
+  }
+
+  const blockedOrigin = 'http://localhost:9999';
+  const blockedResponse = await handler(new Request('https://test.invalid', {
+    method: 'OPTIONS',
+    headers: { origin: blockedOrigin },
+  }));
+  assert.notEqual(blockedResponse.headers.get('Access-Control-Allow-Origin'), blockedOrigin);
+});

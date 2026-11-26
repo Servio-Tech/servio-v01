@@ -50,6 +50,9 @@ test("real XLSX round-trips numeric values, RTL sheets, and harmless string cell
   assert.equal(loaded.worksheets.length, 9);
   assert.equal(loaded.getWorksheet("الملخص").views[0].rightToLeft, true);
   assert.equal(loaded.getWorksheet("الملخص").getCell("B4").value, 115);
+  assert.equal(loaded.getWorksheet("الملخص").getCell("A1").fill.fgColor.argb, "FF24201D");
+  assert.equal(loaded.getWorksheet("الملخص").getCell("A1").border.bottom.color.argb, "FFF47920");
+  assert.equal(loaded.getWorksheet("الملخص").getCell("A2").fill.fgColor.argb, "FFFFF7EF");
   assert.equal(loaded.getWorksheet("إيرادات الطاولات").getCell("A2").value, "'=HYPERLINK(1)");
   assert.equal(loaded.getWorksheet("الأصناف").getCell("B2").value, "لاتيه, كبير");
   assert.equal(typeof loaded.getWorksheet("الأصناف").getCell("D2").value, "number");
