@@ -5,7 +5,7 @@ function send(res, status, payload) {
   return res.status(status).json(payload);
 }
 
-module.exports = function vapidPublicKey(req, res) {
+export default function vapidPublicKey(req, res) {
   if (req.method !== "GET") {
     res.setHeader("Allow", "GET");
     return send(res, 405, { error: "Method not allowed" });
@@ -13,4 +13,4 @@ module.exports = function vapidPublicKey(req, res) {
   const publicKey = String(process.env.VAPID_PUBLIC_KEY || "");
   if (!publicKey) return send(res, 503, { error: "Push notifications are not configured" });
   return send(res, 200, { publicKey });
-};
+}

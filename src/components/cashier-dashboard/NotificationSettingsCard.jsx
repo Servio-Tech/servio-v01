@@ -27,13 +27,14 @@ import DeleteOutlineRoundedIcon from "@mui/icons-material/DeleteOutlineRounded";
 import { useBranch } from "../../context/BranchContext";
 import { useLanguage } from "../../context/LanguageContext";
 import supabase from "../../supabase";
-import { base64UrlToUint8Array, getPushRegistration, supportsWebPush } from "../../utils/pushNotifications";
+import { base64UrlToUint8Array, getPushDeviceLabel, getPushRegistration, subscriptionUsesApplicationServerKey, supportsWebPush } from "../../utils/pushNotifications";
 
 const copy = {
   ar: {
     title: "إشعارات الطلبات واستدعاءات الخدمة",
     intro: "فعّل الإشعارات لهذا الجهاز فقط. تصل إشعارات الطلبات الجديدة واستدعاءات الخدمة للكاشير في الفرع المحدد، عند دعم النظام والمتصفح للإشعارات.",
     enable: "تفعيل الإشعارات على هذا الجهاز",
+    refreshSubscription: "إصلاح اشتراك هذا الجهاز",
     disable: "إيقاف هذا الجهاز",
     unsupported: "هذا المتصفح أو سياق الصفحة لا يدعم Web Push. افتح SERVIO عبر اتصال HTTPS ومتصفح يدعم الإشعارات.",
     permissionDenied: "الإذن مرفوض من إعدادات المتصفح أو النظام. غيّره يدويًا من إعدادات الإشعارات ثم أعد المحاولة.",
@@ -74,6 +75,7 @@ const copy = {
     title: "Order and service-call notifications",
     intro: "Opt in on this device. New orders and service calls are sent to cashier subscriptions for the selected branch where the operating system and browser support push.",
     enable: "Enable notifications on this device",
+    refreshSubscription: "Repair this device subscription",
     disable: "Disable this device",
     unsupported: "This browser or page context does not support Web Push. Open SERVIO over HTTPS in a browser with notification support.",
     permissionDenied: "Permission is blocked by the browser or operating system. Change notification permissions in system settings, then try again.",
@@ -138,6 +140,7 @@ export default function NotificationSettingsCard() {
   const [permission, setPermission] = useState("default");
   const [devices, setDevices] = useState([]);
   const [currentEndpoint, setCurrentEndpoint] = useState("");
+  const [needsKeyRefresh, setNeedsKeyRefresh] = useState(false);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState(null);
@@ -166,6 +169,18 @@ export default function NotificationSettingsCard() {
         const registration = await navigator.serviceWorker.getRegistration("/");
         const subscription = await registration?.pushManager?.getSubscription();
         setCurrentEndpoint(subscription?.endpoint || "");
+        setNeedsKeyRefresh(false);
+        if (subscription) {
+          try {
+            const response = await fetch("/api/notifications/vapid-public-key", { headers: { Accept: "application/json" } });
+            if (response.ok) {
+              const { publicKey } = await response.json();
+              if (publicKey) setNeedsKeyRefresh(!subscriptionUsesApplicationServerKey(subscription, publicKey));
+            }
+          } catch {
+            // Settings remain viewable while offline; the explicit enable action will retry the key fetch.
+          }
+        }
       }
     } catch (error) {
       setDevices([]);
@@ -200,6 +215,11 @@ export default function NotificationSettingsCard() {
       const { publicKey } = await keyResponse.json();
       if (!publicKey) throw new Error("Push key unavailable");
       let subscription = await registration.pushManager.getSubscription();
+      if (subscription && !subscriptionUsesApplicationServerKey(subscription, publicKey)) {
+        // VAPID key rotation invalidates old application-server subscriptions; replace only on explicit opt-in.
+        await subscription.unsubscribe();
+        subscription = null;
+      }
       if (!subscription) {
         subscription = await registration.pushManager.subscribe({
           userVisibleOnly: true,
@@ -210,10 +230,11 @@ export default function NotificationSettingsCard() {
         p_subscription: subscription.toJSON(),
         p_branch_id: branchId,
         p_language: language === "en" ? "en" : "ar",
-        p_device_label: "Cashier device",
+        p_device_label: getPushDeviceLabel(),
       });
       if (error) throw error;
       setCurrentEndpoint(subscription.endpoint);
+      setNeedsKeyRefresh(false);
       setMessage({ type: "success", text: t.enabled });
       await refresh();
     } catch (error) {
@@ -237,7 +258,10 @@ export default function NotificationSettingsCard() {
         .delete()
         .eq("id", device.id);
       if (error) throw error;
-      if (device.endpoint === currentEndpoint) setCurrentEndpoint("");
+      if (device.endpoint === currentEndpoint) {
+        setCurrentEndpoint("");
+        setNeedsKeyRefresh(false);
+      }
       setMessage({ type: "success", text: t.disabled });
       await refresh();
     } catch (error) {
@@ -271,8 +295,8 @@ export default function NotificationSettingsCard() {
           {supported && permission === "denied" && <Alert severity="warning">{t.permissionDenied}</Alert>}
 
           <Stack direction={{ xs: "column", sm: "row" }} spacing={1.2}>
-            <Button variant="contained" startIcon={<NotificationsActiveRoundedIcon />} disabled={loading || busy || !supported || !branchId || permission === "denied" || Boolean(currentDevice)} onClick={enable}>
-              {busy ? t.loading : t.enable}
+            <Button variant="contained" startIcon={<NotificationsActiveRoundedIcon />} disabled={loading || busy || !supported || !branchId || permission === "denied" || (Boolean(currentDevice) && !needsKeyRefresh)} onClick={enable}>
+              {busy ? t.loading : needsKeyRefresh ? t.refreshSubscription : t.enable}
             </Button>
             {currentDevice && <Button variant="outlined" color="inherit" startIcon={<NotificationsOffRoundedIcon />} disabled={busy} onClick={() => removeDevice(currentDevice)}>{t.disable}</Button>}
           </Stack>

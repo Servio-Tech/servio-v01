@@ -1,7 +1,8 @@
 // معالج API ضمن `api/qz/signature.js` لمسار QZ وتحقق التوقيع/الشهادة.
-const { createSign } = require("node:crypto");
-const { createClient } = require("@supabase/supabase-js");
-const { matchesServioCertificate } = require("./certificateFingerprint");
+import { createSign } from "node:crypto";
+import { createClient } from "@supabase/supabase-js";
+import { matchesServioCertificate } from "./certificateFingerprint.js";
+import { getSupabaseConfig } from "../supabaseConfig.js";
 
 const MAX_SIGNED_REQUEST_LENGTH = 250_000;
 const ALLOWED_ROLES = new Set(["admin", "cashier"]);
@@ -12,7 +13,7 @@ function reply(res, status, message) {
   res.status(status).send(message);
 }
 
-module.exports = async function signQzRequest(req, res) {
+export default async function signQzRequest(req, res) {
   res.setHeader("Cache-Control", "no-store, max-age=0");
   res.setHeader("X-Content-Type-Options", "nosniff");
 
@@ -43,8 +44,7 @@ module.exports = async function signQzRequest(req, res) {
   }
 
   const privateKey = String(process.env.QZ_SIGNING_PRIVATE_KEY || "").replace(/\\n/g, "\n");
-  const supabaseUrl = process.env.REACT_APP_SUPABASE_URL || process.env.SUPABASE_URL;
-  const supabaseKey = process.env.REACT_APP_SUPABASE_KEY || process.env.SUPABASE_ANON_KEY;
+  const { url: supabaseUrl, key: supabaseKey } = getSupabaseConfig();
   if (!privateKey || !supabaseUrl || !supabaseKey) {
     return reply(res, 503, "QZ signing is not configured in Vercel");
   }
@@ -72,4 +72,4 @@ module.exports = async function signQzRequest(req, res) {
     console.error("QZ signing request failed:", error?.code || error?.name || "unknown");
     return reply(res, 500, "Unable to sign print request");
   }
-};
+}

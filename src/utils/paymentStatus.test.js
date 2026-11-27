@@ -2,6 +2,7 @@
 import {
   createPaymentMethodUpdate,
   createOrderPaymentStatusUpdate,
+  createOrderPaymentSettlementUpdate,
   createPaymentSettlementUpdate,
   createPaymentStatusUpdate,
   isValidSplitPayment,
@@ -52,6 +53,24 @@ describe("payment helpers", () => {
       payment_method: "cash",
       cash_amount: 12.5,
       card_amount: 0,
+    });
+  });
+
+  test("completes an awaiting-payment order as served instead of returning it to ready", () => {
+    const now = () => new Date("2026-10-06T01:00:00.000Z");
+    expect(createOrderPaymentSettlementUpdate(
+      { status: "awaiting_payment", payment_status: "unpaid", total_price: 12.5 },
+      { method: "cash" },
+      now,
+    )).toEqual({
+      payment_status: "paid",
+      paid_at: "2026-10-06T01:00:00.000Z",
+      payment_method: "cash",
+      cash_amount: 12.5,
+      card_amount: 0,
+      status: "served",
+      is_completed: true,
+      completed_at: "2026-10-06T01:00:00.000Z",
     });
   });
 

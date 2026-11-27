@@ -1,5 +1,5 @@
 import { FullscreenDialog as Dialog } from "../../common/FullscreenOverlays";
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 
 // MUI COMPONENTS
 import Box from "@mui/material/Box";
@@ -10,6 +10,11 @@ import Button from "@mui/material/Button";
 import Typography from "@mui/material/Typography";
 import Divider from "@mui/material/Divider";
 import Chip from "@mui/material/Chip";
+import FormControl from "@mui/material/FormControl";
+import FormHelperText from "@mui/material/FormHelperText";
+import InputLabel from "@mui/material/InputLabel";
+import MenuItem from "@mui/material/MenuItem";
+import Select from "@mui/material/Select";
 
 import DialogTitle from "@mui/material/DialogTitle";
 import DialogContent from "@mui/material/DialogContent";
@@ -41,7 +46,10 @@ function OrderItemCard({ order }) {
   const [sending, setSending] = useState(false);
   const [paymentSaving, setPaymentSaving] = useState(false);
   const [paymentError, setPaymentError] = useState("");
+  const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
+  const [paymentDialogMethod, setPaymentDialogMethod] = useState("");
   const [confirmingStatus, setConfirmingStatus] = useState(null);
+  const paymentMethodFieldId = useId();
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState(order.payment_method || null);
   const [, setTimeTick] = useState(0);
   const isPaid = order.payment_status === "paid";
@@ -92,32 +100,33 @@ function OrderItemCard({ order }) {
     }
     void performStatusChange(status);
   };
-  const settleAndDeliver = () => {
+  const openPaymentDialog = () => {
     if (sending || paymentSaving) return;
-    void recordSelectedPayment();
-  };
-  const recordPayment = () => {
-    if (sending || paymentSaving) return;
-    void recordSelectedPayment();
+    setPaymentError("");
+    setPaymentDialogMethod("");
+    setPaymentDialogOpen(true);
   };
   const recordSelectedPayment = async () => {
     if (sending || paymentSaving) return;
-    const method = selectedPaymentMethod;
+    const method = paymentDialogMethod;
     if (!method) {
-      setPaymentError(language === "ar" ? "اختر طريقة الدفع من الحقل أولًا." : "Choose a payment method in the field first.");
+      setPaymentError(language === "ar" ? "اختر طريقة الدفع لتسجيل السداد." : "Choose a payment method to record payment.");
       return;
     }
-    setSending(true);
+    setPaymentSaving(true);
     setPaymentError("");
     try {
       const paymentResult = await updateOrderPaymentStatus(order.id, "paid", { method });
       if (paymentResult?.error) {
         setPaymentError(language === "ar" ? "تعذر تسجيل السداد. تحقق من طريقة الدفع ثم أعد المحاولة." : "Could not record payment. Check the payment method and retry.");
+      } else {
+        setSelectedPaymentMethod(method);
+        setPaymentDialogOpen(false);
       }
     } catch {
       setPaymentError(language === "ar" ? "تعذر تسجيل السداد. تحقق من الاتصال ثم أعد المحاولة." : "Could not record payment. Check the connection and retry.");
     } finally {
-      setSending(false);
+      setPaymentSaving(false);
     }
   };
   const confirmReceiptAction = async () => {
@@ -128,7 +137,7 @@ function OrderItemCard({ order }) {
   const changePaymentStatus = async (status) => {
     if (paymentSaving) return;
     if (status === "paid") {
-      recordPayment();
+      openPaymentDialog();
       return;
     }
     if (isReady && status !== "paid") {
@@ -168,6 +177,9 @@ function OrderItemCard({ order }) {
     }
   };
   const orderItems = Array.isArray(order?.items) ? order.items : [];
+  const paymentMethodOptions = language === "ar"
+    ? [["cash", "نقد"], ["card", "شبكة/بطاقة"], ["wallet", "محفظة رقمية"], ["transfer", "تحويل بنكي"], ["other", "أخرى"]]
+    : [["cash", "Cash"], ["card", "Card / network"], ["wallet", "Digital wallet"], ["transfer", "Bank transfer"], ["other", "Other"]];
 
   return (
     <motion.div
@@ -243,7 +255,8 @@ function OrderItemCard({ order }) {
         </Box>
 
         <Box sx={{ mx: { xs: 1.4, sm: 1.65 }, mb: 1.2, p: 1.25, borderRadius: "12px", border: `1px solid ${statusVisual.accent}30`, bgcolor: statusVisual.soft, display: "flex", flexDirection: "column", gap: 0.7, minWidth: 0, "& .MuiToggleButton-root": { minHeight: 40, px: 1.25, fontSize: ".85rem" }, "& .MuiInputBase-root": { minHeight: 44 }, "& .MuiInputLabel-root, & .MuiTypography-caption": { fontSize: ".82rem" } }}>
-          <PaymentStatusControl value={order.payment_status} method={selectedPaymentMethod} onChange={changePaymentStatus} onMethodChange={changePaymentMethod} disabled={sending || paymentSaving || (isReady && isPaid)} language={language} />
+          {!isAwaitingPayment && <PaymentStatusControl value={order.payment_status} method={selectedPaymentMethod} onChange={changePaymentStatus} onMethodChange={changePaymentMethod} disabled={sending || paymentSaving || (isReady && isPaid)} language={language} />}
+          {isAwaitingPayment && <Typography variant="caption" color="warning.main" sx={{ fontWeight: 800 }}>{t("paymentRequired")}</Typography>}
           {isReady && isPaid && <Typography variant="caption" color="success.main" sx={{ fontWeight: 800 }}>
             {language === "ar" ? "جاهز للاستلام — حالة الدفع مثبتة حتى يتم التسليم." : "Ready for pickup — payment status is locked until delivery."}
           </Typography>}
@@ -425,14 +438,8 @@ function OrderItemCard({ order }) {
           )}
           {isAwaitingPayment && (
             <Box sx={{ width: "100%", display: "grid", gap: 0.8 }}>
-              <Typography variant="caption" color="warning.main" sx={{ fontWeight: 800 }}>
-                {t("paymentRequired")}
-              </Typography>
-              <Button color="success" variant="contained" onClick={!isPaid ? settleAndDeliver : () => changeStatus("served")} disabled={sending || paymentSaving}>
-                {!isPaid ? (language === "ar" ? "تأكيد السداد" : "Confirm payment") : (language === "ar" ? "تأكيد التسليم" : "Confirm delivery")}
-              </Button>
-              {isPaid && <Button variant="outlined" startIcon={<PrintRoundedIcon />} onClick={() => setIsInvoiceOpen(true)} disabled={sending}>
-                {t("printInvoice")}
+              {!isPaid && <Button color="success" variant="contained" onClick={openPaymentDialog} disabled={sending || paymentSaving}>
+                {language === "ar" ? "تسجيل السداد" : "Record payment"}
               </Button>}
             </Box>
           )}
@@ -447,6 +454,33 @@ function OrderItemCard({ order }) {
         <DialogActions>
           <Button onClick={() => setConfirmingStatus(null)} disabled={sending}>{language === "ar" ? "إلغاء" : "Cancel"}</Button>
           <Button variant="contained" color="success" onClick={confirmReceiptAction} disabled={sending}>{language === "ar" ? "تأكيد الاستلام" : "Confirm receipt"}</Button>
+        </DialogActions>
+      </Dialog>
+      <Dialog open={paymentDialogOpen} onClose={() => !paymentSaving && setPaymentDialogOpen(false)} fullWidth maxWidth="xs" language={language}>
+        <DialogTitle>{language === "ar" ? "تسجيل سداد الطلب" : "Record order payment"}</DialogTitle>
+        <DialogContent>
+          <FormControl fullWidth required error={Boolean(paymentError)} sx={{ mt: 1 }}>
+            <InputLabel id={`${paymentMethodFieldId}-label`}>{language === "ar" ? "طريقة الدفع" : "Payment method"}</InputLabel>
+            <Select
+              labelId={`${paymentMethodFieldId}-label`}
+              id={paymentMethodFieldId}
+              value={paymentDialogMethod}
+              label={language === "ar" ? "طريقة الدفع" : "Payment method"}
+              onChange={(event) => { setPaymentDialogMethod(event.target.value); setPaymentError(""); }}
+            >
+              <MenuItem value=""><em>{language === "ar" ? "اختر طريقة الدفع" : "Select a payment method"}</em></MenuItem>
+              {paymentMethodOptions.map(([method, label]) => <MenuItem key={method} value={method}>{label}</MenuItem>)}
+            </Select>
+            <FormHelperText role={paymentError ? "alert" : undefined}>
+              {paymentError || (language === "ar" ? "اختيار الطريقة مطلوب لتسجيل السداد." : "A payment method is required to record payment.")}
+            </FormHelperText>
+          </FormControl>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setPaymentDialogOpen(false)} disabled={paymentSaving}>{language === "ar" ? "إلغاء" : "Cancel"}</Button>
+          <Button variant="contained" color="success" onClick={recordSelectedPayment} disabled={!paymentDialogMethod || paymentSaving}>
+            {paymentSaving ? (language === "ar" ? "جارٍ التسجيل…" : "Recording…") : (language === "ar" ? "تأكيد السداد" : "Confirm payment")}
+          </Button>
         </DialogActions>
       </Dialog>
     </motion.div>

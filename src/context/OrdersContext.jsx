@@ -6,7 +6,7 @@ import { useBranch } from "./BranchContext";
 import { playRealtimeNotification } from "../utils/realtimeNotifications";
 import { createRequestGuard } from "../utils/requestGuard";
 import { compactOrderItems, parseOrderItems } from "../utils/orderItemPayload";
-import { createOrderPaymentStatusUpdate } from "../utils/paymentStatus";
+import { createOrderPaymentSettlementUpdate, createOrderPaymentStatusUpdate } from "../utils/paymentStatus";
 import { attachDailyTableOrderNumbers } from "../utils/tableOrderUtils";
 
 const OrdersContext = createContext();
@@ -442,16 +442,13 @@ export const OrdersProvider = ({ children }) => {
 
     let paymentUpdate;
     try {
-      paymentUpdate = createOrderPaymentStatusUpdate(newStatus, target, paymentDetails);
+      paymentUpdate = newStatus === "paid"
+        ? createOrderPaymentSettlementUpdate(target, paymentDetails)
+        : createOrderPaymentStatusUpdate(newStatus, target, paymentDetails);
     } catch (error) {
       return { error };
     }
-    // سداد الطلب الموجود في انتظار السداد ينهي دورة البيع محاسبيًا
-    // وينقله إلى جاهز، مع بقائه ظاهرًا للكاشير حتى يتم استلامه فعليًا.
-    if (target.status === "awaiting_payment" && newStatus === "paid") {
-      paymentUpdate = { ...paymentUpdate, status: "ready" };
-    }
-    const optimistic = { ...target, ...paymentUpdate, paid_at: paymentUpdate.paid_at ? new Date(paymentUpdate.paid_at) : null };
+    const optimistic = formatOrder({ ...target, ...paymentUpdate });
     setOrders((current) => current.map((order) => order.id === orderId ? optimistic : order));
 
     let result = { data: null, error: null };

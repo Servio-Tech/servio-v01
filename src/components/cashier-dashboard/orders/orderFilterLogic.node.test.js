@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { filterCashierOrders, getCashierOrderStatusCounts, sortCashierOrdersByPriority } from "./orderFilterLogic.js";
+import { filterCashierOrders, getActiveCashierOrders, getCashierOrderStatusCounts, sortCashierOrdersByPriority } from "./orderFilterLogic.js";
+import { createOrderPaymentSettlementUpdate } from "../../../utils/paymentStatus.js";
 
 const makeOrder = (id, status, type = "table", paymentStatus = "unpaid") => ({
   id,
@@ -45,6 +46,15 @@ test("status counts preserve the single-list totals and include payment fallback
     ready: 1,
     awaiting_payment: 2,
   });
+});
+
+test("a paid awaiting-payment settlement is removed from the active cashier list", () => {
+  const order = {
+    ...makeOrder("settled", "awaiting_payment"),
+    total_price: 12.5,
+  };
+  const settlement = createOrderPaymentSettlementUpdate(order, { method: "cash" });
+  assert.deepEqual(getActiveCashierOrders([{ ...order, ...settlement }]), []);
 });
 
 test("sorts work by status priority and oldest order first without mutating the queue", () => {

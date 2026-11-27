@@ -35,21 +35,28 @@ beforeEach(() => {
   updateOrderStatus.mockResolvedValue({ data: { id: "order-1" }, error: null });
 });
 
-test("يسجل الدفع فور الضغط باستخدام الطريقة المحددة دون نافذة تأكيد", async () => {
+test("يعرض نافذة اختيار السداد حتى إذا كانت طريقة الدفع محددة مسبقًا", async () => {
   render(<OrderItemCard order={makeOrder({ status: "preparing", payment_method: "cash" })} />);
 
   fireEvent.click(screen.getByRole("button", { name: "مدفوع" }));
+  expect(await screen.findByText("تسجيل سداد الطلب")).toBeTruthy();
+  fireEvent.mouseDown(screen.getByRole("combobox", { name: "طريقة الدفع" }));
+  fireEvent.click(screen.getByRole("option", { name: "نقد" }));
+  fireEvent.click(screen.getByRole("button", { name: "تأكيد السداد" }));
   await waitFor(() => expect(updateOrderPaymentStatus).toHaveBeenCalledWith("order-1", "paid", { method: "cash" }));
   expect(updateOrderStatus).not.toHaveBeenCalled();
-  expect(screen.queryByText("تسجيل سداد الطلب")).toBeNull();
 });
 
-test("يحفظ اختيار الدفع المحلي مع تسجيل السداد في طلب واحد", async () => {
+test("يطلب طريقة الدفع داخل نافذة تسجيل السداد ولا يشترط اختيارها مسبقًا", async () => {
   render(<OrderItemCard order={makeOrder()} />);
 
+  expect(screen.queryByRole("button", { name: "مدفوع" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "غير مدفوع" })).toBeNull();
+  fireEvent.click(screen.getByRole("button", { name: "تسجيل السداد" }));
+  expect(await screen.findByText("تسجيل سداد الطلب")).toBeTruthy();
   const paymentSelect = screen.getByRole("combobox", { name: "طريقة الدفع" });
   fireEvent.mouseDown(paymentSelect);
-  expect(screen.getAllByRole("option").map((option) => option.textContent)).toEqual(["غير محددة", "نقد", "شبكة/بطاقة"]);
+  expect(screen.getAllByRole("option").map((option) => option.textContent)).toContain("نقد");
   fireEvent.click(screen.getByRole("option", { name: "نقد" }));
   expect(updateOrderPaymentStatus).not.toHaveBeenCalled();
 
@@ -80,8 +87,8 @@ test("يعيد تفعيل إجراءات الطلب ويعرض خطأ عند ف�
   expect(startButton.disabled).toBe(false);
 });
 
-test("يعرض إجراء السداد للطلب الجاهز غير المدفوع", () => {
+test("يعرض إجراء تسجيل السداد للطلب الجاهز غير المدفوع", () => {
   render(<OrderItemCard order={makeOrder({ status: "ready", payment_status: "unpaid" })} />);
 
-  expect(screen.getByRole("button", { name: "تأكيد السداد" })).toBeTruthy();
+  expect(screen.getByRole("button", { name: "تسجيل السداد" })).toBeTruthy();
 });

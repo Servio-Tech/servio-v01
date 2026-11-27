@@ -87,3 +87,14 @@ export function createOrderPaymentStatusUpdate(status, order, paymentDetails = n
   }
   return update;
 }
+
+export function createOrderPaymentSettlementUpdate(order, paymentDetails, now = () => new Date()) {
+  const update = createOrderPaymentStatusUpdate("paid", order, paymentDetails, now);
+  if (order?.status !== "awaiting_payment") return update;
+  return {
+    ...update,
+    status: "served",
+    is_completed: true,
+    completed_at: update.paid_at,
+  };
+}
